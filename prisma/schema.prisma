@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Activities {
+  id          String       @id @default(cuid())
+  name        String
+  description String
+  capacity    Int
+  address     String
+  amenities   String[]
+  images      String[]
+  collection  Collection[]
+  booking     Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("activities")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  phone_number String?
+  address      String?
+  password     String
+  role         Role         @default(Customer)
+  collection   Collection[]
+  booking      Booking[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Invoice   Invoice[]
+
+  @@map("users")
+}
+
+model Collection {
+  id           String     @id @default(cuid())
+  userId       String     @unique
+  user         User       @relation(fields: [userId], references: [id])
+  activitiesId String
+  activities   Activities @relation(fields: [activitiesId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("collections")
+}
+
+model Booking {
+  id           String     @id @default(cuid())
+  start_date   String
+  end_date     String
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  activitiesId String
+  activities   Activities @relation(fields: [activitiesId], references: [id])
+  status       Status     @default(Pending)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Invoice   Invoice[]
+
+  @@map("bookings")
+}
+
+model Invoice {
+  id        String  @id @default(cuid())
+  amount    Decimal
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  status    Payment @default(Pending)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("invoices")
+}
+
+enum Role {
+  Moderator
+  Customer
+}
+
+enum Status {
+  Pending
+  Confirmed
+  Cancelled
+}
+
+enum Payment {
+  Pending
+  Paid
+  Failed
+}
