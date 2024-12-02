@@ -7,7 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserDto } from './dto';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -15,8 +15,8 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
-import { JwtGuard } from '../auth/guard/auth.guard';
-import { GetUser } from '../auth/decorator/get-user.decorator';
+import { JwtGuard } from '../auth/guard';
+import { GetUser } from '../auth/decorator';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({
