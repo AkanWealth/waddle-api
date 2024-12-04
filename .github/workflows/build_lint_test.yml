@@ -22,7 +22,7 @@ jobs:
     - name: Prettier Action
       uses: creyD/prettier_action@v4.3
       
-    - name: ESLint checker
+    - name: ESLint Action
       uses: ninosaurus/eslint-check@v5.3.1
       with:
         eslint-config-path: .eslintrc.js
