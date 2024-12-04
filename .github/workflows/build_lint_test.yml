@@ -24,8 +24,6 @@ jobs:
       
     - name: ESLint Action
       uses: ninosaurus/eslint-check@v5.3.1
-      with:
-        eslint-config-path: .eslintrc.js
     
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
