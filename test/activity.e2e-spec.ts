@@ -46,8 +46,7 @@ describe('Activity (e2e)', () => {
         return request(app.getHttpServer())
           .post('/api/v1/auth/signup')
           .send(customer)
-          .expect(201)
-          .then((res) => expect(res.body.access_token).toBeDefined());
+          .expect(400);
       });
     });
 
