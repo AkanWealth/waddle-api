@@ -17,6 +17,30 @@ jobs:
       matrix:
         node-version: [18.x, 22.x]
 
+    services:
+      postgres:
+        image: postgres:latest
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: testdb
+          SEED_USER_NAME: Admin
+          SEED_USER_EMAIL: admin@waddle.uk
+          SEED_PASSWORD: 123456
+
+          PORT: 3030
+          DATABASE_URL: 'postgresql://postgres:password@localhost:5432/testdb?schema=public'
+          JWT_SECRET_KEY: NkM9Ci}gVsEjwfZI07gH@CEZ}?2h
+          JWT_EXPIRATION_TIME: '60m'
+
+        options: >-
+          --health-cmd="pg_isready" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v3
 
