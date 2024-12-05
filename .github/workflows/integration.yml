@@ -64,7 +64,7 @@ jobs:
           echo "DB_NAME=testdb" >> $GITHUB_ENV
           echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/testdb" >> $GITHUB_ENV
           echo "JWT_SECRET_KEY=NkM9Ci}gVsEjwfZI07gH@CEZ}?2h" >> $GITHUB_ENV
-          echo "JJWT_EXPIRATION_TIME=60m" >> $GITHUB_ENV
+          echo "JWT_EXPIRATION_TIME=60m" >> $GITHUB_ENV
           echo "SEED_USER_NAME=Admin" >> $GITHUB_ENV
           echo "SEED_USER_EMAIL=admin@waddle.uk" >> $GITHUB_ENV
           echo "SEED_PASSWORD=123456" >> $GITHUB_ENV
