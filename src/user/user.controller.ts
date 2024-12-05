@@ -11,7 +11,6 @@ import { UpdateUserDto } from './dto';
 import {
   ApiBearerAuth,
   ApiOkResponse,
-  ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
