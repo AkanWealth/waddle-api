@@ -54,6 +54,18 @@ jobs:
           npm i
           npm ci
 
+      - name: Set Environment Variables
+        run: |
+          echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
+          echo "DB_PORT=5432" >> $GITHUB_ENV
+          echo "DB_USER=postgres" >> $GITHUB_ENV
+          echo "DB_PASSWORD=password" >> $GITHUB_ENV
+          echo "DB_NAME=testdb" >> $GITHUB_ENV
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          until pg_isready -h ${{ env.DB_HOST }} -p ${{ env.DB_PORT }} -U ${{ env.DB_USER }}; do echo "Waiting for PostgreSQL to be ready..." sleep 1 done
+
       - name: Format Code with Prettier
         run: |
           npm run format
