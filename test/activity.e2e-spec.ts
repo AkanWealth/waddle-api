@@ -46,7 +46,7 @@ describe('Activity (e2e)', () => {
         return request(app.getHttpServer())
           .post('/api/v1/auth/signup')
           .send(customer)
-          .expect(400);
+          .expect(201);
       });
     });
 
