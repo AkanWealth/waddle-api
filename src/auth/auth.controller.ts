@@ -1,4 +1,14 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Get,
+  UseGuards,
+  Patch,
+  Param,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInDto, SignUpDto } from './dto';
 import {
@@ -7,6 +17,8 @@ import {
   ApiOkResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { GoogleAuthGuard } from './guard';
+import { GetUser } from './decorator';
 
 @ApiBadRequestResponse({ description: 'Credentials taken' })
 @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
@@ -18,6 +30,12 @@ export class AuthController {
   @Post('signup')
   register(@Body() dto: SignUpDto) {
     return this.authService.register(dto);
+  }
+
+  @ApiOkResponse({ description: 'User email verified' })
+  @Patch('verification/:id')
+  veriyEmail(@Param('id') userId: string) {
+    return this.authService.verifyEmail(userId);
   }
 
   @ApiOkResponse({ description: 'User authenticated' })
@@ -32,5 +50,24 @@ export class AuthController {
   @Post('host')
   admin(@Body() dto: SignInDto) {
     return this.authService.admin(dto);
+  }
+
+  @ApiOkResponse({ description: 'User authenticated' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(GoogleAuthGuard)
+  @Get('google/signin')
+  googleLogin() {}
+
+  @ApiOkResponse({ description: 'User authenticated' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(GoogleAuthGuard)
+  @Get('google/callback')
+  async googleCallback(
+    @GetUser('id') id: string,
+    @GetUser('email') email: string,
+  ) {
+    const response = await this.authService.signToken(id, email);
+
+    return response;
   }
 }

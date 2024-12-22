@@ -8,6 +8,16 @@ export class UserService {
   constructor(private prisma: PrismaService) {}
 
   // function to update the loggedin user
+  async findAll() {
+    try {
+      const user = await this.prisma.user.findMany();
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to update the loggedin user
   async update(id: string, dto: UpdateUserDto) {
     try {
       if (dto.password) {
@@ -37,6 +47,16 @@ export class UserService {
 
   // function to delete the loggedin user
   async remove(id: string) {
+    try {
+      await this.prisma.user.delete({ where: { id } });
+
+      return { mesaage: 'User deleted' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async removeOne(id: string) {
     try {
       await this.prisma.user.delete({ where: { id } });
 
