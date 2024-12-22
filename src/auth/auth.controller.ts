@@ -17,7 +17,7 @@ import {
   ApiOkResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { GoogleAuthGuard } from './guard';
+import { FacebookAuthGuard, GoogleAuthGuard } from './guard';
 import { GetUser } from './decorator';
 
 @ApiBadRequestResponse({ description: 'Credentials taken' })
@@ -71,6 +71,25 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
   async googleCallback(
+    @GetUser('id') id: string,
+    @GetUser('email') email: string,
+  ) {
+    const response = await this.authService.signToken(id, email);
+
+    return response;
+  }
+
+  @ApiOkResponse({ description: 'Sign in with facebook' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(FacebookAuthGuard)
+  @Get('facebook/signin')
+  facebookLogin() {}
+
+  @ApiOkResponse({ description: 'User authenticated' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(FacebookAuthGuard)
+  @Get('facebook/redirect')
+  async facebookCallback(
     @GetUser('id') id: string,
     @GetUser('email') email: string,
   ) {
