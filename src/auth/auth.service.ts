@@ -9,6 +9,7 @@ import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
+import { createTransport } from 'nodemailer';
 
 @Injectable()
 export class AuthService {
@@ -27,7 +28,7 @@ export class AuthService {
         data: { ...dto, password: hash },
       });
 
-      return this.signToken(user.id, user.email);
+      return this.userVerification(user.id, user.email);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -69,6 +70,64 @@ export class AuthService {
         throw new UnauthorizedException('Invalid Credential');
 
       return this.signToken(user.id, user.email);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to validate google user
+  async validateGoogleUser(googleUser: SignUpDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: googleUser?.email },
+    });
+
+    if (user) return user;
+
+    return await this.prisma.user.create({
+      data: googleUser,
+    });
+  }
+
+  // function to validate the registered user
+  async userVerification(userId: string, userEmail: string) {
+    try {
+      const transporter = createTransport({
+        host: this.config.getOrThrow('SMTP_HOST'),
+        port: this.config.getOrThrow('SMTP_PORT'),
+        auth: {
+          user: this.config.getOrThrow('SMTP_USER'),
+          pass: this.config.getOrThrow('SMTP_PASSWORD'),
+        },
+      });
+
+      const mailOptions = {
+        from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
+        to: [userEmail, this.config.getOrThrow('SMTP_USER')],
+        subject: 'Email Verification',
+        html: `<p>Hello,</p>
+
+        <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('VERIFICATION_URL')}/${userId}" target="_blank">HERE</a> to verify your email account.</p>
+
+        <p>Warm regards,</p>
+
+        <p>Waddle Team</p>
+        `,
+      };
+      await transporter.sendMail(mailOptions);
+      return { message: 'Email sent successfully' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to update the verification process for the registered user
+  async verifyEmail(userId: string) {
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { email_verify: true },
+      });
+      return { message: 'User verified' };
     } catch (error) {
       throw error;
     }

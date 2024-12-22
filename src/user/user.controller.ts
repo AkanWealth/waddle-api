@@ -5,12 +5,14 @@ import {
   Patch,
   Delete,
   UseGuards,
+  Param,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto';
 import {
   ApiBearerAuth,
   ApiOkResponse,
+  ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
@@ -26,6 +28,16 @@ import { GetUser } from '../auth/decorator';
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
+
+  // get all user
+  @Get('all')
+  findAll() {
+    try {
+      return this.userService.findAll();
+    } catch (error) {
+      throw error;
+    }
+  }
 
   // get the loggedin user
   @Get('me')
@@ -47,5 +59,12 @@ export class UserController {
   @Delete('me')
   remove(@GetUser('id') id: string) {
     return this.userService.remove(id);
+  }
+
+  // delete a user
+  @ApiParam({ name: 'id' })
+  @Delete(':id')
+  removeOne(@Param('id') id: string) {
+    return this.userService.removeOne(id);
   }
 }
