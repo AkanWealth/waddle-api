@@ -88,6 +88,19 @@ export class AuthService {
     });
   }
 
+  // function to validate facebook user
+  async validateFacebookUser(facebookUser: SignUpDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: facebookUser?.email },
+    });
+
+    if (user) return user;
+
+    return await this.prisma.user.create({
+      data: facebookUser,
+    });
+  }
+
   // function to validate the registered user
   async sendVerification(userEmail: string) {
     try {
