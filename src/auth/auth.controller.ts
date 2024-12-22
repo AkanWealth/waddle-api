@@ -32,8 +32,16 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  @ApiOkResponse({ description: 'Verification mail sent' })
+  @Post('verification/send')
+  @HttpCode(HttpStatus.OK)
+  sendVerification(@Body() userEmail: string) {
+    return this.authService.sendVerification(userEmail);
+  }
+
   @ApiOkResponse({ description: 'User email verified' })
   @Patch('verification/:id')
+  @HttpCode(HttpStatus.OK)
   veriyEmail(@Param('id') userId: string) {
     return this.authService.verifyEmail(userId);
   }
@@ -52,7 +60,7 @@ export class AuthController {
     return this.authService.admin(dto);
   }
 
-  @ApiOkResponse({ description: 'User authenticated' })
+  @ApiOkResponse({ description: 'Sign in with google' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(GoogleAuthGuard)
   @Get('google/signin')

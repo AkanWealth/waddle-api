@@ -28,7 +28,7 @@ export class AuthService {
         data: { ...dto, password: hash },
       });
 
-      return this.userVerification(user.id, user.email);
+      return this.sendVerification(user.email);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -89,8 +89,12 @@ export class AuthService {
   }
 
   // function to validate the registered user
-  async userVerification(userId: string, userEmail: string) {
+  async sendVerification(userEmail: string) {
     try {
+      const user = await this.prisma.user.findUnique({
+        where: { email: userEmail },
+      });
+
       const transporter = createTransport({
         host: this.config.getOrThrow('SMTP_HOST'),
         port: this.config.getOrThrow('SMTP_PORT'),
@@ -102,11 +106,11 @@ export class AuthService {
 
       const mailOptions = {
         from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
-        to: [userEmail, this.config.getOrThrow('SMTP_USER')],
+        to: [user.email, this.config.getOrThrow('SMTP_USER')],
         subject: 'Email Verification',
         html: `<p>Hello,</p>
 
-        <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('VERIFICATION_URL')}/${userId}" target="_blank">HERE</a> to verify your email account.</p>
+        <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('VERIFICATION_URL')}/${user.id}" target="_blank">HERE</a> to verify your email account.</p>
 
         <p>Warm regards,</p>
 
