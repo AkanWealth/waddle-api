@@ -10,7 +10,12 @@ import {
   Param,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { SignInDto, SignUpDto } from './dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  SignInDto,
+  SignUpDto,
+} from './dto';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -26,40 +31,71 @@ import { GetUser } from './decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @ApiCreatedResponse({ description: 'User created' })
-  @Post('signup')
-  register(@Body() dto: SignUpDto) {
-    return this.authService.register(dto);
+  // --------------- customer routes ----------------------
+  @ApiCreatedResponse({ description: 'Customer created' })
+  @Post('signup/customer')
+  createCustomer(@Body() dto: SignUpDto) {
+    return this.authService.createCustomer(dto);
   }
 
   @ApiOkResponse({ description: 'Verification mail sent' })
-  @Post('verification/send')
+  @Post('verification/send/customer')
   @HttpCode(HttpStatus.OK)
-  sendVerification(@Body() userEmail: string) {
-    return this.authService.sendVerification(userEmail);
+  sendCustomerVerification(@Body() dto: SignUpDto) {
+    return this.authService.sendCustomerVerification(dto.email);
   }
 
-  @ApiOkResponse({ description: 'User email verified' })
-  @Patch('verification/:id')
+  @ApiOkResponse({ description: 'Customer email verified' })
+  @Patch('verification/customer/:id')
   @HttpCode(HttpStatus.OK)
-  veriyEmail(@Param('id') userId: string) {
-    return this.authService.verifyEmail(userId);
+  veriyCustomerEmail(@Param('id') userId: string) {
+    return this.authService.verifyCustomerEmail(userId);
   }
 
-  @ApiOkResponse({ description: 'User authenticated' })
+  @ApiOkResponse({ description: 'Customer authenticated' })
   @HttpCode(HttpStatus.OK)
-  @Post('signin')
-  login(@Body() dto: SignInDto) {
-    return this.authService.login(dto);
+  @Post('signin/customer')
+  customerLogin(@Body() dto: SignInDto) {
+    return this.authService.customerLogin(dto);
   }
 
+  // --------------- vendor routes ----------------------
+  @ApiCreatedResponse({ description: 'Vendor created' })
+  @Post('signup/vendor')
+  createVendor(@Body() dto: SignUpDto) {
+    return this.authService.createVendor(dto);
+  }
+
+  @ApiOkResponse({ description: 'Verification mail sent' })
+  @Post('verification/send/vendor')
+  @HttpCode(HttpStatus.OK)
+  sendVendorVerification(@Body() dto: SignUpDto) {
+    return this.authService.sendVendorVerification(dto.email);
+  }
+
+  @ApiOkResponse({ description: 'Vendor email verified' })
+  @Patch('verification/vendor/:id')
+  @HttpCode(HttpStatus.OK)
+  veriyVendorEmail(@Param('id') userId: string) {
+    return this.authService.verifyVendorEmail(userId);
+  }
+
+  @ApiOkResponse({ description: 'Vendor authenticated' })
+  @HttpCode(HttpStatus.OK)
+  @Post('signin/vendor')
+  vendorLogin(@Body() dto: SignInDto) {
+    return this.authService.vendorLogin(dto);
+  }
+
+  // --------------- admin routes ----------------------
   @ApiOkResponse({ description: 'User authenticated' })
   @HttpCode(HttpStatus.OK)
   @Post('host')
   admin(@Body() dto: SignInDto) {
-    return this.authService.admin(dto);
+    return this.authService.adminLogin(dto);
   }
 
+  // --------------- social routes ----------------------
   @ApiOkResponse({ description: 'Sign in with google' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(GoogleAuthGuard)
@@ -96,5 +132,18 @@ export class AuthController {
     const response = await this.authService.signToken(id, email);
 
     return response;
+  }
+
+  // ------------ reset password ----------------
+  // generate password reset token
+  @Patch('forgot-password')
+  generateResetToken(@Body() dto: ForgotPasswordDto) {
+    return this.authService.generateResetToken(dto.email);
+  }
+
+  // reset password
+  @Patch('reset-password/:token')
+  resetPassword(@Param('token') token: string, @Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(token, dto.password);
   }
 }

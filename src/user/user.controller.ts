@@ -12,14 +12,12 @@ import { UpdateUserDto } from './dto';
 import {
   ApiBearerAuth,
   ApiOkResponse,
-  ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { JwtGuard } from '../auth/guard';
 import { GetUser } from '../auth/decorator';
 
-@ApiBearerAuth()
 @ApiUnauthorizedResponse({
   description: 'The user is not unathorized to perform this action',
 })
@@ -30,6 +28,7 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   // get all user
+  @ApiBearerAuth()
   @Get('all')
   findAll() {
     try {
@@ -40,6 +39,7 @@ export class UserController {
   }
 
   // get the loggedin user
+  @ApiBearerAuth()
   @Get('me')
   findOne(@GetUser() user: User) {
     try {
@@ -50,19 +50,20 @@ export class UserController {
   }
 
   // update the loggedin user
+  @ApiBearerAuth()
   @Patch('me')
   update(@GetUser('id') id: string, @Body() dto: UpdateUserDto) {
     return this.userService.update(id, dto);
   }
 
-  // delete the loggedin user
-  @Delete('me')
-  remove(@GetUser('id') id: string) {
-    return this.userService.remove(id);
-  }
+  // // delete the loggedin user
+  // @Delete('me')
+  // remove(@GetUser('id') id: string) {
+  //   return this.userService.remove(id);
+  // }
 
   // delete a user
-  @ApiParam({ name: 'id' })
+  @ApiBearerAuth()
   @Delete(':id')
   removeOne(@Param('id') id: string) {
     return this.userService.removeOne(id);

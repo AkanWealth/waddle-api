@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { UpdateUserDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private config: ConfigService,
+  ) {}
 
   // function to update the loggedin user
   async findAll() {
@@ -45,17 +49,18 @@ export class UserService {
     }
   }
 
-  // function to delete the loggedin user
-  async remove(id: string) {
-    try {
-      await this.prisma.user.delete({ where: { id } });
+  // // function to delete the loggedin user
+  // async remove(id: string) {
+  //   try {
+  //     await this.prisma.user.delete({ where: { id } });
 
-      return { mesaage: 'User deleted' };
-    } catch (error) {
-      throw error;
-    }
-  }
+  //     return { mesaage: 'User deleted' };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
 
+  // function to delete the a user by ID
   async removeOne(id: string) {
     try {
       await this.prisma.user.delete({ where: { id } });
