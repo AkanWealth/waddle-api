@@ -30,21 +30,50 @@ model Activities {
   @@map("activities")
 }
 
-model User {
-  id           String       @id @default(cuid())
-  name         String
-  email        String       @unique
-  phone_number String?
-  address      String?
-  password     String
-  role         Role         @default(Customer)
-  collection   Collection[]
-  booking      Booking[]
-  email_verify Boolean      @default(false)
+model Admin {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(Moderator)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Invoice   Invoice[]
+  @@map("admins")
+}
+
+model Vendor {
+  id               String   @id @default(cuid())
+  name             String
+  email            String   @unique
+  password         String
+  role             Role     @default(Vendor)
+  email_verify     Boolean  @default(false)
+  reset_token      String?
+  reset_expiration String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("vendors")
+}
+
+model User {
+  id               String       @id @default(cuid())
+  name             String
+  email            String       @unique
+  phone_number     String?
+  address          String?
+  password         String
+  guardian_type    String?
+  role             Role         @default(Customer)
+  collection       Collection[]
+  booking          Booking[]
+  email_verify     Boolean      @default(false)
+  reset_token      String?
+  reset_expiration String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  Invoice          Invoice[]
 
   @@map("users")
 }
@@ -96,6 +125,7 @@ model Invoice {
 
 enum Role {
   Moderator
+  Vendor
   Customer
 }
 
