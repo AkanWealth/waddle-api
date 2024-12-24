@@ -27,22 +27,32 @@ export class UsersMiddleware implements NestMiddleware {
     const user = await this.prisma.user.findUnique({
       where: { id: decoded.sub },
     });
-    delete user.password;
+    const admin = await this.prisma.admin.findUnique({
+      where: { id: decoded.sub },
+    });
+
+    admin ? delete admin.password : delete user.password;
 
     // Check for specific request method and route path
-    if (user.role === 'Customer') {
-      if (req.method === 'GET' && req.path === '/api/v1/users/all') {
-        throw new ForbiddenException('You are not authorized for this action');
-      }
-      if (
-        req.method === 'DELETE' &&
-        req.path === `/api/v1/users/${req.params.id}`
-      ) {
-        throw new ForbiddenException('You are not authorized for this action');
+    if (admin || user) {
+      if (admin?.role === 'Customer' || user?.role === 'Customer') {
+        if (req.method === 'GET' && req.path === '/api/v1/users/all') {
+          throw new ForbiddenException(
+            'You are not authorized for this action',
+          );
+        }
+        if (
+          req.method === 'DELETE' &&
+          req.path === `/api/v1/users/${req.params.id}`
+        ) {
+          throw new ForbiddenException(
+            'You are not authorized for this action',
+          );
+        }
       }
     }
 
-    req.user = user;
+    admin ? (req.user = admin) : (req.user = user);
     next();
   }
 }
