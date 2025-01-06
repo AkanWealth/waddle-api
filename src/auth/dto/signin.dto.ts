@@ -17,6 +17,6 @@ export class SignInDto {
     example: 'Jd@1234.',
   })
   @IsString({ message: 'The password must be a string' })
-  @MinLength(6, { message: 'The password must be minimum of 6 characters' })
+  @MinLength(8, { message: 'The password must be minimum of 8 characters' })
   password: string;
 }

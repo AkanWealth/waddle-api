@@ -3,7 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { SignInDto, SignUpDto } from './dto';
+import { SignInDto, UserSignUpDto, VendorSignUpDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
@@ -20,7 +20,7 @@ export class AuthService {
   ) {}
 
   // function to create a new customer
-  async createCustomer(dto: SignUpDto) {
+  async createCustomer(dto: UserSignUpDto) {
     try {
       const hash = await argon.hash(dto.password);
 
@@ -110,7 +110,7 @@ export class AuthService {
   }
 
   // function to create a new vendor
-  async createVendor(dto: SignUpDto) {
+  async createVendor(dto: VendorSignUpDto) {
     try {
       const hash = await argon.hash(dto.password);
 
@@ -125,6 +125,7 @@ export class AuthService {
           throw new BadRequestException('Credentials Taken');
         }
       }
+      console.log(error);
       throw error;
     }
   }
@@ -215,7 +216,7 @@ export class AuthService {
   }
 
   // function to validate google user
-  async validateGoogleUser(googleUser: SignUpDto) {
+  async validateGoogleUser(googleUser: UserSignUpDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: googleUser?.email },
     });
@@ -228,7 +229,7 @@ export class AuthService {
   }
 
   // function to validate facebook user
-  async validateFacebookUser(facebookUser: SignUpDto) {
+  async validateFacebookUser(facebookUser: UserSignUpDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: facebookUser?.email },
     });

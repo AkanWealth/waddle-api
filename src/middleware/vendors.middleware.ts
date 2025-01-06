@@ -9,8 +9,8 @@ import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-// middleware for activities role based authorization
-export class ActvitiesMiddleware implements NestMiddleware {
+// middleware for vendor role based authorization
+export class VendorsMiddleware implements NestMiddleware {
   constructor(
     private jwt: JwtService,
     private prisma: PrismaService,
@@ -24,7 +24,7 @@ export class ActvitiesMiddleware implements NestMiddleware {
     }
 
     const decoded = await this.jwt.verify(bearerToken);
-    const user = await this.prisma.user.findUnique({
+    const vendor = await this.prisma.vendor.findUnique({
       where: { id: decoded.sub },
     });
     const admin = await this.prisma.admin.findUnique({
@@ -32,11 +32,20 @@ export class ActvitiesMiddleware implements NestMiddleware {
     });
 
     delete admin?.password;
-    delete user?.password;
+    delete vendor?.password;
 
-    if (admin || user) {
-      if (admin?.role === 'Customer' || user?.role === 'Customer') {
-        if (req.method !== 'GET') {
+    // Check for specific request method and route path
+    if (admin || vendor) {
+      if (admin?.role === 'Vendor' || vendor?.role === 'Vendor') {
+        if (req.method === 'GET' && req.path === '/api/v1/vendors/all') {
+          throw new ForbiddenException(
+            'You are not authorized for this action',
+          );
+        }
+        if (
+          req.method === 'DELETE' &&
+          req.path === `/api/v1/vendors/${req.params.id}`
+        ) {
           throw new ForbiddenException(
             'You are not authorized for this action',
           );
@@ -45,7 +54,8 @@ export class ActvitiesMiddleware implements NestMiddleware {
     }
 
     req.user = admin;
-    req.user = user;
+    req.user = vendor;
+
     next();
   }
 }

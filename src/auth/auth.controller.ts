@@ -14,44 +14,49 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
   SignInDto,
-  SignUpDto,
+  UserSignUpDto,
+  VendorSignUpDto,
 } from './dto';
 import {
+  ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { FacebookAuthGuard, GoogleAuthGuard } from './guard';
 import { GetUser } from './decorator';
 
-@ApiBadRequestResponse({ description: 'Credentials taken' })
-@ApiUnauthorizedResponse({ description: 'Invalid credentials' })
+@ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   // --------------- customer routes ----------------------
   @ApiCreatedResponse({ description: 'Customer created' })
+  @ApiBadRequestResponse({ description: 'Credentials taken' })
   @Post('signup/customer')
-  createCustomer(@Body() dto: SignUpDto) {
+  createCustomer(@Body() dto: UserSignUpDto) {
     return this.authService.createCustomer(dto);
   }
 
   @ApiOkResponse({ description: 'Verification mail sent' })
-  @Post('verification/send/customer')
   @HttpCode(HttpStatus.OK)
-  sendCustomerVerification(@Body() dto: SignUpDto) {
+  @Post('verification/send/customer')
+  sendCustomerVerification(@Body() dto: UserSignUpDto) {
     return this.authService.sendCustomerVerification(dto.email);
   }
 
-  @ApiOkResponse({ description: 'Customer email verified' })
+  @ApiAcceptedResponse({ description: 'Customer email verified' })
+  @HttpCode(HttpStatus.ACCEPTED)
   @Patch('verification/customer/:id')
-  @HttpCode(HttpStatus.OK)
   veriyCustomerEmail(@Param('id') userId: string) {
     return this.authService.verifyCustomerEmail(userId);
   }
 
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @ApiOkResponse({ description: 'Customer authenticated' })
   @HttpCode(HttpStatus.OK)
   @Post('signin/customer')
@@ -61,25 +66,27 @@ export class AuthController {
 
   // --------------- vendor routes ----------------------
   @ApiCreatedResponse({ description: 'Vendor created' })
+  @ApiBadRequestResponse({ description: 'Credentials taken' })
   @Post('signup/vendor')
-  createVendor(@Body() dto: SignUpDto) {
+  createVendor(@Body() dto: VendorSignUpDto) {
     return this.authService.createVendor(dto);
   }
 
   @ApiOkResponse({ description: 'Verification mail sent' })
-  @Post('verification/send/vendor')
   @HttpCode(HttpStatus.OK)
-  sendVendorVerification(@Body() dto: SignUpDto) {
+  @Post('verification/send/vendor')
+  sendVendorVerification(@Body() dto: VendorSignUpDto) {
     return this.authService.sendVendorVerification(dto.email);
   }
 
-  @ApiOkResponse({ description: 'Vendor email verified' })
+  @ApiAcceptedResponse({ description: 'Vendor email verified' })
+  @HttpCode(HttpStatus.ACCEPTED)
   @Patch('verification/vendor/:id')
-  @HttpCode(HttpStatus.OK)
   veriyVendorEmail(@Param('id') userId: string) {
     return this.authService.verifyVendorEmail(userId);
   }
 
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @ApiOkResponse({ description: 'Vendor authenticated' })
   @HttpCode(HttpStatus.OK)
   @Post('signin/vendor')
@@ -88,7 +95,8 @@ export class AuthController {
   }
 
   // --------------- admin routes ----------------------
-  @ApiOkResponse({ description: 'User authenticated' })
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
+  @ApiOkResponse({ description: 'Admin authenticated' })
   @HttpCode(HttpStatus.OK)
   @Post('host')
   admin(@Body() dto: SignInDto) {
@@ -136,12 +144,18 @@ export class AuthController {
 
   // ------------ reset password ----------------
   // generate password reset token
+  @ApiAcceptedResponse({ description: 'Reset token generated' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @HttpCode(HttpStatus.ACCEPTED)
   @Patch('forgot-password')
   generateResetToken(@Body() dto: ForgotPasswordDto) {
     return this.authService.generateResetToken(dto.email);
   }
 
   // reset password
+  @ApiAcceptedResponse({ description: 'Password reset successful' })
+  @ApiBadRequestResponse({ description: 'Reset token is required' })
+  @HttpCode(HttpStatus.ACCEPTED)
   @Patch('reset-password/:token')
   resetPassword(@Param('token') token: string, @Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(token, dto.password);
