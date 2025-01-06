@@ -31,7 +31,8 @@ export class UsersMiddleware implements NestMiddleware {
       where: { id: decoded.sub },
     });
 
-    admin ? delete admin.password : delete user.password;
+    delete admin?.password;
+    delete user?.password;
 
     // Check for specific request method and route path
     if (admin || user) {
@@ -52,7 +53,9 @@ export class UsersMiddleware implements NestMiddleware {
       }
     }
 
-    admin ? (req.user = admin) : (req.user = user);
+    req.user = admin;
+    req.user = user;
+
     next();
   }
 }

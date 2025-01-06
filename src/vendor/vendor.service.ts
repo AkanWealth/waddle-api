@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { UpdateUserDto } from './dto';
+import { UpdateVendorDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 
 @Injectable()
-export class UserService {
+export class VendorService {
   constructor(private prisma: PrismaService) {}
 
-  // function to update the loggedin user
+  // function to update the loggedin vendor
   async findAll() {
     try {
-      const user = await this.prisma.user.findMany();
+      const user = await this.prisma.vendor.findMany();
       return user;
     } catch (error) {
       throw error;
@@ -18,12 +18,12 @@ export class UserService {
   }
 
   // function to update the loggedin user
-  async update(id: string, dto: UpdateUserDto) {
+  async update(id: string, dto: UpdateVendorDto) {
     try {
       if (dto.password) {
         const hashed = await argon.hash(dto.password);
 
-        const user = await this.prisma.user.update({
+        const user = await this.prisma.vendor.update({
           where: { id },
           data: { ...dto, password: hashed },
         });
@@ -33,7 +33,7 @@ export class UserService {
       }
 
       // if no password is provided, update the user without changing the password
-      const user = await this.prisma.user.update({
+      const user = await this.prisma.vendor.update({
         where: { id },
         data: { ...dto },
       });
@@ -48,9 +48,9 @@ export class UserService {
   // function to delete the a user by ID
   async removeOne(id: string) {
     try {
-      await this.prisma.user.delete({ where: { id } });
+      await this.prisma.vendor.delete({ where: { id } });
 
-      return { mesaage: 'User deleted' };
+      return { mesaage: 'Vendor deleted' };
     } catch (error) {
       throw error;
     }
