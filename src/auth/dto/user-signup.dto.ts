@@ -4,14 +4,6 @@ import { SignInDto } from './signin.dto';
 
 export class UserSignUpDto extends SignInDto {
   @ApiPropertyOptional({
-    description: 'The profile picture of the user',
-    example: 'photo.png',
-  })
-  @IsString({ message: 'The profile picture must be a string of file name' })
-  @IsOptional()
-  profile_picture: string;
-
-  @ApiPropertyOptional({
     description: 'The name of the user',
     example: 'John Doe',
   })
