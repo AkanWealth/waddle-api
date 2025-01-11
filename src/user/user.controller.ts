@@ -8,6 +8,11 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto';
@@ -16,12 +21,14 @@ import {
   ApiBearerAuth,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 import { JwtGuard } from '../auth/guard';
 import { GetUser } from '../auth/decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiUnauthorizedResponse({
   description: 'The user is not unathorized to perform this action',
@@ -37,11 +44,7 @@ export class UserController {
   @ApiBearerAuth()
   @Get('all')
   findAll() {
-    try {
-      return this.userService.findAll();
-    } catch (error) {
-      throw error;
-    }
+    return this.userService.findAll();
   }
 
   // get the loggedin user
@@ -49,11 +52,7 @@ export class UserController {
   @ApiBearerAuth()
   @Get('me')
   findOne(@GetUser() user: User) {
-    try {
-      return user;
-    } catch (error) {
-      throw error;
-    }
+    return this.userService.findMe(user.id);
   }
 
   // update the loggedin user
@@ -61,12 +60,32 @@ export class UserController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
-  update(@GetUser('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.userService.update(id, dto);
+  @UseInterceptors(FileInterceptor('profile_picture'))
+  update(
+    @GetUser('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (file) {
+      try {
+        new ParseFilePipe({
+          validators: [
+            new MaxFileSizeValidator({ maxSize: 10000000 }),
+            new FileTypeValidator({ fileType: 'image/*' }),
+          ],
+        }).transform(file);
+      } catch (error) {
+        throw error;
+      }
+      return this.userService.update(id, dto, file.originalname, file.buffer);
+    } else {
+      return this.userService.update(id, dto);
+    }
   }
 
   // delete a user
   @ApiNoContentResponse({ description: 'Deleted Successfully' })
+  @ApiNotFoundResponse({ description: 'Not found' })
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')

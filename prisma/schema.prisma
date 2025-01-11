@@ -49,6 +49,7 @@ model Vendor {
   email               String       @unique
   password            String
   phone_number        String
+  business_logo       String?
   address             String
   registration_number String
   role                Role         @default(Vendor)
@@ -67,6 +68,7 @@ model Vendor {
 
 model User {
   id               String       @id @default(cuid())
+  profile_picture  String?
   name             String
   email            String       @unique
   phone_number     String?
