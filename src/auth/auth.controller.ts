@@ -8,6 +8,11 @@ import {
   UseGuards,
   Patch,
   Param,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
@@ -28,6 +33,7 @@ import {
 } from '@nestjs/swagger';
 import { FacebookAuthGuard, GoogleAuthGuard } from './guard';
 import { GetUser } from './decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @Controller('auth')
@@ -38,8 +44,34 @@ export class AuthController {
   @ApiCreatedResponse({ description: 'Customer created' })
   @ApiBadRequestResponse({ description: 'Credentials taken' })
   @Post('signup/customer')
-  createCustomer(@Body() dto: UserSignUpDto) {
-    return this.authService.createCustomer(dto);
+  @UseInterceptors(FileInterceptor('profile_picture'))
+  createCustomer(
+    @Body() dto: UserSignUpDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (file) {
+      try {
+        new ParseFilePipe({
+          validators: [
+            new MaxFileSizeValidator({ maxSize: 10000000 }),
+            new FileTypeValidator({ fileType: 'image/*' }),
+          ],
+        }).transform(file);
+      } catch (error) {
+        throw error;
+      }
+      return this.authService.createCustomer(
+        dto,
+        file.originalname,
+        file.buffer,
+      );
+    } else {
+      return this.authService.createCustomer(
+        dto,
+        file?.originalname,
+        file?.buffer,
+      );
+    }
   }
 
   @ApiOkResponse({ description: 'Verification mail sent' })
@@ -68,8 +100,30 @@ export class AuthController {
   @ApiCreatedResponse({ description: 'Vendor created' })
   @ApiBadRequestResponse({ description: 'Credentials taken' })
   @Post('signup/vendor')
-  createVendor(@Body() dto: VendorSignUpDto) {
-    return this.authService.createVendor(dto);
+  @UseInterceptors(FileInterceptor('business_logo'))
+  createVendor(
+    @Body() dto: VendorSignUpDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (file) {
+      try {
+        new ParseFilePipe({
+          validators: [
+            new MaxFileSizeValidator({ maxSize: 10000000 }),
+            new FileTypeValidator({ fileType: 'image/*' }),
+          ],
+        }).transform(file);
+      } catch (error) {
+        throw error;
+      }
+      return this.authService.createVendor(dto, file.originalname, file.buffer);
+    } else {
+      return this.authService.createVendor(
+        dto,
+        file?.originalname,
+        file?.buffer,
+      );
+    }
   }
 
   @ApiOkResponse({ description: 'Verification mail sent' })

@@ -31,6 +31,7 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
     const user = await this.authService.validateFacebookUser({
       email: emails[0].value,
       name: name.givenName + ' ' + name.familyName,
+      profile_picture: '',
       password: '',
       phone_number: '',
       address: '',

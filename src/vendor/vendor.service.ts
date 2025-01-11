@@ -1,31 +1,116 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { UpdateVendorDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
+import { ConfigService } from '@nestjs/config';
+import {
+  DeleteObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 
 @Injectable()
 export class VendorService {
-  constructor(private prisma: PrismaService) {}
+  private readonly s3Client = new S3Client({
+    region: 'auto',
+    endpoint: this.config.getOrThrow('S3_API'),
+    credentials: {
+      accessKeyId: this.config.getOrThrow('ACCESS_KEY_ID'),
+      secretAccessKey: this.config.getOrThrow('SECRET_ACCESS_KEY'),
+    },
+  });
 
-  // function to update the loggedin vendor
+  constructor(
+    private prisma: PrismaService,
+    private config: ConfigService,
+  ) {}
+
+  // function to find all the vendor
   async findAll() {
     try {
-      const user = await this.prisma.vendor.findMany();
-      return user;
+      const vendor = await this.prisma.vendor.findMany();
+
+      const vendorsWithLogo = vendor.map((list) => {
+        const business_logo = `${process.env.R2_PUBLIC_ENDPOINT}/${list.business_logo}`;
+        return {
+          ...list,
+          business_logo,
+        };
+      });
+
+      return vendorsWithLogo;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to find the loggedin vendor
+  async findMe(authVendor: string) {
+    try {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { id: authVendor },
+      });
+
+      const business_logo = `${process.env.R2_PUBLIC_ENDPOINT}/${vendor.business_logo}`;
+
+      return { ...vendor, business_logo };
     } catch (error) {
       throw error;
     }
   }
 
   // function to update the loggedin user
-  async update(id: string, dto: UpdateVendorDto) {
+  async update(
+    id: string,
+    dto: UpdateVendorDto,
+    fileName?: string,
+    file?: Buffer,
+  ) {
     try {
+      const existingVendor = await this.prisma.vendor.findUnique({
+        where: { id },
+      });
+
+      if (!existingVendor) {
+        throw new NotFoundException(
+          'Vendor with the provided ID does not exist.',
+        );
+      }
+
+      let businessLogo = existingVendor?.business_logo || undefined;
+
+      // Upload the new logo
+      if (businessLogo !== fileName) {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.config.getOrThrow('BUCKET_NAME'),
+            Key: fileName,
+            Body: file,
+          }),
+        );
+
+        // Delete the old logo from bucket
+        await this.s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: this.config.getOrThrow('BUCKET_NAME'),
+            Key: businessLogo || 'null',
+          }),
+        );
+
+        // Update the business logo filename
+        businessLogo = fileName;
+      }
+
       if (dto.password) {
         const hashed = await argon.hash(dto.password);
 
         const user = await this.prisma.vendor.update({
           where: { id },
-          data: { ...dto, password: hashed },
+          data: {
+            ...dto,
+            business_logo: businessLogo || null,
+            password: hashed,
+          },
         });
 
         delete user.password;
@@ -35,7 +120,7 @@ export class VendorService {
       // if no password is provided, update the user without changing the password
       const user = await this.prisma.vendor.update({
         where: { id },
-        data: { ...dto },
+        data: { ...dto, business_logo: businessLogo || null },
       });
 
       delete user.password;
@@ -48,7 +133,24 @@ export class VendorService {
   // function to delete the a user by ID
   async removeOne(id: string) {
     try {
-      await this.prisma.vendor.delete({ where: { id } });
+      const existingVendor = await this.prisma.vendor.findUnique({
+        where: { id },
+      });
+
+      if (!existingVendor) throw new NotFoundException('Vendor not found');
+
+      const vendor = await this.prisma.vendor.delete({
+        where: { id: existingVendor.id },
+      });
+
+      if (vendor?.business_logo) {
+        await this.s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: this.config.getOrThrow('BUCKET_NAME'),
+            Key: vendor.business_logo,
+          }),
+        );
+      }
 
       return { mesaage: 'Vendor deleted' };
     } catch (error) {
