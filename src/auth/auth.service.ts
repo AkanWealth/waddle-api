@@ -10,9 +10,19 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
 import { createTransport } from 'nodemailer';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class AuthService {
+  private readonly s3Client = new S3Client({
+    region: 'auto',
+    endpoint: this.config.getOrThrow('S3_API'),
+    credentials: {
+      accessKeyId: this.config.getOrThrow('ACCESS_KEY_ID'),
+      secretAccessKey: this.config.getOrThrow('SECRET_ACCESS_KEY'),
+    },
+  });
+
   constructor(
     private config: ConfigService,
     private prisma: PrismaService,
@@ -20,12 +30,22 @@ export class AuthService {
   ) {}
 
   // function to create a new customer
-  async createCustomer(dto: UserSignUpDto) {
+  async createCustomer(dto: UserSignUpDto, fileName?: string, file?: Buffer) {
     try {
+      if (file) {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.config.getOrThrow('BUCKET_NAME'),
+            Key: fileName,
+            Body: file,
+          }),
+        );
+      }
+
       const hash = await argon.hash(dto.password);
 
       const customer = await this.prisma.user.create({
-        data: { ...dto, password: hash },
+        data: { ...dto, profile_picture: fileName || null, password: hash },
       });
 
       return this.sendCustomerVerification(customer.email);
@@ -110,12 +130,22 @@ export class AuthService {
   }
 
   // function to create a new vendor
-  async createVendor(dto: VendorSignUpDto) {
+  async createVendor(dto: VendorSignUpDto, fileName?: string, file?: Buffer) {
     try {
+      if (file) {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.config.getOrThrow('BUCKET_NAME'),
+            Key: fileName,
+            Body: file,
+          }),
+        );
+      }
+
       const hash = await argon.hash(dto.password);
 
       const vendor = await this.prisma.vendor.create({
-        data: { ...dto, password: hash },
+        data: { ...dto, business_logo: fileName || null, password: hash },
       });
 
       return this.sendVendorVerification(vendor.email);
@@ -125,7 +155,6 @@ export class AuthService {
           throw new BadRequestException('Credentials Taken');
         }
       }
-      console.log(error);
       throw error;
     }
   }
