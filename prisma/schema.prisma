@@ -51,10 +51,13 @@ model Vendor {
   phone_number        String
   business_logo       String?
   address             String
+  business_name       String
   registration_number String
   role                Role         @default(Vendor)
   email_verify        Boolean      @default(false)
   business_verify     Boolean      @default(false)
+  isActive            Boolean      @default(true)
+  failedLoginAttempts Int          @default(0)
   business_url        String?
   facebook_url        String?
   reset_token         String?
@@ -67,23 +70,25 @@ model Vendor {
 }
 
 model User {
-  id               String       @id @default(cuid())
-  profile_picture  String?
-  name             String
-  email            String       @unique
-  phone_number     String?
-  address          String?
-  password         String
-  guardian_type    String?
-  role             Role         @default(Customer)
-  collection       Collection[]
-  booking          Booking[]
-  email_verify     Boolean      @default(false)
-  reset_token      String?
-  reset_expiration String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  Invoice          Invoice[]
+  id                  String       @id @default(cuid())
+  profile_picture     String?
+  name                String
+  email               String       @unique
+  phone_number        String?
+  address             String?
+  password            String
+  guardian_type       String?
+  role                Role         @default(Customer)
+  collection          Collection[]
+  booking             Booking[]
+  email_verify        Boolean      @default(false)
+  isActive            Boolean      @default(true)
+  failedLoginAttempts Int          @default(0)
+  reset_token         String?
+  reset_expiration    String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  Invoice             Invoice[]
 
   @@map("users")
 }

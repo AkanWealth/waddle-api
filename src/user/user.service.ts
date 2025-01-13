@@ -151,7 +151,7 @@ export class UserService {
         );
       }
 
-      return { mesaage: 'User deleted' };
+      return { message: 'User deleted' };
     } catch (error) {
       throw error;
     }
