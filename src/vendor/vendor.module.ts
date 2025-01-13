@@ -4,9 +4,9 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
-import { UserService } from './user.service';
-import { UserController } from './user.controller';
-import { UsersMiddleware } from '../middleware/users.middleware';
+import { VendorService } from './vendor.service';
+import { VendorController } from './vendor.controller';
+import { VendorsMiddleware } from '../middleware';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
@@ -16,15 +16,15 @@ import { JwtModule } from '@nestjs/jwt';
       signOptions: { expiresIn: process.env.JWT_EXPIRATION_TIME },
     }),
   ],
-  controllers: [UserController],
-  providers: [UserService],
+  controllers: [VendorController],
+  providers: [VendorService],
 })
-export class UserModule implements NestModule {
+export class VendorModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // consuming middleware for authorization
     consumer
-      .apply(UsersMiddleware)
+      .apply(VendorsMiddleware)
       .exclude({ path: '*', method: RequestMethod.GET })
-      .forRoutes(UserController);
+      .forRoutes(VendorController);
   }
 }

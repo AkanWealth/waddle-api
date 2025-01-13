@@ -4,7 +4,7 @@ import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { SignInDto } from '../src/auth/dto/signin.dto';
-import { SignUpDto } from '../src/auth/dto/signup.dto';
+import { UserSignUpDto } from '../src/auth/dto/user-signup.dto';
 import {
   CreateActivitiesDto,
   UpdateActivitiesDto,
@@ -36,18 +36,17 @@ describe('Activity (e2e)', () => {
     describe('Signup', () => {
       // testing for signup with valid data
       it('(POST) => Should register a new user', () => {
-        const customer: SignUpDto = {
-          name: 'E2E Test1',
-          email: 'test1@gmail.com',
-          password: '123456',
+        const customer: UserSignUpDto = {
+          name: 'E2E Test2',
+          email: 'test2@gmail.com',
+          password: '12345678',
           phone_number: '',
           address: '',
         };
         return request(app.getHttpServer())
-          .post('/api/v1/auth/signup')
+          .post('/api/v1/auth/signup/customer')
           .send(customer)
-          .expect(201)
-          .then((res) => expect(res.body.access_token).toBeDefined());
+          .expect(201);
       });
     });
 
@@ -55,11 +54,11 @@ describe('Activity (e2e)', () => {
       // testing for customer login
       test('(POST) => Should login for customer', () => {
         const customer: SignInDto = {
-          email: 'test1@gmail.com',
-          password: '123456',
+          email: 'test2@gmail.com',
+          password: '12345678',
         };
         return request(app.getHttpServer())
-          .post('/api/v1/auth/signin')
+          .post('/api/v1/auth/signin/customer')
           .send(customer)
           .expect(200)
           .then((res) => {
@@ -69,13 +68,13 @@ describe('Activity (e2e)', () => {
       });
 
       // testing for moderator login
-      test('(POST) => Should login for moderator', () => {
+      test('(POST) => Should login for admin', () => {
         const moderator: SignInDto = {
           email: process.env.SEED_USER_EMAIL,
           password: process.env.SEED_PASSWORD,
         };
         return request(app.getHttpServer())
-          .post('/api/v1/auth/signin')
+          .post('/api/v1/auth/host')
           .send(moderator)
           .expect(200)
           .then((res) => {

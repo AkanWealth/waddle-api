@@ -1,0 +1,133 @@
+# Continuous Integration
+
+name: Test and Build
+
+on:
+  push:
+    branches: [staging]
+  pull_request:
+    types: [opened, reopened]
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 22.x]
+
+    services:
+      postgres:
+        image: postgres:latest
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: testdb
+          SEED_USER_NAME: Admin
+          SEED_USER_EMAIL: admin@waddle.uk
+          SEED_PASSWORD: 12345678
+          GOOGLE_CLIENT_ID: 237136003048-3mlogbmva2mmbscg5klvuv861ktvjmen.apps.googleusercontent.com
+          GOOGLE_CLIENT_SECRET: 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
+          GOOGLE_CALLBACK_URL: http://localhost:3030/api/v1/auth/google/callback
+
+          FACEBOOK_CLIENT_ID: 464940513010541
+          FACEBOOK_CLIENT_SECRET: 2c9a12d4b7790dac7cb34c707b3aa2fa
+          FACEBOOK_CALLBACK_URL: http://localhost:3030/api/v1/auth/facebook/redirect
+
+          PORT: 3030
+          DATABASE_URL: 'postgresql://postgres:password@localhost:5432/testdb?schema=public'
+          JWT_SECRET_KEY: NkM9Ci}gVsEjwfZI07gH@CEZ}?2h
+          JWT_EXPIRATION_TIME: '60m'
+          VERIFICATION_URL: http://localhost:5173/auth/verification
+          PASSWORD_RESET_URL: http://localhost:5173/auth/resetpassword
+          SMTP_HOST: wghp1.wghservers.com
+          SMTP_PORT: 465
+          SMTP_USER: test@philipoyelegbin.com.ng
+          SMTP_PASSWORD: NXjHG(m2FATc
+          BUCKET_NAME: waddletestbucket
+          ACCESS_KEY_ID: 6e30f43a6e34bb6db106299fc0480d7e
+          SECRET_ACCESS_KEY: 9db13a6ed03697aa77daf530e53b5ab5df74e059e89693ea12b167a79a9e9fb5
+          R2_PUBLIC_ENDPOINT: https://pub-42f91b17061547449f97974510335219.r2.dev
+          S3_API: https://81c852930641402981b6a613c8239927.r2.cloudflarestorage.com
+
+        options: >-
+          --health-cmd="pg_isready" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Dependencies
+        run: |
+          npm i
+          npm ci
+
+      - name: Set Environment Variables
+        run: |
+          echo "PORT=3030" >> $GITHUB_ENV
+          echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
+          echo "DB_PORT=5432" >> $GITHUB_ENV
+          echo "DB_USER=postgres" >> $GITHUB_ENV
+          echo "DB_PASSWORD=password" >> $GITHUB_ENV
+          echo "DB_NAME=testdb" >> $GITHUB_ENV
+          echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/testdb" >> $GITHUB_ENV
+          echo "JWT_SECRET_KEY=NkM9Ci}gVsEjwfZI07gH@CEZ}?2h" >> $GITHUB_ENV
+          echo "JWT_EXPIRATION_TIME=60m" >> $GITHUB_ENV
+          echo "SEED_USER_NAME=Admin" >> $GITHUB_ENV
+          echo "SEED_USER_EMAIL=admin@waddle.uk" >> $GITHUB_ENV
+          echo "SEED_PASSWORD=12345678" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_ID=237136003048-3mlogbmva2mmbscg5klvuv861ktvjmen.apps.googleusercontent.com" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_SECRET=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" >> $GITHUB_ENV
+          echo "GOOGLE_CALLBACK_URL=http://localhost:3030/api/v1/auth/google/callback" >> $GITHUB_ENV
+          echo "FACEBOOK_CLIENT_ID=464940513010541" >> $GITHUB_ENV
+          echo "FACEBOOK_CLIENT_SECRET=2c9a12d4b7790dac7cb34c707b3aa2fa" >> $GITHUB_ENV
+          echo "FACEBOOK_CALLBACK_URL=http://localhost:3030/api/v1/auth/facebook/redirect" >> $GITHUB_ENV
+          echo "VERIFICATION_URL=http://localhost:5173/auth/verification" >> $GITHUB_ENV
+          echo "PASSWORD_RESET_URL=http://localhost:5173/auth/resetpassword" >> $GITHUB_ENV
+          echo "SMTP_HOST=wghp1.wghservers.com" >> $GITHUB_ENV
+          echo "SMTP_PORT=465" >> $GITHUB_ENV
+          echo "SMTP_USER=test@philipoyelegbin.com.ng" >> $GITHUB_ENV
+          echo "SMTP_PASSWORD=NXjHG(m2FATc" >> $GITHUB_ENV
+          echo "BUCKET_NAME=waddletestbucket" >> $GITHUB_ENV
+          echo "ACCESS_KEY_ID=6e30f43a6e34bb6db106299fc0480d7e" >> $GITHUB_ENV
+          echo "SECRET_ACCESS_KEY=9db13a6ed03697aa77daf530e53b5ab5df74e059e89693ea12b167a79a9e9fb5" >> $GITHUB_ENV
+          echo "R2_PUBLIC_ENDPOINT=https://pub-42f91b17061547449f97974510335219.r2.dev" >> $GITHUB_ENV
+          echo "S3_API=https://81c852930641402981b6a613c8239927.r2.cloudflarestorage.com" >> $GITHUB_ENV
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          until pg_isready -h ${{ env.DB_HOST }} -p ${{ env.DB_PORT }} -U ${{ env.DB_USER }}; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 1
+          done
+
+      - name: Run migration and seed data
+        run: |
+          npx prisma migrate dev --name init
+          npx prisma db seed
+
+      - name: Format Code with Prettier
+        run: |
+          npm run format
+
+      - name: Lint Code with ESLint
+        run: |
+          npm run lint
+
+      - name: Run E2E Tests
+        run: |
+          npm run test:e2e
+
+      - name: Build the Backend Application
+        run: |
+          npm run build
