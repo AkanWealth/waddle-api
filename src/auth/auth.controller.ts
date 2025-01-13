@@ -34,6 +34,7 @@ import {
 import { FacebookAuthGuard, GoogleAuthGuard } from './guard';
 import { GetUser } from './decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @Controller('auth')
@@ -91,6 +92,7 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @ApiOkResponse({ description: 'Customer authenticated' })
   @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
   @Post('signin/customer')
   customerLogin(@Body() dto: SignInDto) {
     return this.authService.customerLogin(dto);
@@ -201,17 +203,39 @@ export class AuthController {
   @ApiAcceptedResponse({ description: 'Reset token generated' })
   @ApiNotFoundResponse({ description: 'User not found' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('forgot-password')
-  generateResetToken(@Body() dto: ForgotPasswordDto) {
-    return this.authService.generateResetToken(dto.email);
+  @Patch('forgot-password/user')
+  generateResetTokenForUser(@Body() dto: ForgotPasswordDto) {
+    return this.authService.generateResetTokenForUser(dto.email);
+  }
+
+  @ApiAcceptedResponse({ description: 'Reset token generated' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('forgot-password/vendor')
+  generateResetTokenForVendor(@Body() dto: ForgotPasswordDto) {
+    return this.authService.generateResetTokenForVendor(dto.email);
   }
 
   // reset password
   @ApiAcceptedResponse({ description: 'Password reset successful' })
   @ApiBadRequestResponse({ description: 'Reset token is required' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('reset-password/:token')
-  resetPassword(@Param('token') token: string, @Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(token, dto.password);
+  @Patch('reset-password/user/:token')
+  resetUserPassword(
+    @Param('token') token: string,
+    @Body() dto: ResetPasswordDto,
+  ) {
+    return this.authService.resetUserPassword(token, dto.password);
+  }
+
+  @ApiAcceptedResponse({ description: 'Password reset successful' })
+  @ApiBadRequestResponse({ description: 'Reset token is required' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('reset-password/vendor/:token')
+  resetVendorPassword(
+    @Param('token') token: string,
+    @Body() dto: ResetPasswordDto,
+  ) {
+    return this.authService.resetVendorPassword(token, dto.password);
   }
 }

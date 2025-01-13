@@ -19,7 +19,9 @@ async function bootstrap() {
   // setting up swagger ui documentation
   const config = new DocumentBuilder()
     .setTitle('Waddle API')
-    .setDescription('The waddle reservation API')
+    .setDescription(
+      'This application provides an API endpoiint for managing guardian, vendors, activities and payment for the waddle mobile app.',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
