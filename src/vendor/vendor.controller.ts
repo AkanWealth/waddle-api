@@ -14,14 +14,13 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
 } from '@nestjs/common';
-import { UserService } from './user.service';
-import { UpdateUserDto } from './dto';
+import { VendorService } from './vendor.service';
+import { UpdateVendorDto } from './dto';
 import {
   ApiAcceptedResponse,
   ApiBearerAuth,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
-  ApiNotFoundResponse,
   ApiOkResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -31,39 +30,39 @@ import { GetUser } from '../auth/decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiUnauthorizedResponse({
-  description: 'The user is not unathorized to perform this action',
+  description: 'The vendor is not unathorized to perform this action',
 })
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @UseGuards(JwtGuard)
-@Controller('users')
-export class UserController {
-  constructor(private userService: UserService) {}
+@Controller('vendors')
+export class VendorController {
+  constructor(private vendorService: VendorService) {}
 
-  // get all user
+  // get all vendor
   @ApiOkResponse({ description: 'Successfull' })
   @ApiBearerAuth()
   @Get('all')
   findAll() {
-    return this.userService.findAll();
+    return this.vendorService.findAll();
   }
 
-  // get the loggedin user
+  // get the loggedin vendor
   @ApiOkResponse({ description: 'Successfull' })
   @ApiBearerAuth()
   @Get('me')
-  findOne(@GetUser() user: User) {
-    return this.userService.findMe(user.id);
+  findOne(@GetUser() vendor: User) {
+    return this.vendorService.findMe(vendor.id);
   }
 
-  // update the loggedin user
+  // update the loggedin vendor
   @ApiAcceptedResponse({ description: 'Successfully updated' })
   @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
-  @UseInterceptors(FileInterceptor('profile_picture'))
+  @UseInterceptors(FileInterceptor('business_logo'))
   update(
     @GetUser('id') id: string,
-    @Body() dto: UpdateUserDto,
+    @Body() dto: UpdateVendorDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (file) {
@@ -77,19 +76,18 @@ export class UserController {
       } catch (error) {
         throw error;
       }
-      return this.userService.update(id, dto, file.originalname, file.buffer);
+      return this.vendorService.update(id, dto, file.originalname, file.buffer);
     } else {
-      return this.userService.update(id, dto);
+      return this.vendorService.update(id, dto);
     }
   }
 
-  // delete a user
+  // delete a vendor
   @ApiNoContentResponse({ description: 'Deleted Successfully' })
-  @ApiNotFoundResponse({ description: 'Not found' })
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   removeOne(@Param('id') id: string) {
-    return this.userService.removeOne(id);
+    return this.vendorService.removeOne(id);
   }
 }

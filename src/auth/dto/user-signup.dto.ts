@@ -1,18 +1,17 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import { SignInDto } from './signin.dto';
 
-export class SignUpDto extends SignInDto {
-  @ApiProperty({
+export class UserSignUpDto extends SignInDto {
+  @ApiPropertyOptional({
     description: 'The name of the user',
-    required: true,
     example: 'John Doe',
   })
   @IsString({ message: 'The name must be a string' })
-  @IsNotEmpty({ message: 'The name can not be blank' })
+  @IsOptional()
   name: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'The phone number of the user',
     example: '080123456789',
   })

@@ -9,8 +9,8 @@ import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-// middleware for activities role based authorization
-export class ActvitiesMiddleware implements NestMiddleware {
+// middleware for reservation role based authoriazation
+export class ReserviationMiddleware implements NestMiddleware {
   constructor(
     private jwt: JwtService,
     private prisma: PrismaService,
@@ -27,24 +27,14 @@ export class ActvitiesMiddleware implements NestMiddleware {
     const user = await this.prisma.user.findUnique({
       where: { id: decoded.sub },
     });
-    const admin = await this.prisma.admin.findUnique({
-      where: { id: decoded.sub },
-    });
-
-    delete admin?.password;
     delete user?.password;
 
-    if (admin || user) {
-      if (admin?.role === 'Customer' || user?.role === 'Customer') {
-        if (req.method !== 'GET') {
-          throw new ForbiddenException(
-            'You are not authorized for this action',
-          );
-        }
+    if (user.role === 'Customer') {
+      if (req.method !== 'GET') {
+        throw new ForbiddenException('You are not authorized for this action');
       }
     }
 
-    req.user = admin;
     req.user = user;
     next();
   }
