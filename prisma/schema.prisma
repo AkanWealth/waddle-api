@@ -52,6 +52,7 @@ model Vendor {
   business_logo       String?
   address             String
   business_name       String
+  business_category   String
   registration_number String
   role                Role         @default(Vendor)
   email_verify        Boolean      @default(false)
