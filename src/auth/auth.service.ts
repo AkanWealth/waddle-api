@@ -114,15 +114,42 @@ export class AuthService {
       const customer = await this.prisma.user.findUnique({
         where: { email: dto.email },
       });
-      if (!customer) throw new UnauthorizedException('Invalid credential');
+
+      // Check if the customer is locked
+      if (!customer.isActive) {
+        throw new UnauthorizedException('Account is locked, try again later!');
+      }
+
+      // Lock the account after 3 failed attempts
+      if (customer.failedLoginAttempts >= 3) {
+        await this.prisma.user.update({
+          where: { id: customer.id },
+          data: { isActive: false },
+        });
+        throw new UnauthorizedException('Account is locked, try again later!');
+      }
 
       const isValidPassword = await argon.verify(
         customer.password,
         dto.password,
       );
-      if (!isValidPassword)
-        throw new UnauthorizedException('Invalid Credential');
 
+      // If validation fails
+      if (!customer || !isValidPassword) {
+        await this.prisma.user.update({
+          where: { id: customer.id },
+          data: { failedLoginAttempts: customer.failedLoginAttempts + 1 },
+        });
+        throw new UnauthorizedException('Invalid Credential');
+      }
+
+      // Reset login attempts on successful attempt
+      await this.prisma.user.update({
+        where: { id: customer.id },
+        data: { failedLoginAttempts: 0 },
+      });
+
+      // Proceed with your normal login logic (e.g., generating JWT)
       return this.signToken(customer.id, customer.email);
     } catch (error) {
       throw error;
@@ -214,12 +241,39 @@ export class AuthService {
       const vendor = await this.prisma.vendor.findUnique({
         where: { email: dto.email },
       });
-      if (!vendor) throw new UnauthorizedException('Invalid credential');
+
+      // Check if the vendor is locked
+      if (!vendor.isActive) {
+        throw new UnauthorizedException('Account is locked, try again later!');
+      }
+
+      // Lock the account after 3 failed attempts
+      if (vendor.failedLoginAttempts >= 3) {
+        await this.prisma.vendor.update({
+          where: { id: vendor.id },
+          data: { isActive: false },
+        });
+        throw new UnauthorizedException('Account is locked, try again later!');
+      }
 
       const isValidPassword = await argon.verify(vendor.password, dto.password);
-      if (!isValidPassword)
-        throw new UnauthorizedException('Invalid Credential');
 
+      // If validation fails
+      if (!vendor || !isValidPassword) {
+        await this.prisma.vendor.update({
+          where: { id: vendor.id },
+          data: { failedLoginAttempts: vendor.failedLoginAttempts + 1 },
+        });
+        throw new UnauthorizedException('Invalid Credential');
+      }
+
+      // Reset login attempts on successful attempt
+      await this.prisma.vendor.update({
+        where: { id: vendor.id },
+        data: { failedLoginAttempts: 0 },
+      });
+
+      // Proceed with your normal login logic (e.g., generating JWT)
       return this.signToken(vendor.id, vendor.email);
     } catch (error) {
       throw error;
@@ -282,8 +336,8 @@ export class AuthService {
     return { access_token: token };
   }
 
-  // function for generating the reset password token
-  async generateResetToken(userEmail: string) {
+  // function for generating the reset password token for user
+  async generateResetTokenForUser(userEmail: string) {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email: userEmail },
@@ -340,8 +394,8 @@ export class AuthService {
     }
   }
 
-  // function for password reset based on reset token
-  async resetPassword(resetToken: string, password: string) {
+  // function for user password reset based on reset token
+  async resetUserPassword(resetToken: string, password: string) {
     try {
       const user = await this.prisma.user.findFirst({
         where: {
@@ -363,6 +417,102 @@ export class AuthService {
         where: { id: user.id },
         data: {
           password: hashed,
+          isActive: true,
+          failedLoginAttempts: 0,
+          reset_token: null,
+          reset_expiration: null,
+        },
+      });
+
+      return { message: 'Password reset successful' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function for generating the reset password token for vendor
+  async generateResetTokenForVendor(userEmail: string) {
+    try {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { email: userEmail },
+      });
+      if (!vendor) {
+        throw new Error('Customer not found');
+      }
+
+      // generate token and expiration time
+      const resetToken = Math.random().toString(36).substr(2);
+      const resetTokenExpiration = Date.now() + 3600000; // 1 hour
+
+      // save token and expiration time to database
+      await this.prisma.vendor.update({
+        where: { id: vendor.id },
+        data: {
+          reset_token: resetToken,
+          reset_expiration: resetTokenExpiration.toString(),
+        },
+      });
+
+      // send reset token to the user
+      const transporter = createTransport({
+        host: this.config.getOrThrow('SMTP_HOST'),
+        port: this.config.getOrThrow('SMTP_PORT'),
+        auth: {
+          user: this.config.getOrThrow('SMTP_USER'),
+          pass: this.config.getOrThrow('SMTP_PASSWORD'),
+        },
+      });
+
+      const mailOptions = {
+        from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
+        to: vendor.email,
+        subject: `Password Reset Request`,
+        html: `
+        <p>Hi,</p>
+
+        <p>You requested a password reset. Please click <a href="${this.config.getOrThrow('PASSWORD_RESET_URL')}/${resetToken}" target="_blank">HERE</a> to reset your password.</p>
+
+        <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
+
+        <p>Warm regards,</p>
+
+        <p><b>Waddle Team</b></p>
+        `,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      return { resetToken };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function for vendor password reset based on reset token
+  async resetVendorPassword(resetToken: string, password: string) {
+    try {
+      const vendor = await this.prisma.vendor.findFirst({
+        where: {
+          reset_token: resetToken,
+          reset_expiration: {
+            gte: Date.now().toString(),
+          },
+        },
+      });
+
+      if (!vendor) {
+        throw new Error('Invalid or expired token');
+      }
+
+      const hashed = await argon.hash(password);
+
+      // save new password
+      await this.prisma.vendor.update({
+        where: { id: vendor.id },
+        data: {
+          password: hashed,
+          isActive: true,
+          failedLoginAttempts: 0,
           reset_token: null,
           reset_expiration: null,
         },
