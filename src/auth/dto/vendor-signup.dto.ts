@@ -31,6 +31,15 @@ export class VendorSignUpDto extends SignInDto {
   business_name: string;
 
   @ApiProperty({
+    description: 'The category of the business ',
+    required: true,
+    example: 'Hospitality',
+  })
+  @IsString({ message: 'The business category must be a string' })
+  @IsNotEmpty({ message: 'The business category is required' })
+  business_category: string;
+
+  @ApiProperty({
     description: 'The registration number of the business',
     required: true,
     example: 's#kA6uA1LkTt[5P',
