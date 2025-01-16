@@ -16,7 +16,9 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
+  BlacklistTokenDto,
   ForgotPasswordDto,
+  RefreshTokenDto,
   ResetPasswordDto,
   SignInDto,
   UserSignUpDto,
@@ -98,6 +100,12 @@ export class AuthController {
     return this.authService.customerLogin(dto);
   }
 
+  @Post('logout/customer')
+  async logoutUser(@Body() dto: BlacklistTokenDto) {
+    await this.authService.addToken(dto);
+    return { message: 'Logged out successfully' };
+  }
+
   // --------------- vendor routes ----------------------
   @ApiCreatedResponse({ description: 'Vendor created' })
   @ApiBadRequestResponse({ description: 'Credentials taken' })
@@ -150,6 +158,12 @@ export class AuthController {
     return this.authService.vendorLogin(dto);
   }
 
+  @Post('logout/vendor')
+  async logoutVendor(@Body() dto: BlacklistTokenDto) {
+    await this.authService.addToken(dto);
+    return { message: 'Logged out successfully' };
+  }
+
   // --------------- admin routes ----------------------
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @ApiOkResponse({ description: 'Admin authenticated' })
@@ -198,6 +212,16 @@ export class AuthController {
     return response;
   }
 
+  // --------------- refresh token ----------------------
+  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
+  @ApiOkResponse({ description: 'New token generated' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  @Post('refresh')
+  customerRefreshToken(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto.token);
+  }
+
   // ------------ reset password ----------------
   // generate password reset token
   @ApiAcceptedResponse({ description: 'Reset token generated' })
@@ -237,5 +261,12 @@ export class AuthController {
     @Body() dto: ResetPasswordDto,
   ) {
     return this.authService.resetVendorPassword(token, dto.password);
+  }
+
+  // --------------- admin routes ----------------------
+  @Post('logout/admin')
+  async logoutAdmin(@Body() dto: BlacklistTokenDto) {
+    await this.authService.addToken(dto);
+    return { message: 'Logged out successfully' };
   }
 }

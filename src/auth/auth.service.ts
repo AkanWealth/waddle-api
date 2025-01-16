@@ -1,9 +1,15 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { SignInDto, UserSignUpDto, VendorSignUpDto } from './dto';
+import {
+  BlacklistTokenDto,
+  SignInDto,
+  UserSignUpDto,
+  VendorSignUpDto,
+} from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
@@ -328,12 +334,43 @@ export class AuthService {
   async signToken(userId: string, email: string) {
     const payload = { sub: userId, email };
 
-    const token = await this.jwt.signAsync(payload, {
+    const access_token = await this.jwt.signAsync(payload, {
       expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
       secret: this.config.get<string>('JWT_SECRET_KEY'),
     });
 
-    return { access_token: token };
+    const refresh_token = await this.jwt.signAsync(payload, {
+      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
+      secret: this.config.get<string>('JWT_REFRESH_SECRET_KEY'),
+    });
+
+    return { access_token, refresh_token };
+  }
+
+  // function to generate a fresh token
+  async refreshToken(token: string) {
+    const blacklistToken = await this.prisma.blacklistedToken.findFirst({
+      where: { refresh_token: token },
+    });
+    if (blacklistToken) {
+      throw new ForbiddenException('Login, token has been blacklisted!');
+    }
+
+    const decoded = await this.jwt.verifyAsync(token, {
+      secret: process.env.JWT_REFRESH_SECRET_KEY,
+    });
+    if (!decoded) {
+      throw new UnauthorizedException('Token is invalid');
+    }
+
+    const payload = { sub: decoded.sub, email: decoded.email };
+
+    const access_token = await this.jwt.signAsync(payload, {
+      expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
+      secret: this.config.get<string>('JWT_SECRET_KEY'),
+    });
+
+    return { access_token };
   }
 
   // function for generating the reset password token for user
@@ -519,6 +556,21 @@ export class AuthService {
       });
 
       return { message: 'Password reset successful' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to blacklist a token
+  async addToken(dto: BlacklistTokenDto) {
+    try {
+      await this.prisma.blacklistedToken.create({
+        data: {
+          access_token: dto.access_token,
+          refresh_token: dto.refresh_token,
+        },
+      });
+      return { message: 'Logged out successfully' };
     } catch (error) {
       throw error;
     }

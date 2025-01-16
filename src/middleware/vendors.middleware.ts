@@ -23,6 +23,13 @@ export class VendorsMiddleware implements NestMiddleware {
       throw new BadRequestException('Token must be provided');
     }
 
+    const blacklistToken = await this.prisma.blacklistedToken.findFirst({
+      where: { access_token: bearerToken },
+    });
+    if (blacklistToken) {
+      throw new ForbiddenException('Login, token has been blacklisted!');
+    }
+
     const decoded = await this.jwt.verify(bearerToken);
     const vendor = await this.prisma.vendor.findUnique({
       where: { id: decoded.sub },
