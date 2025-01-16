@@ -139,6 +139,16 @@ model Invoice {
   @@map("invoices")
 }
 
+model BlacklistedToken {
+  id            String   @id @default(cuid())
+  access_token  String
+  refresh_token String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("blacklisted_token")
+}
+
 enum Role {
   Admin
   Vendor

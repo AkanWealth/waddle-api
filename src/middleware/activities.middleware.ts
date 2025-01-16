@@ -23,6 +23,13 @@ export class ActvitiesMiddleware implements NestMiddleware {
       throw new BadRequestException('Token must be provided');
     }
 
+    const blacklistToken = await this.prisma.blacklistedToken.findFirst({
+      where: { access_token: bearerToken },
+    });
+    if (blacklistToken) {
+      throw new ForbiddenException('Login, token has been blacklisted!');
+    }
+
     const decoded = await this.jwt.verify(bearerToken);
     const user = await this.prisma.user.findUnique({
       where: { id: decoded.sub },
