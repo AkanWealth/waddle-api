@@ -413,7 +413,7 @@ export class AuthService {
         html: `
         <p>Hi,</p>
 
-        <p>You requested a password reset. Please click <a href="${this.config.getOrThrow('GUARDIAN_PASSWORD_RESET_URL')}/${resetToken}" target="_blank">HERE</a> to reset your password.</p>
+        <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
 
         <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
 
@@ -507,7 +507,7 @@ export class AuthService {
         html: `
         <p>Hi,</p>
 
-        <p>You requested a password reset. Please click <a href="${this.config.getOrThrow('VENDOR_PASSWORD_RESET_URL')}/${resetToken}" target="_blank">HERE</a> to reset your password.</p>
+        <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
 
         <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
 
