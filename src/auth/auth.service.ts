@@ -87,7 +87,7 @@ export class AuthService {
         subject: 'Email Verification',
         html: `<p>Hello,</p>
 
-        <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('VERIFICATION_URL')}/${user.id}" target="_blank">HERE</a> to verify your email account.</p>
+        <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('GUARDIAN_VERIFICATION_URL')}/${user.id}" target="_blank">HERE</a> to verify your email account.</p>
 
         <p>Warm regards,</p>
 
@@ -214,7 +214,7 @@ export class AuthService {
         subject: 'Email Verification',
         html: `<p>Hello,</p>
 
-        <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('VERIFICATION_URL')}/${vendor.id}" target="_blank">HERE</a> to verify your email account.</p>
+        <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('VENDOR_VERIFICATION_URL')}/${vendor.id}" target="_blank">HERE</a> to verify your email account.</p>
 
         <p>Warm regards,</p>
 
@@ -413,7 +413,7 @@ export class AuthService {
         html: `
         <p>Hi,</p>
 
-        <p>You requested a password reset. Please click <a href="${this.config.getOrThrow('PASSWORD_RESET_URL')}/${resetToken}" target="_blank">HERE</a> to reset your password.</p>
+        <p>You requested a password reset. Please click <a href="${this.config.getOrThrow('GUARDIAN_PASSWORD_RESET_URL')}/${resetToken}" target="_blank">HERE</a> to reset your password.</p>
 
         <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
 
@@ -507,7 +507,7 @@ export class AuthService {
         html: `
         <p>Hi,</p>
 
-        <p>You requested a password reset. Please click <a href="${this.config.getOrThrow('PASSWORD_RESET_URL')}/${resetToken}" target="_blank">HERE</a> to reset your password.</p>
+        <p>You requested a password reset. Please click <a href="${this.config.getOrThrow('VENDOR_PASSWORD_RESET_URL')}/${resetToken}" target="_blank">HERE</a> to reset your password.</p>
 
         <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
 
