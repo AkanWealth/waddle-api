@@ -121,13 +121,18 @@ export class AuthService {
         where: { email: dto.email },
       });
 
+      // If validation fails
+      if (!customer) {
+        throw new UnauthorizedException('Invalid Credential');
+      }
+
       // Check if the customer is locked
-      if (!customer.isActive) {
+      if (!customer?.isActive) {
         throw new UnauthorizedException('Account is locked, try again later!');
       }
 
       // Lock the account after 3 failed attempts
-      if (customer.failedLoginAttempts >= 3) {
+      if (customer?.failedLoginAttempts >= 3) {
         await this.prisma.user.update({
           where: { id: customer.id },
           data: { isActive: false },
@@ -141,7 +146,7 @@ export class AuthService {
       );
 
       // If validation fails
-      if (!customer || !isValidPassword) {
+      if (!isValidPassword) {
         await this.prisma.user.update({
           where: { id: customer.id },
           data: { failedLoginAttempts: customer.failedLoginAttempts + 1 },
@@ -247,6 +252,9 @@ export class AuthService {
       const vendor = await this.prisma.vendor.findUnique({
         where: { email: dto.email },
       });
+      if (!vendor) {
+        throw new UnauthorizedException('Invalid Credential');
+      }
 
       // Check if the vendor is locked
       if (!vendor.isActive) {
@@ -265,7 +273,7 @@ export class AuthService {
       const isValidPassword = await argon.verify(vendor.password, dto.password);
 
       // If validation fails
-      if (!vendor || !isValidPassword) {
+      if (!isValidPassword) {
         await this.prisma.vendor.update({
           where: { id: vendor.id },
           data: { failedLoginAttempts: vendor.failedLoginAttempts + 1 },
