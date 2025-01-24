@@ -5,6 +5,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { SignInDto } from '../src/auth/dto/signin.dto';
 import { UserSignUpDto } from '../src/auth/dto/user-signup.dto';
+import { VendorSignUpDto } from '../src/auth/dto/vendor-signup.dto';
 import {
   CreateActivitiesDto,
   UpdateActivitiesDto,
@@ -34,8 +35,8 @@ describe('Activity (e2e)', () => {
 
   describe('Auth', () => {
     describe('Signup', () => {
-      // testing for signup with valid data
-      it('(POST) => Should register a new user', () => {
+      // testing for customer signup
+      it('(POST) => Should register a new customer', () => {
         const customer: UserSignUpDto = {
           name: 'E2E Test2',
           email: 'test2@gmail.com',
@@ -46,6 +47,26 @@ describe('Activity (e2e)', () => {
         return request(app.getHttpServer())
           .post('/api/v1/auth/signup/customer')
           .send(customer)
+          .expect(201);
+      });
+
+      // testing for vendor signup
+      it('(POST) => Should register a new vendor', () => {
+        const vendor: VendorSignUpDto = {
+          name: 'E2E Vendor1',
+          email: 'vendor2@gmail.com',
+          password: '12345678',
+          address: '12B Cresent Maryland',
+          business_name: 'Mr Bigs',
+          business_category: 'Hospitality',
+          registration_number: 's#kA6uA1LkTt[5P',
+          phone_number: '080123456789',
+          business_url: 'https://xample.co.uk',
+          facebook_url: 'https://facebook.com/xample-co-uk',
+        };
+        return request(app.getHttpServer())
+          .post('/api/v1/auth/signup/vendor')
+          .send(vendor)
           .expect(201);
       });
     });
@@ -67,15 +88,15 @@ describe('Activity (e2e)', () => {
           });
       });
 
-      // testing for moderator login
-      test('(POST) => Should login for admin', () => {
-        const moderator: SignInDto = {
-          email: process.env.SEED_USER_EMAIL,
-          password: process.env.SEED_PASSWORD,
+      // testing for vendor login
+      test('(POST) => Should login for vendor', () => {
+        const vendor: SignInDto = {
+          email: 'vendor2@gmail.com',
+          password: '12345678',
         };
         return request(app.getHttpServer())
-          .post('/api/v1/auth/host')
-          .send(moderator)
+          .post('/api/v1/auth/signin/vendor')
+          .send(vendor)
           .expect(200)
           .then((res) => {
             expect(res.body.access_token).toBeDefined();
@@ -91,13 +112,13 @@ describe('Activity (e2e)', () => {
         name: 'Mountain Hiking',
         description:
           'Experience the breathtaking views and fresh air while hiking through the beautiful mountain trails.',
-        capacity: 15,
+        price: 200,
         address: '123 Mountain Rd, Adventure Town, AT 12345',
-        amenities: ['Guided Tour', 'Snacks', 'First Aid Kit'],
-        images: [
-          'https://example.com/images/mountain_hiking_1.jpg',
-          'https://example.com/images/mountain_hiking_2.jpg',
-        ],
+        total_ticket: 20,
+        date: '2025-03-26',
+        time: '11:30:00',
+        age_range: '6-10',
+        instruction: 'Parent supervision is required',
       };
 
       // testing for creating activity with customer authenticated
@@ -109,8 +130,8 @@ describe('Activity (e2e)', () => {
           .expect(403);
       });
 
-      // testing for creating activity with moderator authenticated
-      it('(POST) => Should create activity with moderator authenticated', () => {
+      // testing for creating activity with vendor authenticated
+      it('(POST) => Should create activity with vendor authenticated', () => {
         return request(app.getHttpServer())
           .post('/api/v1/activities')
           .set('Authorization', 'Bearer ' + moderatorToken)
@@ -164,7 +185,7 @@ describe('Activity (e2e)', () => {
     });
 
     describe('Update Activity', () => {
-      const activity: UpdateActivitiesDto = { capacity: 20 };
+      const activity: UpdateActivitiesDto = { price: 50 };
 
       // testing for updating activity with customer authenticated
       it('(PATCH) => Should not update activity with customer authenticated', () => {

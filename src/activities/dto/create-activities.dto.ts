@@ -1,5 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsDateString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateActivitiesDto {
   @ApiProperty({
@@ -24,33 +30,54 @@ export class CreateActivitiesDto {
     example: '321 Art Ave, Creative City, CC 98765',
   })
   @IsString({ message: 'The address must be a string' })
-  @IsNotEmpty({ message: 'The address can not be blanck' })
+  @IsNotEmpty({ message: 'The address can not be blank' })
   address: string;
 
   @ApiProperty({
-    description: 'The capacity of the activity',
-    example: 50,
+    description: 'The price of the activity',
+    example: 100.0,
   })
-  @IsNumber({}, { message: 'The capacity must be a number' })
-  @IsNotEmpty({ message: 'The capacity can not be blanck' })
-  capacity: number;
+  @IsNumber({}, { message: 'The price must be a number' })
+  @IsNotEmpty({ message: 'The price can not be blank' })
+  price: number;
 
   @ApiProperty({
-    description: 'The amenities of the activity',
-    example: ['Art Supplies', 'Expert Guidance', 'Refreshments'],
+    description: 'The total ticket of the activity',
+    example: 20,
   })
-  @IsArray({ message: 'The amenities must be a string' })
-  @IsNotEmpty({ message: 'The amenities can not be blank' })
-  amenities: [string];
+  @IsNumber({}, { message: 'The total ticket must be a number' })
+  @IsNotEmpty({ message: 'The total ticket can not be blank' })
+  total_ticket: number;
 
   @ApiProperty({
-    description: 'The images of the activity',
-    example: [
-      'https://example.com/images/art_workshop_1.jpg',
-      'https://example.com/images/art_workshop_2.jpg',
-    ],
+    description: 'The date of the activity',
+    example: '2025-03-26',
   })
-  @IsArray({ message: 'The images must be an array' })
-  @IsNotEmpty({ message: 'The images can not be blank' })
-  images: [string];
+  @IsDateString({}, { message: 'The date must be a date string' })
+  @IsNotEmpty({ message: 'The date can not be blank' })
+  date: string;
+
+  @ApiProperty({
+    description: 'The time of the activity in 24 hours',
+    example: '11:30:00',
+  })
+  @IsString({ message: 'The time must be a string' })
+  @IsNotEmpty({ message: 'The time can not be blank' })
+  time: string;
+
+  @ApiProperty({
+    description: 'The age range of the activity',
+    example: '6-10',
+  })
+  @IsString({ message: 'The age range must be a string' })
+  @IsNotEmpty({ message: 'The age range can not be blank' })
+  age_range: string;
+
+  @ApiPropertyOptional({
+    description: 'The instruction of the activity',
+    example: 'Parent supervision is required',
+  })
+  @IsString({ message: 'The instruction must be a string' })
+  @IsOptional()
+  instruction: string;
 }
