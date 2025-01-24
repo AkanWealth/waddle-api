@@ -44,6 +44,8 @@ jobs:
           JWT_REFRESH_SECRET_KEY: jwfZI07gH@CEZ}?2hNkM9Ci}gVsE
           JWT_REFRESH_EXPIRATION_TIME: '3d'
           VERIFICATION_URL: http://localhost:5173/auth/verification
+          GUARDIAN_VERIFICATION_URL: http://localhost:5173/verify/guardian
+          VENDOR_VERIFICATION_URL: http://localhost:5173/verify/vendor
           PASSWORD_RESET_URL: http://localhost:5173/auth/resetpassword
           SMTP_HOST: wghp1.wghservers.com
           SMTP_PORT: 465
@@ -96,7 +98,8 @@ jobs:
           echo "FACEBOOK_CLIENT_ID=464940513010541" >> $GITHUB_ENV
           echo "FACEBOOK_CLIENT_SECRET=2c9a12d4b7790dac7cb34c707b3aa2fa" >> $GITHUB_ENV
           echo "FACEBOOK_CALLBACK_URL=http://localhost:3030/api/v1/auth/facebook/redirect" >> $GITHUB_ENV
-          echo "VERIFICATION_URL=http://localhost:5173/auth/verification" >> $GITHUB_ENV
+          echo "GUARDIAN_VERIFICATION_URL=http://localhost:5173/verify/guardian" >> $GITHUB_ENV
+          echo "VENDOR_VERIFICATION_URL=http://localhost:5173/verify/vendor" >> $GITHUB_ENV
           echo "PASSWORD_RESET_URL=http://localhost:5173/auth/resetpassword" >> $GITHUB_ENV
           echo "SMTP_HOST=wghp1.wghservers.com" >> $GITHUB_ENV
           echo "SMTP_PORT=465" >> $GITHUB_ENV
