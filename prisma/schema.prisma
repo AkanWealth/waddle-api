@@ -18,17 +18,17 @@ model Activities {
   name         String
   description  String
   address      String
-  images       String
+  images       String?
   price        Decimal
   total_ticket Int
-  date         String
+  date         DateTime
   time         String
   age_range    String
-  instruction  String
+  instruction  String?
   collection   Collection[]
   booking      Booking[]
-  Vendor       Vendor?      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   vendorId     String?
+  Vendor       Vendor?      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
