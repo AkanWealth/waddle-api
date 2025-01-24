@@ -40,7 +40,9 @@ jobs:
           PORT: 3030
           DATABASE_URL: 'postgresql://postgres:password@localhost:5432/testdb?schema=public'
           JWT_SECRET_KEY: NkM9Ci}gVsEjwfZI07gH@CEZ}?2h
-          JWT_EXPIRATION_TIME: '60m'
+          JWT_EXPIRATION_TIME: '1h'
+          JWT_REFRESH_SECRET_KEY: jwfZI07gH@CEZ}?2hNkM9Ci}gVsE
+          JWT_REFRESH_EXPIRATION_TIME: '3d'
           VERIFICATION_URL: http://localhost:5173/auth/verification
           PASSWORD_RESET_URL: http://localhost:5173/auth/resetpassword
           SMTP_HOST: wghp1.wghservers.com
@@ -82,7 +84,9 @@ jobs:
           echo "DB_NAME=testdb" >> $GITHUB_ENV
           echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/testdb" >> $GITHUB_ENV
           echo "JWT_SECRET_KEY=NkM9Ci}gVsEjwfZI07gH@CEZ}?2h" >> $GITHUB_ENV
-          echo "JWT_EXPIRATION_TIME=60m" >> $GITHUB_ENV
+          echo "JWT_EXPIRATION_TIME=1h" >> $GITHUB_ENV
+          echo "JWT_REFRESH_SECRET_KEY=jwfZI07gH@CEZ}?2hNkM9Ci}gVsE" >> $GITHUB_ENV
+          echo "JWT_REFRESH_EXPIRATION_TIME=3d" >> $GITHUB_ENV
           echo "SEED_USER_NAME=Admin" >> $GITHUB_ENV
           echo "SEED_USER_EMAIL=admin@waddle.uk" >> $GITHUB_ENV
           echo "SEED_PASSWORD=12345678" >> $GITHUB_ENV
