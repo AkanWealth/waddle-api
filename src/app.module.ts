@@ -9,6 +9,7 @@ import { ActivitiesModule } from './activities/activities.module';
 import { VendorModule } from './vendor/vendor.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
+import { LocationModule } from './location/location.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
     VendorModule,
     ActivitiesModule,
     PrismaModule,
+    LocationModule,
   ],
   providers: [AppService],
   controllers: [AppController],
