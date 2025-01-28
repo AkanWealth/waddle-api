@@ -20,7 +20,7 @@ describe('Authentication and Vendor (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     app.setGlobalPrefix('/api/v1');
     await app.init();
-    await app.listen(3333);
+    await app.listen(3332);
     prisma = app.get(PrismaService);
     await prisma.cleanDb();
   });

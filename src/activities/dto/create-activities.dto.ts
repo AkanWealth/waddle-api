@@ -80,4 +80,13 @@ export class CreateActivitiesDto {
   @IsString({ message: 'The instruction must be a string' })
   @IsOptional()
   instruction: string;
+
+  @ApiProperty({
+    description: 'The category of the activity',
+    example: 'Games',
+    required: true,
+  })
+  @IsString({ message: 'The category must be a string' })
+  @IsNotEmpty({ message: 'The category can not be blank' })
+  category: string;
 }

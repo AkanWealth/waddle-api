@@ -58,7 +58,7 @@ export class ActivitiesService {
   async findAll() {
     try {
       const activities = await this.prisma.activities.findMany({
-        include: { Vendor: true },
+        include: { vendor: true },
       });
 
       const activitiesWithImage = activities.map((list) => {
@@ -81,7 +81,7 @@ export class ActivitiesService {
       const activity = await this.prisma.activities.findUnique({
         where: { id },
         include: {
-          Vendor: true,
+          vendor: true,
         },
       });
       if (!activity)
@@ -116,7 +116,7 @@ export class ActivitiesService {
 
       const activity = await this.prisma.activities.findMany({
         where: whereClause,
-        include: { Vendor: true },
+        include: { vendor: true },
       });
       if (!activity || activity.length === 0)
         throw new NotFoundException(
@@ -156,7 +156,7 @@ export class ActivitiesService {
 
       const activity = await this.prisma.activities.findMany({
         where: whereClause,
-        include: { Vendor: true },
+        include: { vendor: true },
       });
 
       if (!activity || activity.length === 0) {

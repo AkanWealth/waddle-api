@@ -29,6 +29,7 @@ import { JwtGuard } from '../auth/guard';
 import { GetUser } from '../auth/decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
+@ApiBearerAuth()
 @ApiUnauthorizedResponse({
   description: 'The vendor is not unathorized to perform this action',
 })
@@ -40,7 +41,6 @@ export class VendorController {
 
   // get all vendor
   @ApiOkResponse({ description: 'Successfull' })
-  @ApiBearerAuth()
   @Get('all')
   findAll() {
     return this.vendorService.findAll();
@@ -48,7 +48,6 @@ export class VendorController {
 
   // get the loggedin vendor
   @ApiOkResponse({ description: 'Successfull' })
-  @ApiBearerAuth()
   @Get('me')
   findOne(@GetUser() vendor: User) {
     return this.vendorService.findMe(vendor.id);
@@ -56,7 +55,6 @@ export class VendorController {
 
   // update the loggedin vendor
   @ApiAcceptedResponse({ description: 'Successfully updated' })
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
   @UseInterceptors(FileInterceptor('business_logo'))
@@ -84,7 +82,6 @@ export class VendorController {
 
   // delete a vendor
   @ApiNoContentResponse({ description: 'Deleted Successfully' })
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   removeOne(@Param('id') id: string) {

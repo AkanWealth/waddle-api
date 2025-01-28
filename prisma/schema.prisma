@@ -25,14 +25,29 @@ model Activities {
   time         String
   age_range    String
   instruction  String?
+  category     String
   collection   Collection[]
   booking      Booking[]
-  vendorId     String?
-  Vendor       Vendor?      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendorId     String
+  vendor       Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  reviews      Reviews[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
   @@map("activities")
+}
+
+model Reviews {
+  id         String     @id @default(cuid())
+  rating     Int
+  comment    String?
+  verified   Boolean    @default(false)
+  activityId String
+  activity   Activities @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@map("reviews")
 }
 
 model Admin {
@@ -91,9 +106,9 @@ model User {
   failedLoginAttempts Int          @default(0)
   reset_token         String?
   reset_expiration    String?
+  invoice             Invoice[]
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
-  Invoice             Invoice[]
 
   @@map("users")
 }
@@ -104,9 +119,8 @@ model Collection {
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   activitiesId String
   activities   Activities @relation(fields: [activitiesId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@map("collections")
 }
@@ -120,23 +134,21 @@ model Booking {
   activitiesId String
   activities   Activities @relation(fields: [activitiesId], references: [id], onDelete: Cascade)
   status       Status     @default(Pending)
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Invoice   Invoice[]
+  invoice      Invoice[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@map("bookings")
 }
 
 model Invoice {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   amount    Decimal
   userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookingId String
-  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  status    Payment @default(Pending)
-
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  status    Payment  @default(Pending)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
