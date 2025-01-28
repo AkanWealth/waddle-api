@@ -13,6 +13,8 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
 import { CreateActivitiesDto, UpdateActivitiesDto } from './dto';
@@ -118,6 +120,7 @@ export class ActivitiesController {
 
   @ApiAcceptedResponse({ description: 'Data accepted' })
   @ApiParam({ name: 'id' })
+  @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
   @UseInterceptors(FileInterceptor('images'))
   update(
@@ -149,6 +152,7 @@ export class ActivitiesController {
 
   @ApiNoContentResponse({ description: 'Deleted successfully' })
   @ApiParam({ name: 'id' })
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.activitiesService.remove(id);

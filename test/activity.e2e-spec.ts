@@ -15,7 +15,7 @@ describe('Activity (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let customerToken = '';
-  let moderatorToken = '';
+  let vendorToken = '';
   let id = '';
 
   beforeAll(async () => {
@@ -100,7 +100,7 @@ describe('Activity (e2e)', () => {
           .expect(200)
           .then((res) => {
             expect(res.body.access_token).toBeDefined();
-            moderatorToken = res.body.access_token;
+            vendorToken = res.body.access_token;
           });
       });
     });
@@ -119,6 +119,7 @@ describe('Activity (e2e)', () => {
         time: '11:30:00',
         age_range: '6-10',
         instruction: 'Parent supervision is required',
+        category: 'Outing',
       };
 
       // testing for creating activity with customer authenticated
@@ -134,7 +135,7 @@ describe('Activity (e2e)', () => {
       it('(POST) => Should create activity with vendor authenticated', () => {
         return request(app.getHttpServer())
           .post('/api/v1/activities')
-          .set('Authorization', 'Bearer ' + moderatorToken)
+          .set('Authorization', 'Bearer ' + vendorToken)
           .send(activity)
           .expect(201)
           .then((res) => expect(res.body.id).toBeDefined());
@@ -155,7 +156,7 @@ describe('Activity (e2e)', () => {
       it('(GET) => Should find activities with moderator authentication', () => {
         return request(app.getHttpServer())
           .get('/api/v1/activities')
-          .set('Authorization', 'Bearer ' + moderatorToken)
+          .set('Authorization', 'Bearer ' + vendorToken)
           .expect(200)
           .then((res) => {
             expect(res.body[0].id).toBeDefined();
@@ -178,7 +179,7 @@ describe('Activity (e2e)', () => {
       it('(GET) => Should find one activity by id with moderator authentication', () => {
         return request(app.getHttpServer())
           .get(`/api/v1/activities/${id}`)
-          .set('Authorization', 'Bearer ' + moderatorToken)
+          .set('Authorization', 'Bearer ' + vendorToken)
           .expect(200)
           .then((res) => expect(res.body.id).toBeDefined());
       });
@@ -196,33 +197,32 @@ describe('Activity (e2e)', () => {
           .expect(403);
       });
 
-      // testing for updating activity with moderator authenticated
-      it('(PATCH) => Should update activity with moderator authenticated', () => {
+      // testing for updating activity with vendor authenticated
+      it('(PATCH) => Should update activity with vendor authenticated', () => {
         return request(app.getHttpServer())
           .patch(`/api/v1/activities/${id}`)
-          .set('Authorization', 'Bearer ' + moderatorToken)
+          .set('Authorization', 'Bearer ' + vendorToken)
           .send(activity)
-          .expect(200)
+          .expect(202)
           .then((res) => expect(res.body.id).toBeDefined());
       });
     });
 
     describe('Delete Activity', () => {
       // testing for deleting activity with customer authenticated
-      it('(PATCH) => Should not delete activity with customer authenticated', () => {
+      it('(DELETE) => Should not delete activity with customer authenticated', () => {
         return request(app.getHttpServer())
-          .patch(`/api/v1/activities/${id}`)
+          .delete(`/api/v1/activities/${id}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(403);
       });
 
-      // testing for deleting activity with moderator authenticated
-      it('(PATCH) => Should delete activity with moderator authenticated', () => {
+      // testing for deleting activity with vendor authenticated
+      it('(DELETE) => Should delete activity with vendor authenticated', () => {
         return request(app.getHttpServer())
-          .patch(`/api/v1/activities/${id}`)
-          .set('Authorization', 'Bearer ' + moderatorToken)
-          .expect(200)
-          .then((res) => expect(res.body.id).toBeDefined());
+          .delete(`/api/v1/activities/${id}`)
+          .set('Authorization', 'Bearer ' + vendorToken)
+          .expect(204);
       });
     });
   });

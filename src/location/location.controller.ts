@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { LocationService } from './location.service';
 import {
   ApiInternalServerErrorResponse,
@@ -19,13 +19,13 @@ export class LocationController {
   }
 
   @ApiOkResponse({ description: 'Successfull' })
-  @ApiParam({ name: 'parameter1' })
-  @ApiParam({ name: 'parameter2' })
-  @Get('distance/:parameter1/:parameter2')
+  @ApiParam({ name: 'origin' })
+  @ApiParam({ name: 'destination' })
+  @Get('distance/:origin/:destination')
   calculateDistance(
-    @Param('parameter1') parameter1: string,
-    @Param('parameter2') parameter2: string,
+    @Param('origin') origin: string,
+    @Param('destination') destination: string,
   ) {
-    return this.locationService.calculateDistance(parameter1, parameter2);
+    return this.locationService.calculateDistance(origin, destination);
   }
 }
