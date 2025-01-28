@@ -29,9 +29,20 @@ export class LocationService {
   }
 
   // calculate the distance between two address
-  async calculateDistance(parameter1: string, parameter2: string) {
+  async calculateDistance(origin: string, destination: string) {
     try {
-      return { parameter1, parameter2 };
+      const url = `https://driving-distance-calculator-between-two-points.p.rapidapi.com/data?origin=${origin}&destination=${destination}`;
+      const options = {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-key': this.config.getOrThrow('DISTANCE_API_KEY'),
+          'x-rapidapi-host': this.config.getOrThrow('DISTANCE_HOST'),
+        },
+      };
+
+      const response = await fetch(url, options);
+      const result = await response.text();
+      return result;
     } catch (error) {
       throw error;
     }

@@ -10,6 +10,7 @@ import { VendorModule } from './vendor/vendor.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { LocationModule } from './location/location.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { LocationModule } from './location/location.module';
     ActivitiesModule,
     PrismaModule,
     LocationModule,
+    ReviewModule,
   ],
   providers: [AppService],
   controllers: [AppController],
