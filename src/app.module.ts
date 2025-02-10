@@ -5,12 +5,12 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
-import { ActivitiesModule } from './activities/activities.module';
 import { VendorModule } from './vendor/vendor.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { LocationModule } from './location/location.module';
 import { ReviewModule } from './review/review.module';
+import { EventModule } from './event/event.module';
 
 @Module({
   imports: [
@@ -27,7 +27,7 @@ import { ReviewModule } from './review/review.module';
     AuthModule,
     UserModule,
     VendorModule,
-    ActivitiesModule,
+    EventModule,
     PrismaModule,
     LocationModule,
     ReviewModule,

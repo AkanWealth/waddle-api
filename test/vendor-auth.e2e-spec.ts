@@ -203,7 +203,7 @@ describe('Authentication and Vendor (e2e)', () => {
       it('(GET) => Should not find current vendor without authentication', () => {
         return request(app.getHttpServer())
           .get('/api/v1/vendors/me')
-          .expect(400);
+          .expect(401);
       });
 
       // testing for getting current vendor data with authentication
@@ -229,7 +229,7 @@ describe('Authentication and Vendor (e2e)', () => {
         return request(app.getHttpServer())
           .patch('/api/v1/vendors/me')
           .send(vendor)
-          .expect(400);
+          .expect(401);
       });
 
       // testing for updating current vendor data with authentication

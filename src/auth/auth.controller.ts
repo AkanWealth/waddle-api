@@ -37,6 +37,7 @@ import { FacebookAuthGuard, GoogleAuthGuard } from './guard';
 import { GetUser } from './decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { Role } from './enum/role.enum';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @Controller('auth')
@@ -188,7 +189,7 @@ export class AuthController {
     @GetUser('id') id: string,
     @GetUser('email') email: string,
   ) {
-    const response = await this.authService.signToken(id, email);
+    const response = await this.authService.signToken(id, email, Role.User);
 
     return response;
   }
@@ -207,7 +208,7 @@ export class AuthController {
     @GetUser('id') id: string,
     @GetUser('email') email: string,
   ) {
-    const response = await this.authService.signToken(id, email);
+    const response = await this.authService.signToken(id, email, Role.User);
 
     return response;
   }

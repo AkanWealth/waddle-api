@@ -8,7 +8,7 @@ export class ReviewService {
 
   async create(dto: CreateReviewDto) {
     try {
-      const review = await this.prisma.reviews.create({
+      const review = await this.prisma.review.create({
         data: <any>{ ...dto },
       });
       return review;
@@ -19,8 +19,8 @@ export class ReviewService {
 
   async findAll() {
     try {
-      const reviews = await this.prisma.reviews.findMany({
-        where: { activityId: '2' },
+      const reviews = await this.prisma.review.findMany({
+        where: { eventId: '2' },
       });
 
       if (!reviews) throw new NotFoundException('Review not found');
@@ -33,7 +33,7 @@ export class ReviewService {
 
   async findOne(id: string) {
     try {
-      const reviews = await this.prisma.reviews.findUnique({
+      const reviews = await this.prisma.review.findUnique({
         where: { id },
       });
 
@@ -47,13 +47,13 @@ export class ReviewService {
 
   async update(id: string, dto: UpdateReviewDto) {
     try {
-      const review = await this.prisma.reviews.findUnique({
+      const review = await this.prisma.review.findUnique({
         where: { id },
       });
 
       if (!review) throw new NotFoundException('Review not found');
 
-      const updateReview = await this.prisma.reviews.update({
+      const updateReview = await this.prisma.review.update({
         where: { id: review.id },
         data: { ...dto },
       });
@@ -66,13 +66,13 @@ export class ReviewService {
 
   async remove(id: string) {
     try {
-      const review = await this.prisma.reviews.findUnique({
+      const review = await this.prisma.review.findUnique({
         where: { id },
       });
 
       if (!review) throw new NotFoundException('Review not found');
 
-      await this.prisma.reviews.delete({ where: { id: review.id } });
+      await this.prisma.review.delete({ where: { id: review.id } });
       return { message: 'Review deleted' };
     } catch (error) {
       throw error;

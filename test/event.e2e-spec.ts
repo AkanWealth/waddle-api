@@ -6,10 +6,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { SignInDto } from '../src/auth/dto/signin.dto';
 import { UserSignUpDto } from '../src/auth/dto/user-signup.dto';
 import { VendorSignUpDto } from '../src/auth/dto/vendor-signup.dto';
-import {
-  CreateActivitiesDto,
-  UpdateActivitiesDto,
-} from '../src/activities/dto';
+import { CreateEventDto, UpdateEventDto } from '../src/event/dto';
 
 describe('Activity (e2e)', () => {
   let app: INestApplication;
@@ -106,9 +103,9 @@ describe('Activity (e2e)', () => {
     });
   });
 
-  describe('Activities', () => {
-    describe('Create Activity', () => {
-      const activity: CreateActivitiesDto = <any>{
+  describe('Events', () => {
+    describe('Create event', () => {
+      const event: CreateEventDto = <any>{
         name: 'Mountain Hiking',
         description:
           'Experience the breathtaking views and fresh air while hiking through the beautiful mountain trails.',
@@ -122,40 +119,40 @@ describe('Activity (e2e)', () => {
         category: 'Outing',
       };
 
-      // testing for creating activity with customer authenticated
-      it('(POST) => Should not create activity with customer authenticated', () => {
+      // testing for creating event with customer authenticated
+      it('(POST) => Should not create event with customer authenticated', () => {
         return request(app.getHttpServer())
-          .post('/api/v1/activities')
+          .post('/api/v1/events')
           .set('Authorization', 'Bearer ' + customerToken)
-          .send(activity)
+          .send(event)
           .expect(403);
       });
 
-      // testing for creating activity with vendor authenticated
-      it('(POST) => Should create activity with vendor authenticated', () => {
+      // testing for creating event with vendor authenticated
+      it('(POST) => Should create event with vendor authenticated', () => {
         return request(app.getHttpServer())
-          .post('/api/v1/activities')
+          .post('/api/v1/events')
           .set('Authorization', 'Bearer ' + vendorToken)
-          .send(activity)
+          .send(event)
           .expect(201)
           .then((res) => expect(res.body.id).toBeDefined());
       });
     });
 
-    describe('Get Activities', () => {
-      // testing for finding all activities with customer authenticated
-      it('(GET) => Should find activities with customer authentication', () => {
+    describe('Get events', () => {
+      // testing for finding all events with customer authenticated
+      it('(GET) => Should find events with customer authentication', () => {
         return request(app.getHttpServer())
-          .get('/api/v1/activities')
+          .get('/api/v1/events')
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
           .then((res) => expect(res.body[0].id).toBeDefined());
       });
 
-      // testing for finding all activities with moderator authenticated
-      it('(GET) => Should find activities with moderator authentication', () => {
+      // testing for finding all events with vendor authenticated
+      it('(GET) => Should find events with vendor authentication', () => {
         return request(app.getHttpServer())
-          .get('/api/v1/activities')
+          .get('/api/v1/events')
           .set('Authorization', 'Bearer ' + vendorToken)
           .expect(200)
           .then((res) => {
@@ -165,62 +162,62 @@ describe('Activity (e2e)', () => {
       });
     });
 
-    describe('Get One Activity By ID', () => {
-      // testing for finding one activity with customer authenticated
-      it('(GET) => Should find one activity by id with customer authentication', () => {
+    describe('Get one event by ID', () => {
+      // testing for finding one event with customer authenticated
+      it('(GET) => Should find one event by id with customer authentication', () => {
         return request(app.getHttpServer())
-          .get(`/api/v1/activities/${id}`)
+          .get(`/api/v1/events/${id}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
           .then((res) => expect(res.body.id).toBeDefined());
       });
 
-      // testing for finding one activity with moderator authenticated
-      it('(GET) => Should find one activity by id with moderator authentication', () => {
+      // testing for finding one event with vendor authenticated
+      it('(GET) => Should find one event by id with vendor authentication', () => {
         return request(app.getHttpServer())
-          .get(`/api/v1/activities/${id}`)
+          .get(`/api/v1/events/${id}`)
           .set('Authorization', 'Bearer ' + vendorToken)
           .expect(200)
           .then((res) => expect(res.body.id).toBeDefined());
       });
     });
 
-    describe('Update Activity', () => {
-      const activity: UpdateActivitiesDto = { price: 50 };
+    describe('Update event', () => {
+      const event: UpdateEventDto = { price: 50 };
 
-      // testing for updating activity with customer authenticated
-      it('(PATCH) => Should not update activity with customer authenticated', () => {
+      // testing for updating event with customer authenticated
+      it('(PATCH) => Should not update event with customer authenticated', () => {
         return request(app.getHttpServer())
-          .patch(`/api/v1/activities/${id}`)
+          .patch(`/api/v1/events/${id}`)
           .set('Authorization', 'Bearer ' + customerToken)
-          .send(activity)
+          .send(event)
           .expect(403);
       });
 
-      // testing for updating activity with vendor authenticated
-      it('(PATCH) => Should update activity with vendor authenticated', () => {
+      // testing for updating event with vendor authenticated
+      it('(PATCH) => Should update event with vendor authenticated', () => {
         return request(app.getHttpServer())
-          .patch(`/api/v1/activities/${id}`)
+          .patch(`/api/v1/events/${id}`)
           .set('Authorization', 'Bearer ' + vendorToken)
-          .send(activity)
+          .send(event)
           .expect(202)
           .then((res) => expect(res.body.id).toBeDefined());
       });
     });
 
-    describe('Delete Activity', () => {
-      // testing for deleting activity with customer authenticated
-      it('(DELETE) => Should not delete activity with customer authenticated', () => {
+    describe('Delete event', () => {
+      // testing for deleting event with customer authenticated
+      it('(DELETE) => Should not delete event with customer authenticated', () => {
         return request(app.getHttpServer())
-          .delete(`/api/v1/activities/${id}`)
+          .delete(`/api/v1/events/${id}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(403);
       });
 
-      // testing for deleting activity with vendor authenticated
-      it('(DELETE) => Should delete activity with vendor authenticated', () => {
+      // testing for deleting event with vendor authenticated
+      it('(DELETE) => Should delete event with vendor authenticated', () => {
         return request(app.getHttpServer())
-          .delete(`/api/v1/activities/${id}`)
+          .delete(`/api/v1/events/${id}`)
           .set('Authorization', 'Bearer ' + vendorToken)
           .expect(204);
       });
