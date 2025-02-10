@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateActivitiesDto, UpdateActivitiesDto } from './dto';
+import { CreateEventDto, UpdateEventDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { Role } from '../auth/enum/role.enum';
 import {
   DeleteObjectCommand,
   PutObjectCommand,
@@ -9,7 +10,7 @@ import {
 } from '@aws-sdk/client-s3';
 
 @Injectable()
-export class ActivitiesService {
+export class EventService {
   private readonly s3Client = new S3Client({
     region: 'auto',
     endpoint: this.config.getOrThrow('S3_API'),
@@ -24,10 +25,11 @@ export class ActivitiesService {
     private config: ConfigService,
   ) {}
 
-  // function to add a activities to the database
+  // function to add a event to the database
   async create(
-    vendorId: string,
-    dto: CreateActivitiesDto,
+    userId: string,
+    userRole: string,
+    dto: CreateEventDto,
     fileName?: string,
     file?: Buffer,
   ) {
@@ -44,24 +46,37 @@ export class ActivitiesService {
 
       const date = new Date(dto.date);
 
-      const activity = await this.prisma.activities.create({
-        data: { ...dto, date, images: fileName || null, vendorId },
+      // Determine whether to store vendorId or adminId
+      const eventData: any = {
+        ...dto,
+        date,
+        images: fileName || null,
+      };
+
+      if (userRole === Role.Vendor) {
+        eventData.vendorId = userId;
+      } else if (userRole === Role.Admin) {
+        eventData.adminId = userId;
+      }
+
+      const event = await this.prisma.event.create({
+        data: eventData,
       });
 
-      return activity;
+      return event;
     } catch (error) {
       throw error;
     }
   }
 
-  // function to find all activities from the database
+  // function to find all Event from the database
   async findAll() {
     try {
-      const activities = await this.prisma.activities.findMany({
-        include: { vendor: true },
+      const event = await this.prisma.event.findMany({
+        include: { vendor: true, admin: true },
       });
 
-      const activitiesWithImage = activities.map((list) => {
+      const eventWithImage = event.map((list) => {
         const images = `${process.env.R2_PUBLIC_ENDPOINT}/${list.images}`;
         return {
           ...list,
@@ -69,35 +84,36 @@ export class ActivitiesService {
         };
       });
 
-      return activitiesWithImage;
+      return eventWithImage;
     } catch (error) {
       throw error;
     }
   }
 
-  // function to find a activities from the database
+  // function to find a event from the database
   async findOne(id: string) {
     try {
-      const activity = await this.prisma.activities.findUnique({
+      const event = await this.prisma.event.findUnique({
         where: { id },
         include: {
           vendor: true,
+          admin: true,
         },
       });
-      if (!activity)
+      if (!event)
         throw new NotFoundException(
-          'Activity with the provdied ID does not exist.',
+          'Event with the provdied ID does not exist.',
         );
 
-      const images = `${process.env.R2_PUBLIC_ENDPOINT}/${activity.images}`;
+      const images = `${process.env.R2_PUBLIC_ENDPOINT}/${event.images}`;
 
-      return { ...activity, images };
+      return { ...event, images };
     } catch (error) {
       throw error;
     }
   }
 
-  // function to search for activities from the database
+  // function to search for event from the database
   async search(name: string, age: string, price: string) {
     try {
       const whereClause: any = {};
@@ -107,23 +123,23 @@ export class ActivitiesService {
       }
 
       if (age) {
-        whereClause.age = { equals: age, mode: 'insensitive' };
+        whereClause.age_range = age;
       }
 
       if (price) {
         whereClause.price = price;
       }
 
-      const activity = await this.prisma.activities.findMany({
+      const event = await this.prisma.event.findMany({
         where: whereClause,
-        include: { vendor: true },
+        include: { vendor: true, admin: true },
       });
-      if (!activity || activity.length === 0)
+      if (!event || event.length === 0)
         throw new NotFoundException(
-          'Activity with the provided name does not exist.',
+          'Event with the provided name does not exist.',
         );
 
-      const activitiesWithImage = activity.map((list) => {
+      const eventWithImage = event.map((list) => {
         const images = `${process.env.R2_PUBLIC_ENDPOINT}/${list.images}`;
         return {
           ...list,
@@ -131,13 +147,13 @@ export class ActivitiesService {
         };
       });
 
-      return activitiesWithImage;
+      return eventWithImage;
     } catch (error) {
       throw error;
     }
   }
 
-  // function to filter activities by age range or category from the database
+  // function to filter event by age range or category from the database
   async filter(age_range?: string, category?: string, address?: string) {
     try {
       const whereClause: any = {};
@@ -154,18 +170,18 @@ export class ActivitiesService {
         whereClause.category = { equals: category, mode: 'insensitive' };
       }
 
-      const activity = await this.prisma.activities.findMany({
+      const event = await this.prisma.event.findMany({
         where: whereClause,
-        include: { vendor: true },
+        include: { vendor: true, admin: true },
       });
 
-      if (!activity || activity.length === 0) {
+      if (!event || event.length === 0) {
         throw new NotFoundException(
-          'No activities found with the provided criteria.',
+          'No Event found with the provided criteria.',
         );
       }
 
-      const activitiesWithImage = activity.map((list) => {
+      const eventWithImage = event.map((list) => {
         const images = `${process.env.R2_PUBLIC_ENDPOINT}/${list.images}`;
         return {
           ...list,
@@ -173,29 +189,42 @@ export class ActivitiesService {
         };
       });
 
-      return activitiesWithImage;
+      return eventWithImage;
     } catch (error) {
       throw error;
     }
   }
 
-  // function to update an activity in the database
+  // function to update an event in the database
   async update(
     id: string,
-    dto: UpdateActivitiesDto,
+    userId: string,
+    userRole: string,
+    dto: UpdateEventDto,
     fileName?: string,
     file?: Buffer,
   ) {
     try {
-      const existingActivity = await this.prisma.activities.findUnique({
-        where: { id },
+      const whereClause: any = {};
+
+      if (userRole === Role.Vendor) {
+        whereClause.id = id;
+        whereClause.vendorId = userId;
+      } else if (userRole === Role.Admin) {
+        whereClause.id = id;
+        whereClause.adminId = userId;
+      }
+
+      const existingEvent = await this.prisma.event.findUnique({
+        where: whereClause,
       });
-      if (!existingActivity)
+
+      if (!existingEvent)
         throw new NotFoundException(
-          'Activity with the provdied ID does not exist.',
+          'Event with the provided ID does not exist.',
         );
 
-      let image = existingActivity?.images || undefined;
+      let image = existingEvent?.images || undefined;
 
       // Upload the new image
       if (image !== fileName) {
@@ -219,42 +248,55 @@ export class ActivitiesService {
         image = fileName;
       }
 
-      const activity = await this.prisma.activities.update({
-        where: { id: existingActivity.id },
+      const event = await this.prisma.event.update({
+        where: {
+          id: existingEvent.id,
+        },
         data: <any>{ ...dto, images: image || null },
       });
 
-      return activity;
+      return event;
     } catch (error) {
       throw error;
     }
   }
 
-  // function to delete an activity from the database
-  async remove(id: string) {
+  // function to delete an event from the database
+  async remove(id: string, userId: string, userRole: string) {
     try {
-      const existingActivities = await this.prisma.activities.findUnique({
-        where: { id },
+      const whereClause: any = {};
+
+      if (userRole === Role.Vendor) {
+        whereClause.id = id;
+        whereClause.vendorId = userId;
+      } else if (userRole === Role.Admin) {
+        whereClause.id = id;
+        whereClause.adminId = userId;
+      }
+
+      const existingEvent = await this.prisma.event.findUnique({
+        where: whereClause,
       });
-      if (!existingActivities)
+
+      if (!existingEvent)
         throw new NotFoundException(
-          'Activity with the provdied ID does not exist.',
+          'Event with the provdied ID does not exist.',
         );
 
-      if (existingActivities?.images) {
+      if (existingEvent?.images) {
         await this.s3Client.send(
           new DeleteObjectCommand({
             Bucket: this.config.getOrThrow('BUCKET_NAME'),
-            Key: existingActivities.images,
+            Key: existingEvent.images,
           }),
         );
       }
 
-      await this.prisma.activities.delete({
-        where: { id: existingActivities.id },
+      await this.prisma.event.delete({
+        where: { id: existingEvent.id },
       });
 
-      return { message: 'Activity deleted.' };
+      return { message: 'Event deleted.' };
     } catch (error) {
       throw error;
     }

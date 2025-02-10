@@ -162,7 +162,7 @@ describe('Authentication and User (e2e)', () => {
     describe('GetUser', () => {
       // testing for getting current user data without authentication
       it('(GET) => Should not find current user without authentication', () => {
-        return request(app.getHttpServer()).get('/api/v1/users/me').expect(400);
+        return request(app.getHttpServer()).get('/api/v1/users/me').expect(401);
       });
 
       // testing for getting current user data with authentication
@@ -186,7 +186,7 @@ describe('Authentication and User (e2e)', () => {
         return request(app.getHttpServer())
           .patch('/api/v1/users/me')
           .send(user)
-          .expect(400);
+          .expect(401);
       });
 
       // testing for updating current user data with authentication

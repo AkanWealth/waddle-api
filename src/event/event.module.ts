@@ -1,7 +1,8 @@
 import { Module, NestModule } from '@nestjs/common';
-import { VendorService } from './vendor.service';
-import { VendorController } from './vendor.controller';
+import { EventService } from './event.service';
+import { EventController } from './event.controller';
 import { JwtModule } from '@nestjs/jwt';
+import { JwtStrategy } from '../auth/strategy';
 
 @Module({
   imports: [
@@ -10,9 +11,9 @@ import { JwtModule } from '@nestjs/jwt';
       signOptions: { expiresIn: process.env.JWT_EXPIRATION_TIME },
     }),
   ],
-  controllers: [VendorController],
-  providers: [VendorService],
+  controllers: [EventController],
+  providers: [EventService, JwtStrategy],
 })
-export class VendorModule implements NestModule {
+export class EventModule implements NestModule {
   configure() {}
 }

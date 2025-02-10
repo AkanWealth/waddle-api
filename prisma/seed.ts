@@ -11,11 +11,10 @@ async function main() {
       name: process.env.SEED_USER_NAME,
       email: process.env.SEED_USER_EMAIL,
       password: await argon.hash(process.env.SEED_PASSWORD),
-      role: 'Admin',
     },
   });
 
-  console.log({ root });
+  // console.log({ root });
 }
 
 main()

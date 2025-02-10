@@ -8,10 +8,15 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { Roles } from '../auth/decorator/role-decorator';
+import { Role } from '../auth/enum/role.enum';
+import { JwtGuard } from '../auth/guard/auth.guard';
+import { RolesGuard } from '../auth/guard/role.guard';
 import {
   ApiAcceptedResponse,
   ApiBearerAuth,
@@ -27,12 +32,14 @@ import {
   description: 'The user is not unathorized to perform this action',
 })
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
-@Controller('review')
+@UseGuards(JwtGuard, RolesGuard)
+@Controller('reviews')
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
   @ApiCreatedResponse({ description: 'Created Successfull' })
   @Post()
+  @Roles(Role.User)
   create(@Body() dto: CreateReviewDto) {
     return this.reviewService.create(dto);
   }
@@ -59,6 +66,7 @@ export class ReviewController {
   @ApiNoContentResponse({ description: 'Deleted successfully' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
+  @Roles(Role.Admin)
   remove(@Param('id') id: string) {
     return this.reviewService.remove(id);
   }
