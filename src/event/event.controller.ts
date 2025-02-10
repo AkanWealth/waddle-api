@@ -16,8 +16,8 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ActivitiesService } from './activities.service';
-import { CreateActivitiesDto, UpdateActivitiesDto } from './dto';
+import { EventService } from './event.service';
+import { CreateEventDto, UpdateEventDto } from './dto';
 import { GetUser } from '../auth/decorator/get-user.decorator';
 import {
   ApiAcceptedResponse,
@@ -30,26 +30,30 @@ import {
   ApiQuery,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Vendor } from '@prisma/client';
+import { User } from '@prisma/client';
 import { JwtGuard } from '../auth/guard/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RolesGuard } from '../auth/guard/role.guard';
+import { Roles } from '../auth/decorator/role-decorator';
+import { Role } from '../auth/enum/role.enum';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({
   description: 'The user is not unathorized to perform this action',
 })
 @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-@UseGuards(JwtGuard)
-@Controller('activities')
-export class ActivitiesController {
-  constructor(private readonly activitiesService: ActivitiesService) {}
+@UseGuards(JwtGuard, RolesGuard)
+@Controller('events')
+export class EventController {
+  constructor(private readonly eventService: EventService) {}
 
   @ApiCreatedResponse({ description: 'Created Successfull' })
   @Post()
+  @Roles(Role.Admin, Role.Vendor)
   @UseInterceptors(FileInterceptor('images'))
   create(
-    @GetUser() vendor: Vendor,
-    @Body() dto: CreateActivitiesDto,
+    @GetUser() user: User,
+    @Body() dto: CreateEventDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (file) {
@@ -63,15 +67,17 @@ export class ActivitiesController {
       } catch (error) {
         throw error;
       }
-      return this.activitiesService.create(
-        vendor.id,
+      return this.eventService.create(
+        user.id,
+        user.role,
         dto,
         file.originalname,
         file.buffer,
       );
     } else {
-      return this.activitiesService.create(
-        vendor.id,
+      return this.eventService.create(
+        user.id,
+        user.role,
         dto,
         file?.originalname,
         file?.buffer,
@@ -82,7 +88,7 @@ export class ActivitiesController {
   @ApiOkResponse({ description: 'Successfull' })
   @Get()
   findAll() {
-    return this.activitiesService.findAll();
+    return this.eventService.findAll();
   }
 
   @ApiOkResponse({ description: 'Successfully searched' })
@@ -95,7 +101,7 @@ export class ActivitiesController {
     @Query('age') age: string,
     @Query('price') price: string,
   ) {
-    return this.activitiesService.search(name, age, price);
+    return this.eventService.search(name, age, price);
   }
 
   @ApiOkResponse({ description: 'Successfully filtered' })
@@ -108,24 +114,26 @@ export class ActivitiesController {
     @Query('category') category: string,
     @Query('address') address: string,
   ) {
-    return this.activitiesService.filter(age, category, address);
+    return this.eventService.filter(age, category, address);
   }
 
   @ApiOkResponse({ description: 'Successfull' })
   @ApiParam({ name: 'id' })
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.activitiesService.findOne(id);
+    return this.eventService.findOne(id);
   }
 
   @ApiAcceptedResponse({ description: 'Data accepted' })
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
+  @Roles(Role.Admin, Role.Vendor)
   @UseInterceptors(FileInterceptor('images'))
   update(
     @Param('id') id: string,
-    @Body() dto: UpdateActivitiesDto,
+    @GetUser() user: User,
+    @Body() dto: UpdateEventDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (file) {
@@ -139,14 +147,16 @@ export class ActivitiesController {
       } catch (error) {
         throw error;
       }
-      return this.activitiesService.update(
+      return this.eventService.update(
         id,
+        user.id,
+        user.role,
         dto,
         file.originalname,
         file.buffer,
       );
     } else {
-      return this.activitiesService.update(id, dto);
+      return this.eventService.update(id, user.id, user.role, dto);
     }
   }
 
@@ -154,7 +164,8 @@ export class ActivitiesController {
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.activitiesService.remove(id);
+  @Roles(Role.Admin, Role.Vendor)
+  remove(@Param('id') id: string, @GetUser() user: User) {
+    return this.eventService.remove(id, user.id, user.role);
   }
 }

@@ -29,12 +29,15 @@ import { User } from '@prisma/client';
 import { JwtGuard } from '../auth/guard';
 import { GetUser } from '../auth/decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RolesGuard } from '../auth/guard/role.guard';
+import { Roles } from '../auth/decorator/role-decorator';
+import { Role } from '../auth/enum/role.enum';
 
 @ApiUnauthorizedResponse({
   description: 'The user is not unathorized to perform this action',
 })
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, RolesGuard)
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
@@ -43,6 +46,7 @@ export class UserController {
   @ApiOkResponse({ description: 'Successfull' })
   @ApiBearerAuth()
   @Get('all')
+  @Roles(Role.Admin)
   findAll() {
     return this.userService.findAll();
   }
@@ -51,6 +55,7 @@ export class UserController {
   @ApiOkResponse({ description: 'Successfull' })
   @ApiBearerAuth()
   @Get('me')
+  @Roles(Role.User)
   findOne(@GetUser() user: User) {
     return this.userService.findMe(user.id);
   }
@@ -60,6 +65,7 @@ export class UserController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
+  @Roles(Role.User)
   @UseInterceptors(FileInterceptor('profile_picture'))
   update(
     @GetUser('id') id: string,
@@ -89,6 +95,7 @@ export class UserController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
+  @Roles(Role.Admin)
   removeOne(@Param('id') id: string) {
     return this.userService.removeOne(id);
   }

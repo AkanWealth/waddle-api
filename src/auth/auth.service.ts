@@ -161,7 +161,7 @@ export class AuthService {
       });
 
       // Proceed with your normal login logic (e.g., generating JWT)
-      return this.signToken(customer.id, customer.email);
+      return this.signToken(customer.id, customer.email, customer.role);
     } catch (error) {
       throw error;
     }
@@ -288,7 +288,7 @@ export class AuthService {
       });
 
       // Proceed with your normal login logic (e.g., generating JWT)
-      return this.signToken(vendor.id, vendor.email);
+      return this.signToken(vendor.id, vendor.email, vendor.role);
     } catch (error) {
       throw error;
     }
@@ -306,7 +306,7 @@ export class AuthService {
       if (!isValidPassword)
         throw new UnauthorizedException('Invalid Credential');
 
-      return this.signToken(admin.id, admin.email);
+      return this.signToken(admin.id, admin.email, admin.role);
     } catch (error) {
       throw error;
     }
@@ -339,8 +339,8 @@ export class AuthService {
   }
 
   // function to generate a token
-  async signToken(userId: string, email: string) {
-    const payload = { sub: userId, email };
+  async signToken(userId: string, email: string, role: string) {
+    const payload = { sub: userId, email, role };
 
     const access_token = await this.jwt.signAsync(payload, {
       expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
@@ -371,7 +371,11 @@ export class AuthService {
       throw new UnauthorizedException('Token is invalid');
     }
 
-    const payload = { sub: decoded.sub, email: decoded.email };
+    const payload = {
+      sub: decoded.sub,
+      email: decoded.email,
+      role: decoded.role,
+    };
 
     const access_token = await this.jwt.signAsync(payload, {
       expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
