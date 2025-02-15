@@ -6,6 +6,7 @@ import { CreateReviewDto, UpdateReviewDto } from './dto';
 export class ReviewService {
   constructor(private prisma: PrismaService) {}
 
+  // create a new review for an event
   async create(dto: CreateReviewDto) {
     try {
       const review = await this.prisma.review.create({
@@ -17,13 +18,16 @@ export class ReviewService {
     }
   }
 
-  async findAll() {
+  // find all reviews based on the event id
+  async findAll(eventId: string) {
     try {
       const reviews = await this.prisma.review.findMany({
-        where: { eventId: '2' },
+        where: { eventId },
+        include: { event: true },
       });
 
-      if (!reviews) throw new NotFoundException('Review not found');
+      if (!reviews || reviews.length <= 0)
+        throw new NotFoundException('Reviews for provided event ID not found');
 
       return reviews;
     } catch (error) {
@@ -31,13 +35,16 @@ export class ReviewService {
     }
   }
 
+  // find one review based on the review id
   async findOne(id: string) {
     try {
       const reviews = await this.prisma.review.findUnique({
         where: { id },
+        include: { event: true },
       });
 
-      if (!reviews) throw new NotFoundException('Review not found');
+      if (!reviews)
+        throw new NotFoundException('Review for the provided ID not found');
 
       return reviews;
     } catch (error) {
@@ -45,13 +52,15 @@ export class ReviewService {
     }
   }
 
+  // update a review based on id
   async update(id: string, dto: UpdateReviewDto) {
     try {
       const review = await this.prisma.review.findUnique({
         where: { id },
       });
 
-      if (!review) throw new NotFoundException('Review not found');
+      if (!review)
+        throw new NotFoundException('Review for the provided ID not found');
 
       const updateReview = await this.prisma.review.update({
         where: { id: review.id },
@@ -64,16 +73,18 @@ export class ReviewService {
     }
   }
 
+  // remove a review based on id
   async remove(id: string) {
     try {
       const review = await this.prisma.review.findUnique({
         where: { id },
       });
 
-      if (!review) throw new NotFoundException('Review not found');
+      if (!review)
+        throw new NotFoundException('Review for the provided ID not found');
 
       await this.prisma.review.delete({ where: { id: review.id } });
-      return { message: 'Review deleted' };
+      return { message: 'Review deleted successfully' };
     } catch (error) {
       throw error;
     }
