@@ -10,11 +10,13 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { ReviewService } from './review.service';
-import { CreateReviewDto } from './dto/create-review.dto';
-import { UpdateReviewDto } from './dto/update-review.dto';
+import { BookingService } from './booking.service';
+import { CreateBookingDto } from './dto/create-booking.dto';
+import { UpdateBookingDto } from './dto/update-booking.dto';
 import { Roles } from '../auth/decorator/role-decorator';
 import { Role } from '../auth/enum/role.enum';
+import { User } from '@prisma/client';
+import { GetUser } from '../auth/decorator/get-user.decorator';
 import { JwtGuard } from '../auth/guard/auth.guard';
 import { RolesGuard } from '../auth/guard/role.guard';
 import {
@@ -24,6 +26,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiOkResponse,
+  ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
@@ -31,44 +34,55 @@ import {
 @ApiUnauthorizedResponse({
   description: 'The user is not unathorized to perform this action',
 })
-@ApiInternalServerErrorResponse({ description: 'Internal server error' })
+@ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
 @UseGuards(JwtGuard, RolesGuard)
-@Controller('reviews')
-export class ReviewController {
-  constructor(private readonly reviewService: ReviewService) {}
+@Controller('bookings')
+export class BookingController {
+  constructor(private readonly bookingService: BookingService) {}
 
   @ApiCreatedResponse({ description: 'Created Successfull' })
   @Post()
   @Roles(Role.User)
-  create(@Body() dto: CreateReviewDto) {
-    return this.reviewService.create(dto);
+  create(@GetUser() user: User, @Body() dto: CreateBookingDto) {
+    return this.bookingService.create(user.id, dto);
   }
 
   @ApiOkResponse({ description: 'Successfull' })
   @Get()
-  findAll(@Param('eventId') eventId: string) {
-    return this.reviewService.findAll(eventId);
+  @Roles(Role.Admin, Role.Vendor)
+  findAll() {
+    return this.bookingService.findAll();
   }
 
   @ApiOkResponse({ description: 'Successfull' })
+  @Get('/me')
+  @Roles(Role.User)
+  findAllForUser(@GetUser() user: User) {
+    return this.bookingService.findAllForUser(user.id);
+  }
+
+  @ApiOkResponse({ description: 'Successfull' })
+  @ApiParam({ name: 'id' })
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.reviewService.findOne(id);
+    return this.bookingService.findOne(id);
   }
 
   @ApiAcceptedResponse({ description: 'Data accepted' })
+  @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
-  @Roles(Role.Admin)
-  update(@Param('id') id: string, @Body() dto: UpdateReviewDto) {
-    return this.reviewService.update(id, dto);
+  @Roles(Role.Admin, Role.Vendor)
+  update(@Param('id') id: string, @Body() dto: UpdateBookingDto) {
+    return this.bookingService.update(id, dto);
   }
 
   @ApiNoContentResponse({ description: 'Deleted successfully' })
+  @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   @Roles(Role.Admin)
   remove(@Param('id') id: string) {
-    return this.reviewService.remove(id);
+    return this.bookingService.remove(id);
   }
 }

@@ -14,4 +14,13 @@ export class CreateReviewDto {
   @IsString({ message: 'Comment must be a string' })
   @IsOptional()
   comment: string;
+
+  @ApiProperty({
+    description: 'Event ID for the given rating.',
+    example: 'cm750aqk900081417lrqc4iq6',
+    required: true,
+  })
+  @IsString({ message: 'Comment must be a string' })
+  @IsNotEmpty({ message: 'The event ID cannot be empty' })
+  eventId: string;
 }

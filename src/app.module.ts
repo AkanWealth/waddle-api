@@ -11,6 +11,8 @@ import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { LocationModule } from './location/location.module';
 import { ReviewModule } from './review/review.module';
 import { EventModule } from './event/event.module';
+import { FavoriteModule } from './favorite/favorite.module';
+import { BookingModule } from './booking/booking.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { EventModule } from './event/event.module';
     PrismaModule,
     LocationModule,
     ReviewModule,
+    FavoriteModule,
+    BookingModule,
   ],
   providers: [AppService],
   controllers: [AppController],
