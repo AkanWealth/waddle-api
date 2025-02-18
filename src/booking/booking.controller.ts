@@ -43,8 +43,11 @@ export class BookingController {
   @ApiCreatedResponse({ description: 'Created Successfull' })
   @Post()
   @Roles(Role.User)
-  create(@GetUser() user: User, @Body() dto: CreateBookingDto) {
-    return this.bookingService.create(user.id, dto);
+  createBookingAndCheckoutSession(
+    @GetUser() user: User,
+    @Body() dto: CreateBookingDto,
+  ) {
+    return this.bookingService.createBookingAndCheckoutSession(user.id, dto);
   }
 
   @ApiOkResponse({ description: 'Successfull' })

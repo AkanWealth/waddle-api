@@ -98,15 +98,16 @@ model Event {
 
 // Bookings Model
 model Booking {
-  id        String        @id @default(cuid())
-  userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  eventId   String
-  event     Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  status    BookingStatus @default(Pending)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  payment   Payment[]
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId         String
+  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticket_quantity Int
+  status          BookingStatus @default(Pending)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  payment         Payment[]
 
   @@map("booking")
 }

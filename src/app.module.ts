@@ -13,6 +13,7 @@ import { ReviewModule } from './review/review.module';
 import { EventModule } from './event/event.module';
 import { FavoriteModule } from './favorite/favorite.module';
 import { BookingModule } from './booking/booking.module';
+import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { BookingModule } from './booking/booking.module';
     ReviewModule,
     FavoriteModule,
     BookingModule,
+    WebhookModule,
   ],
   providers: [AppService],
   controllers: [AppController],

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({
@@ -10,4 +10,13 @@ export class CreateBookingDto {
   @IsString({ message: 'Event ID must be a string' })
   @IsNotEmpty({ message: 'Event ID can not be empty' })
   eventId: string;
+
+  @ApiProperty({
+    description: 'The ticket quantity booked',
+    example: 3,
+    required: true,
+  })
+  @IsNumber({}, { message: 'Event ID must be a number' })
+  @IsNotEmpty({ message: 'Event ID can not be empty' })
+  ticket_quantity: number;
 }
