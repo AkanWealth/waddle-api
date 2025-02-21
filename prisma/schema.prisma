@@ -104,6 +104,7 @@ model Booking {
   eventId         String
   event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   ticket_quantity Int
+  sessionId       String?
   status          BookingStatus @default(Pending)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -219,6 +220,7 @@ enum Role {
 enum BookingStatus {
   Pending
   Confirmed
+  Failed
   Cancelled
 }
 
