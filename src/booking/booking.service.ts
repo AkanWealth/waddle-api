@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, RawBodyRequest } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -47,8 +47,13 @@ export class BookingService {
           },
         ],
         mode: 'payment',
-        success_url: `${this.config.getOrThrow('BASE_URL')}/feedback?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${this.config.getOrThrow('BASE_URL')}/confirmaion?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${this.config.getOrThrow('BASE_URL')}`,
+      });
+
+      await this.prisma.booking.update({
+        where: { id: booking.id },
+        data: { sessionId: session.id },
       });
 
       return { checkout_url: session.url, bookingId: booking.id };
@@ -58,7 +63,7 @@ export class BookingService {
   }
 
   // checkout fulfillment confirmation function
-  async fulfillCheckout(sessionId: string) {
+  private async fulfillCheckout(sessionId: string) {
     try {
       const checkoutSession = await this.stripe.checkout.sessions.retrieve(
         sessionId,
@@ -67,22 +72,43 @@ export class BookingService {
         },
       );
 
+      // condition for payment status
       if (checkoutSession.payment_status === 'paid') {
-        const bookingId = checkoutSession.metadata.bookingId;
-        const booking = await this.prisma.booking.findUnique({
-          where: { id: bookingId },
+        const booking = await this.prisma.booking.findFirst({
+          where: { sessionId: checkoutSession.id },
         });
+
+        if (!booking) throw new NotFoundException('Booking not found');
 
         if (booking.status !== 'Confirmed') {
           await this.prisma.booking.update({
-            where: { id: bookingId },
+            where: { id: booking.id },
             data: { status: 'Confirmed' },
           });
 
-          return { message: `Booking ${bookingId} confirmed` };
+          return { message: `Booking ${checkoutSession.id} confirmed` };
         } else {
           return {
-            message: `Duplicate fulfillment attempt for booking ${bookingId}`,
+            message: `Duplicate fulfillment attempt for booking ${checkoutSession.id}`,
+          };
+        }
+      } else {
+        const booking = await this.prisma.booking.findFirst({
+          where: { sessionId: checkoutSession.id },
+        });
+
+        if (!booking) throw new NotFoundException('Booking not found');
+
+        if (booking.status !== 'Failed') {
+          await this.prisma.booking.update({
+            where: { id: booking.id },
+            data: { status: 'Failed' },
+          });
+
+          return { message: `Booking ${checkoutSession.id} failed` };
+        } else {
+          return {
+            message: `Duplicate fulfillment attempt for booking ${checkoutSession.id}`,
           };
         }
       }
@@ -92,24 +118,25 @@ export class BookingService {
   }
 
   // stripe webhook
-  async createStripeHook(payload: Buffer, signature: string) {
-    console.log(payload, signature);
-    const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
+  async createStripeHook(payload: RawBodyRequest<Request>, signature: string) {
+    const endpointSecret = this.config.getOrThrow('STRIPE_ENDPOINT_SECRET');
+    let data: any;
+    let eventType: any;
     let event: any;
 
     try {
       event = this.stripe.webhooks.constructEvent(
-        payload,
+        payload.rawBody,
         signature,
         endpointSecret,
       );
-      console.log(event);
+      console.log('Webhook verified');
     } catch (error) {
+      console.log('Webhook error', error.message);
       throw error;
     }
-
-    let data = event.data.object;
-    let eventType = event.type;
+    data = event.data.object;
+    eventType = event.type;
 
     if (
       eventType === 'checkout.session.completed' ||
@@ -118,7 +145,7 @@ export class BookingService {
       this.fulfillCheckout(data.id);
     }
 
-    return true;
+    return { received: true };
   }
 
   // find all bookings created
