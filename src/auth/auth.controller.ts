@@ -38,11 +38,17 @@ import { GetUser } from './decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Role } from './enum/role.enum';
+import { NotificationService } from '../notification/notification.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly authService: AuthService,
+    private notification: NotificationService,
+  ) {}
 
   // --------------- customer routes ----------------------
   @ApiCreatedResponse({ description: 'Customer created' })
@@ -81,15 +87,42 @@ export class AuthController {
   @ApiOkResponse({ description: 'Verification mail sent' })
   @HttpCode(HttpStatus.OK)
   @Post('verification/send/customer')
-  sendCustomerVerification(@Body() dto: UserSignUpDto) {
-    return this.authService.sendCustomerVerification(dto.email);
+  async sendCustomerVerification(@Body() dto: ForgotPasswordDto) {
+    try {
+      // generate token and expiration time
+      const verificatonToken = Math.random().toString(36).substr(2);
+      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+
+      // save token and expiration time to database
+      await this.prisma.user.update({
+        where: { email: dto.email },
+        data: {
+          verification_token: verificatonToken,
+          verification_token_expiration: verificationTokenExpiration.toString(),
+        },
+      });
+
+      let subject = 'Email Verification';
+      let message = `<p>Hello,</p>
+
+      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+
+      <p>Warm regards,</p>
+
+      <p>Waddle Team</p>
+      `;
+
+      return await this.notification.sendMail(dto.email, subject, message);
+    } catch (error) {
+      throw error;
+    }
   }
 
   @ApiAcceptedResponse({ description: 'Customer email verified' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('verification/customer/:id')
-  veriyCustomerEmail(@Param('id') userId: string) {
-    return this.authService.verifyCustomerEmail(userId);
+  @Patch('verification/customer')
+  verifyCustomerEmail(@Body() dto: RefreshTokenDto) {
+    return this.authService.verifyCustomerEmail(dto.token);
   }
 
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
@@ -140,15 +173,42 @@ export class AuthController {
   @ApiOkResponse({ description: 'Verification mail sent' })
   @HttpCode(HttpStatus.OK)
   @Post('verification/send/vendor')
-  sendVendorVerification(@Body() dto: VendorSignUpDto) {
-    return this.authService.sendVendorVerification(dto.email);
+  async sendVendorVerification(@Body() dto: ForgotPasswordDto) {
+    try {
+      // generate token and expiration time
+      const verificatonToken = Math.random().toString(36).substr(2);
+      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+
+      // save token and expiration time to database
+      await this.prisma.vendor.update({
+        where: { email: dto.email },
+        data: {
+          verification_token: verificatonToken,
+          verification_token_expiration: verificationTokenExpiration.toString(),
+        },
+      });
+
+      let subject = 'Email Verification';
+      let message = `<p>Hello,</p>
+
+      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+
+      <p>Warm regards,</p>
+
+      <p>Waddle Team</p>
+      `;
+
+      return await this.notification.sendMail(dto.email, subject, message);
+    } catch (error) {
+      throw error;
+    }
   }
 
   @ApiAcceptedResponse({ description: 'Vendor email verified' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('verification/vendor/:id')
-  veriyVendorEmail(@Param('id') userId: string) {
-    return this.authService.verifyVendorEmail(userId);
+  @Patch('verification/vendor')
+  verfiyVendorEmail(@Body() dto: RefreshTokenDto) {
+    return this.authService.verifyVendorEmail(dto.token);
   }
 
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
