@@ -14,6 +14,7 @@ import { EventModule } from './event/event.module';
 import { FavoriteModule } from './favorite/favorite.module';
 import { BookingModule } from './booking/booking.module';
 import { WebhookModule } from './webhook/webhook.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { WebhookModule } from './webhook/webhook.module';
     FavoriteModule,
     BookingModule,
     WebhookModule,
+    NotificationModule,
   ],
   providers: [AppService],
   controllers: [AppController],

@@ -32,7 +32,7 @@ import {
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({
-  description: 'The user is not unathorized to perform this action',
+  description: 'The user is not authorized to perform this action',
 })
 @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
 @UseGuards(JwtGuard, RolesGuard)
@@ -40,7 +40,7 @@ import {
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
 
-  @ApiCreatedResponse({ description: 'Created Successfull' })
+  @ApiCreatedResponse({ description: 'Created successfully' })
   @Post()
   @Roles(Role.User)
   createBookingAndCheckoutSession(

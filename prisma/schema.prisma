@@ -15,55 +15,59 @@ datasource db {
 
 // Vendor Model
 model Vendor {
-  id                  String   @id @default(cuid())
-  name                String
-  email               String   @unique
-  password            String
-  phone_number        String
-  role                Role     @default(Vendor)
-  business_logo       String?
-  address             String
-  business_name       String
-  business_category   String
-  registration_number String
-  email_verify        Boolean  @default(false)
-  business_verify     Boolean  @default(false)
-  isActive            Boolean  @default(true)
-  failedLoginAttempts Int      @default(0)
-  business_url        String?
-  facebook_url        String?
-  reset_token         String?
-  reset_expiration    String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  events              Event[]
+  id                            String   @id @default(cuid())
+  name                          String
+  email                         String   @unique
+  password                      String
+  phone_number                  String
+  role                          Role     @default(Vendor)
+  business_logo                 String?
+  address                       String
+  business_name                 String   @unique
+  business_category             String
+  registration_number           String
+  email_verify                  Boolean  @default(false)
+  business_verify               Boolean  @default(false)
+  isActive                      Boolean  @default(true)
+  failedLoginAttempts           Int      @default(0)
+  business_url                  String?
+  facebook_url                  String?
+  verification_token            String?
+  verification_token_expiration String?
+  reset_token                   String?
+  reset_expiration              String?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  events                        Event[]
 
   @@map("vendor")
 }
 
 // User Model
 model User {
-  id                  String           @id @default(cuid())
-  profile_picture     String?
-  name                String
-  email               String           @unique
-  phone_number        String?
-  address             String?
-  password            String
-  role                Role             @default(User)
-  guardian_type       String?
-  email_verify        Boolean          @default(false)
-  isActive            Boolean          @default(true)
-  failedLoginAttempts Int              @default(0)
-  reset_token         String?
-  reset_expiration    String?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  favorites           Favorite[]
-  bookings            Booking[]
-  payments            Payment[]
-  notifications       Notification[]
-  recommendation      Recommendation[]
+  id                            String           @id @default(cuid())
+  profile_picture               String?
+  name                          String
+  email                         String           @unique
+  phone_number                  String?
+  address                       String?
+  password                      String
+  role                          Role             @default(User)
+  guardian_type                 String?
+  email_verify                  Boolean          @default(false)
+  isActive                      Boolean          @default(true)
+  failedLoginAttempts           Int              @default(0)
+  verification_token            String?
+  verification_token_expiration String?
+  reset_token                   String?
+  reset_expiration              String?
+  createdAt                     DateTime         @default(now())
+  updatedAt                     DateTime         @updatedAt
+  favorites                     Favorite[]
+  bookings                      Booking[]
+  payments                      Payment[]
+  notifications                 Notification[]
+  recommendation                Recommendation[]
 
   @@map("user")
 }
