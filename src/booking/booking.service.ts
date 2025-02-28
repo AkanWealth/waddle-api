@@ -4,6 +4,7 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class BookingService {
@@ -12,6 +13,7 @@ export class BookingService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private notification: NotificationService,
   ) {
     const stripeSecretKey = this.config.getOrThrow('STRIPE_SECRET_KEY');
 
@@ -76,6 +78,7 @@ export class BookingService {
       if (checkoutSession.payment_status === 'paid') {
         const booking = await this.prisma.booking.findFirst({
           where: { sessionId: checkoutSession.id },
+          include: { event: true, user: true },
         });
 
         if (!booking) throw new NotFoundException('Booking not found');
@@ -85,6 +88,30 @@ export class BookingService {
             where: { id: booking.id },
             data: { status: 'Confirmed' },
           });
+
+          await this.prisma.event.update({
+            where: { id: booking.event.id },
+            data: {
+              total_ticket:
+                booking.event.total_ticket - booking.ticket_quantity,
+            },
+          });
+
+          let subject = 'Booking Confirmation';
+          let message = `<p>Hello,</p>
+
+          <p>Thank you for booking the event <b>${booking.event.name}</b>, your booking id is <b>${booking.id}</b> to verify your email account.</p>
+
+          <p>Warm regards,</p>
+
+          <p>Waddle Team</p>
+          `;
+
+          await this.notification.sendMail(
+            booking.user.email,
+            subject,
+            message,
+          );
 
           return { message: `Booking ${checkoutSession.id} confirmed` };
         } else {
@@ -224,12 +251,32 @@ export class BookingService {
     try {
       const booking = await this.prisma.booking.findUnique({
         where: { id },
+        include: { event: true, user: true },
       });
 
       if (!booking)
         throw new NotFoundException('Booking with the provided ID not found');
 
+      await this.prisma.event.update({
+        where: { id: booking.event.id },
+        data: {
+          total_ticket: booking.event.total_ticket - booking.ticket_quantity,
+        },
+      });
+
       await this.prisma.booking.delete({ where: { id: booking.id } });
+
+      let subject = 'Booking Confirmation';
+      let message = `<p>Hello,</p>
+
+          <p>Thank you for booking the event <b>${booking.event.name}</b>, your booking id is <b>${booking.id}</b> to verify your email account.</p>
+
+          <p>Warm regards,</p>
+
+          <p>Waddle Team</p>
+          `;
+
+      await this.notification.sendMail(booking.user.email, subject, message);
     } catch (error) {
       throw error;
     }

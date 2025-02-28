@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -17,6 +18,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
 import { createTransport } from 'nodemailer';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +35,7 @@ export class AuthService {
     private config: ConfigService,
     private prisma: PrismaService,
     private jwt: JwtService,
+    private notification: NotificationService,
   ) {}
 
   // function to create a new customer
@@ -50,11 +53,32 @@ export class AuthService {
 
       const hash = await argon.hash(dto.password);
 
+      // generate token and expiration time
+      const verificatonToken = Math.random().toString(36).substr(2);
+      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+
       const customer = await this.prisma.user.create({
-        data: { ...dto, profile_picture: fileName || null, password: hash },
+        data: {
+          ...dto,
+          profile_picture: fileName || null,
+          password: hash,
+          verification_token: verificatonToken,
+          verification_token_expiration: verificationTokenExpiration.toString(),
+        },
       });
 
-      return this.sendCustomerVerification(customer.email);
+      // email verification section
+      let subject = 'Email Verification';
+      let message = `<p>Hello,</p>
+
+      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+
+      <p>Warm regards,</p>
+
+      <p>Waddle Team</p>
+      `;
+
+      return await this.notification.sendMail(customer.email, subject, message);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -66,47 +90,64 @@ export class AuthService {
   }
 
   // function to validate the registered customer
-  async sendCustomerVerification(email: string) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { email },
-      });
+  // async sendCustomerVerification(email: string) {
+  //   try {
+  //     const user = await this.prisma.user.findUnique({
+  //       where: { email },
+  //     });
 
-      const transporter = createTransport({
-        host: this.config.getOrThrow('SMTP_HOST'),
-        port: this.config.getOrThrow('SMTP_PORT'),
-        auth: {
-          user: this.config.getOrThrow('SMTP_USER'),
-          pass: this.config.getOrThrow('SMTP_PASSWORD'),
+  //     const transporter = createTransport({
+  //       host: this.config.getOrThrow('SMTP_HOST'),
+  //       port: this.config.getOrThrow('SMTP_PORT'),
+  //       auth: {
+  //         user: this.config.getOrThrow('SMTP_USER'),
+  //         pass: this.config.getOrThrow('SMTP_PASSWORD'),
+  //       },
+  //     });
+
+  //     const mailOptions = {
+  //       from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
+  //       to: user.email,
+  //       subject: 'Email Verification',
+  //       html: `<p>Hello,</p>
+
+  //       <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('GUARDIAN_VERIFICATION_URL')}/${user.id}" target="_blank">HERE</a> to verify your email account.</p>
+
+  //       <p>Warm regards,</p>
+
+  //       <p>Waddle Team</p>
+  //       `,
+  //     };
+  //     await transporter.sendMail(mailOptions);
+  //     return { message: 'Email sent successfully' };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
+  // function to update the verification process for the registered customer
+  async verifyCustomerEmail(token: string) {
+    try {
+      const user = await this.prisma.user.findFirst({
+        where: {
+          verification_token: token,
+          verification_token_expiration: {
+            gte: Date.now().toString(),
+          },
         },
       });
 
-      const mailOptions = {
-        from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
-        to: user.email,
-        subject: 'Email Verification',
-        html: `<p>Hello,</p>
+      if (!user) {
+        throw new NotFoundException('Invalid or expired token');
+      }
 
-        <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('GUARDIAN_VERIFICATION_URL')}/${user.id}" target="_blank">HERE</a> to verify your email account.</p>
-
-        <p>Warm regards,</p>
-
-        <p>Waddle Team</p>
-        `,
-      };
-      await transporter.sendMail(mailOptions);
-      return { message: 'Email sent successfully' };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // function to update the verification process for the registered customer
-  async verifyCustomerEmail(userId: string) {
-    try {
       await this.prisma.user.update({
-        where: { id: userId },
-        data: { email_verify: true },
+        where: { id: user.id },
+        data: {
+          email_verify: true,
+          verification_token: null,
+          verification_token_expiration: null,
+        },
       });
       return { message: 'User verified' };
     } catch (error) {
@@ -182,11 +223,32 @@ export class AuthService {
 
       const hash = await argon.hash(dto.password);
 
+      // generate token and expiration time
+      const verificatonToken = Math.random().toString(36).substr(2);
+      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+
       const vendor = await this.prisma.vendor.create({
-        data: { ...dto, business_logo: fileName || null, password: hash },
+        data: {
+          ...dto,
+          business_logo: fileName || null,
+          password: hash,
+          verification_token: verificatonToken,
+          verification_token_expiration: verificationTokenExpiration.toString(),
+        },
       });
 
-      return this.sendVendorVerification(vendor.email);
+      // email verification section
+      let subject = 'Email Verification';
+      let message = `<p>Hello,</p>
+
+      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+
+      <p>Warm regards,</p>
+
+      <p>Waddle Team</p>
+      `;
+
+      return await this.notification.sendMail(vendor.email, subject, message);
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -198,47 +260,64 @@ export class AuthService {
   }
 
   // function to validate the registered customer
-  async sendVendorVerification(email: string) {
-    try {
-      const vendor = await this.prisma.vendor.findUnique({
-        where: { email },
-      });
+  // async sendVendorVerification(email: string) {
+  //   try {
+  //     const vendor = await this.prisma.vendor.findUnique({
+  //       where: { email },
+  //     });
 
-      const transporter = createTransport({
-        host: this.config.getOrThrow('SMTP_HOST'),
-        port: this.config.getOrThrow('SMTP_PORT'),
-        auth: {
-          user: this.config.getOrThrow('SMTP_USER'),
-          pass: this.config.getOrThrow('SMTP_PASSWORD'),
+  //     const transporter = createTransport({
+  //       host: this.config.getOrThrow('SMTP_HOST'),
+  //       port: this.config.getOrThrow('SMTP_PORT'),
+  //       auth: {
+  //         user: this.config.getOrThrow('SMTP_USER'),
+  //         pass: this.config.getOrThrow('SMTP_PASSWORD'),
+  //       },
+  //     });
+
+  //     const mailOptions = {
+  //       from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
+  //       to: vendor.email,
+  //       subject: 'Email Verification',
+  //       html: `<p>Hello,</p>
+
+  //       <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('VENDOR_VERIFICATION_URL')}/${vendor.id}" target="_blank">HERE</a> to verify your email account.</p>
+
+  //       <p>Warm regards,</p>
+
+  //       <p>Waddle Team</p>
+  //       `,
+  //     };
+  //     await transporter.sendMail(mailOptions);
+  //     return { message: 'Email sent successfully' };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
+  // function to update the verification process for the registered vendor
+  async verifyVendorEmail(token: string) {
+    try {
+      const vendor = await this.prisma.vendor.findFirst({
+        where: {
+          verification_token: token,
+          verification_token_expiration: {
+            gte: Date.now().toString(),
+          },
         },
       });
 
-      const mailOptions = {
-        from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
-        to: vendor.email,
-        subject: 'Email Verification',
-        html: `<p>Hello,</p>
+      if (!vendor) {
+        throw new NotFoundException('Invalid or expired token');
+      }
 
-        <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('VENDOR_VERIFICATION_URL')}/${vendor.id}" target="_blank">HERE</a> to verify your email account.</p>
-
-        <p>Warm regards,</p>
-
-        <p>Waddle Team</p>
-        `,
-      };
-      await transporter.sendMail(mailOptions);
-      return { message: 'Email sent successfully' };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // function to update the verification process for the registered vendor
-  async verifyVendorEmail(userId: string) {
-    try {
       await this.prisma.vendor.update({
-        where: { id: userId },
-        data: { email_verify: true },
+        where: { id: vendor.id },
+        data: {
+          email_verify: true,
+          verification_token: null,
+          verification_token_expiration: null,
+        },
       });
       return { message: 'Vendor verified' };
     } catch (error) {
@@ -392,7 +471,7 @@ export class AuthService {
         where: { email: userEmail },
       });
       if (!user) {
-        throw new Error('Customer not found');
+        throw new NotFoundException('Customer not found');
       }
 
       // generate token and expiration time
@@ -409,33 +488,20 @@ export class AuthService {
       });
 
       // send reset token to the user
-      const transporter = createTransport({
-        host: this.config.getOrThrow('SMTP_HOST'),
-        port: this.config.getOrThrow('SMTP_PORT'),
-        auth: {
-          user: this.config.getOrThrow('SMTP_USER'),
-          pass: this.config.getOrThrow('SMTP_PASSWORD'),
-        },
-      });
+      let subject = `Password Reset Request`;
+      let message = `
+      <p>Hi,</p>
 
-      const mailOptions = {
-        from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
-        to: user.email,
-        subject: `Password Reset Request`,
-        html: `
-        <p>Hi,</p>
+      <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
 
-        <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
+      <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
 
-        <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
+      <p>Warm regards,</p>
 
-        <p>Warm regards,</p>
+      <p><b>Waddle Team</b></p>
+      `;
 
-        <p><b>Waddle Team</b></p>
-        `,
-      };
-
-      await transporter.sendMail(mailOptions);
+      await this.notification.sendMail(user.email, subject, message);
 
       return { resetToken };
     } catch (error) {
@@ -456,7 +522,7 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new Error('Invalid or expired token');
+        throw new NotFoundException('Invalid or expired token');
       }
 
       const hashed = await argon.hash(password);
@@ -486,7 +552,7 @@ export class AuthService {
         where: { email: userEmail },
       });
       if (!vendor) {
-        throw new Error('Customer not found');
+        throw new NotFoundException('Customer not found');
       }
 
       // generate token and expiration time
@@ -503,33 +569,20 @@ export class AuthService {
       });
 
       // send reset token to the user
-      const transporter = createTransport({
-        host: this.config.getOrThrow('SMTP_HOST'),
-        port: this.config.getOrThrow('SMTP_PORT'),
-        auth: {
-          user: this.config.getOrThrow('SMTP_USER'),
-          pass: this.config.getOrThrow('SMTP_PASSWORD'),
-        },
-      });
+      let subject = `Password Reset Request`;
+      let message = `
+      <p>Hi,</p>
 
-      const mailOptions = {
-        from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
-        to: vendor.email,
-        subject: `Password Reset Request`,
-        html: `
-        <p>Hi,</p>
+      <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
 
-        <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
+      <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
 
-        <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
+      <p>Warm regards,</p>
 
-        <p>Warm regards,</p>
+      <p><b>Waddle Team</b></p>
+      `;
 
-        <p><b>Waddle Team</b></p>
-        `,
-      };
-
-      await transporter.sendMail(mailOptions);
+      await this.notification.sendMail(vendor.email, subject, message);
 
       return { resetToken };
     } catch (error) {
@@ -550,7 +603,7 @@ export class AuthService {
       });
 
       if (!vendor) {
-        throw new Error('Invalid or expired token');
+        throw new NotFoundException('Invalid or expired token');
       }
 
       const hashed = await argon.hash(password);
