@@ -13,7 +13,6 @@ import {
 import { FavoriteService } from './favorite.service';
 import { CreateFavoriteDto } from './dto/create-favorite.dto';
 import { UpdateFavoriteDto } from './dto/update-favorite.dto';
-import { GetUser } from 'src/auth/decorator';
 import { User } from '@prisma/client';
 import {
   ApiAcceptedResponse,
@@ -28,6 +27,7 @@ import { JwtGuard } from '../auth/guard/auth.guard';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { Role } from '../auth/enum/role.enum';
+import { GetUser } from '../auth/decorator/get-user.decorator';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({

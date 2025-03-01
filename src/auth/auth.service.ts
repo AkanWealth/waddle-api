@@ -16,7 +16,6 @@ import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
-import { createTransport } from 'nodemailer';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { NotificationService } from '../notification/notification.service';
 
@@ -68,8 +67,8 @@ export class AuthService {
       });
 
       // email verification section
-      let subject = 'Email Verification';
-      let message = `<p>Hello,</p>
+      const subject = 'Email Verification';
+      const message = `<p>Hello,</p>
 
       <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
 
@@ -88,42 +87,6 @@ export class AuthService {
       throw error;
     }
   }
-
-  // function to validate the registered customer
-  // async sendCustomerVerification(email: string) {
-  //   try {
-  //     const user = await this.prisma.user.findUnique({
-  //       where: { email },
-  //     });
-
-  //     const transporter = createTransport({
-  //       host: this.config.getOrThrow('SMTP_HOST'),
-  //       port: this.config.getOrThrow('SMTP_PORT'),
-  //       auth: {
-  //         user: this.config.getOrThrow('SMTP_USER'),
-  //         pass: this.config.getOrThrow('SMTP_PASSWORD'),
-  //       },
-  //     });
-
-  //     const mailOptions = {
-  //       from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
-  //       to: user.email,
-  //       subject: 'Email Verification',
-  //       html: `<p>Hello,</p>
-
-  //       <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('GUARDIAN_VERIFICATION_URL')}/${user.id}" target="_blank">HERE</a> to verify your email account.</p>
-
-  //       <p>Warm regards,</p>
-
-  //       <p>Waddle Team</p>
-  //       `,
-  //     };
-  //     await transporter.sendMail(mailOptions);
-  //     return { message: 'Email sent successfully' };
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
 
   // function to update the verification process for the registered customer
   async verifyCustomerEmail(token: string) {
@@ -238,8 +201,8 @@ export class AuthService {
       });
 
       // email verification section
-      let subject = 'Email Verification';
-      let message = `<p>Hello,</p>
+      const subject = 'Email Verification';
+      const message = `<p>Hello,</p>
 
       <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
 
@@ -258,42 +221,6 @@ export class AuthService {
       throw error;
     }
   }
-
-  // function to validate the registered customer
-  // async sendVendorVerification(email: string) {
-  //   try {
-  //     const vendor = await this.prisma.vendor.findUnique({
-  //       where: { email },
-  //     });
-
-  //     const transporter = createTransport({
-  //       host: this.config.getOrThrow('SMTP_HOST'),
-  //       port: this.config.getOrThrow('SMTP_PORT'),
-  //       auth: {
-  //         user: this.config.getOrThrow('SMTP_USER'),
-  //         pass: this.config.getOrThrow('SMTP_PASSWORD'),
-  //       },
-  //     });
-
-  //     const mailOptions = {
-  //       from: `"Waddle" <${this.config.getOrThrow('SMTP_USER')}>`,
-  //       to: vendor.email,
-  //       subject: 'Email Verification',
-  //       html: `<p>Hello,</p>
-
-  //       <p>Thank you for signing up on waddle, you only have one step left, kindly click <a href="${this.config.getOrThrow('VENDOR_VERIFICATION_URL')}/${vendor.id}" target="_blank">HERE</a> to verify your email account.</p>
-
-  //       <p>Warm regards,</p>
-
-  //       <p>Waddle Team</p>
-  //       `,
-  //     };
-  //     await transporter.sendMail(mailOptions);
-  //     return { message: 'Email sent successfully' };
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
 
   // function to update the verification process for the registered vendor
   async verifyVendorEmail(token: string) {
@@ -488,8 +415,8 @@ export class AuthService {
       });
 
       // send reset token to the user
-      let subject = `Password Reset Request`;
-      let message = `
+      const subject = `Password Reset Request`;
+      const message = `
       <p>Hi,</p>
 
       <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
@@ -569,8 +496,8 @@ export class AuthService {
       });
 
       // send reset token to the user
-      let subject = `Password Reset Request`;
-      let message = `
+      const subject = `Password Reset Request`;
+      const message = `
       <p>Hi,</p>
 
       <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>

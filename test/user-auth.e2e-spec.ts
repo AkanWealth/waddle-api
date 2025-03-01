@@ -2,17 +2,19 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
 import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
 import { SignInDto } from '../src/auth/dto/signin.dto';
 import { UpdateUserDto } from '../src/user/dto/update-user.dto';
 import { UserSignUpDto } from '../src/auth/dto/user-signup.dto';
 
+/**
+ * @group user
+ * @depends app
+ */
 describe('Authentication and User (e2e)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
   let jwtToken = '';
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -21,12 +23,7 @@ describe('Authentication and User (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     app.setGlobalPrefix('/api/v1');
     await app.init();
-    await app.listen(3331);
-    prisma = app.get(PrismaService);
-    await prisma.cleanDb();
   });
-
-  afterAll(() => app.close());
 
   describe('Auth', () => {
     describe('Signup', () => {
@@ -43,21 +40,6 @@ describe('Authentication and User (e2e)', () => {
           .post('/api/v1/auth/signup/customer')
           .send(user)
           .expect(201);
-      });
-
-      // testing for signup with an email
-      it('(POST) => Should not Register a new user with existing email', () => {
-        const user: UserSignUpDto = {
-          name: 'E2E Test1',
-          email: 'test1@gmail.com',
-          password: '12345678',
-          phone_number: '',
-          address: '',
-        };
-        return request(app.getHttpServer())
-          .post('/api/v1/auth/signup/customer')
-          .send(user)
-          .expect(400);
       });
 
       // testing for signup without an email
@@ -81,6 +63,21 @@ describe('Authentication and User (e2e)', () => {
           name: 'E2E Test2',
           email: 'test2@gmail.com',
           password: '',
+          phone_number: '',
+          address: '',
+        };
+        return request(app.getHttpServer())
+          .post('/api/v1/auth/signup/customer')
+          .send(user)
+          .expect(400);
+      });
+
+      // testing for signup with an existing email
+      it('(POST) => Should not Register a new user with existing email', () => {
+        const user: UserSignUpDto = {
+          name: 'E2E Test1',
+          email: 'test1@gmail.com',
+          password: '12345678',
           phone_number: '',
           address: '',
         };

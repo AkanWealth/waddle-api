@@ -102,8 +102,8 @@ export class AuthController {
         },
       });
 
-      let subject = 'Email Verification';
-      let message = `<p>Hello,</p>
+      const subject = 'Email Verification';
+      const message = `<p>Hello,</p>
 
       <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
 
@@ -188,8 +188,8 @@ export class AuthController {
         },
       });
 
-      let subject = 'Email Verification';
-      let message = `<p>Hello,</p>
+      const subject = 'Email Verification';
+      const message = `<p>Hello,</p>
 
       <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
 
