@@ -97,8 +97,8 @@ export class BookingService {
             },
           });
 
-          let subject = 'Booking Confirmation';
-          let message = `<p>Hello,</p>
+          const subject = 'Booking Confirmation';
+          const message = `<p>Hello,</p>
 
           <p>Thank you for booking the event <b>${booking.event.name}</b>, your booking id is <b>${booking.id}</b> to verify your email account.</p>
 
@@ -147,8 +147,6 @@ export class BookingService {
   // stripe webhook
   async createStripeHook(payload: RawBodyRequest<Request>, signature: string) {
     const endpointSecret = this.config.getOrThrow('STRIPE_ENDPOINT_SECRET');
-    let data: any;
-    let eventType: any;
     let event: any;
 
     try {
@@ -162,8 +160,8 @@ export class BookingService {
       console.log('Webhook error', error.message);
       throw error;
     }
-    data = event.data.object;
-    eventType = event.type;
+    const data = event.data.object;
+    const eventType = event.type;
 
     if (
       eventType === 'checkout.session.completed' ||
@@ -266,8 +264,8 @@ export class BookingService {
 
       await this.prisma.booking.delete({ where: { id: booking.id } });
 
-      let subject = 'Booking Confirmation';
-      let message = `<p>Hello,</p>
+      const subject = 'Booking Confirmation';
+      const message = `<p>Hello,</p>
 
           <p>Thank you for booking the event <b>${booking.event.name}</b>, your booking id is <b>${booking.id}</b> to verify your email account.</p>
 

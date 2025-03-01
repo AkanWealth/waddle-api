@@ -2,16 +2,18 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
 import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
 import { SignInDto, VendorSignUpDto } from '../src/auth/dto';
 import { UpdateVendorDto } from '../src/vendor/dto';
 
+/**
+ * @group vendor
+ * @depends app
+ */
 describe('Authentication and Vendor (e2e)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
   let jwtToken = '';
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -20,12 +22,7 @@ describe('Authentication and Vendor (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     app.setGlobalPrefix('/api/v1');
     await app.init();
-    await app.listen(3332);
-    prisma = app.get(PrismaService);
-    await prisma.cleanDb();
   });
-
-  afterAll(() => app.close());
 
   describe('Auth', () => {
     describe('Signup', () => {

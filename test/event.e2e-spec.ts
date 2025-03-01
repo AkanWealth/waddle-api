@@ -2,33 +2,31 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
 import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
 import { SignInDto } from '../src/auth/dto/signin.dto';
 import { UserSignUpDto } from '../src/auth/dto/user-signup.dto';
 import { VendorSignUpDto } from '../src/auth/dto/vendor-signup.dto';
 import { CreateEventDto, UpdateEventDto } from '../src/event/dto';
 
-describe('Activity (e2e)', () => {
+/**
+ * @group event
+ * @depends app
+ */
+describe('Event (e2e)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
   let customerToken = '';
   let vendorToken = '';
   let id = '';
 
-  beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
-    app = moduleFixture.createNestApplication();
+
+    app = moduleRef.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     app.setGlobalPrefix('/api/v1');
     await app.init();
-    await app.listen(3334);
-    prisma = app.get(PrismaService);
-    await prisma.cleanDb();
   });
-
-  afterAll(() => app.close());
 
   describe('Auth', () => {
     describe('Signup', () => {

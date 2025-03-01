@@ -56,6 +56,9 @@ jobs:
           SECRET_ACCESS_KEY: 9db13a6ed03697aa77daf530e53b5ab5df74e059e89693ea12b167a79a9e9fb5
           R2_PUBLIC_ENDPOINT: https://pub-42f91b17061547449f97974510335219.r2.dev
           S3_API: https://81c852930641402981b6a613c8239927.r2.cloudflarestorage.com
+          BASE_URL: https://waddleapi.vercel.app
+          STRIPE_SECRET_KEY: sk_test_51Q0lCJJ1vqI8s6tcBqAbHqYQcmompSqF3Nlh7bQ7RzVga7kHMYWlLSaz7xiFxALj5kaHXA9RLLBgM9o65NSNCbI1004n2VHSPr
+          STRIPE_ENDPOINT_SECRET: whsec_533ef27f4aa69f4accf9bd07ad54ca51b0c682adf8d95931ea21b1e3e013c1d8
 
         options: >-
           --health-cmd="pg_isready" 
@@ -110,6 +113,9 @@ jobs:
           echo "SECRET_ACCESS_KEY=9db13a6ed03697aa77daf530e53b5ab5df74e059e89693ea12b167a79a9e9fb5" >> $GITHUB_ENV
           echo "R2_PUBLIC_ENDPOINT=https://pub-42f91b17061547449f97974510335219.r2.dev" >> $GITHUB_ENV
           echo "S3_API=https://81c852930641402981b6a613c8239927.r2.cloudflarestorage.com" >> $GITHUB_ENV
+          echo "BASE_URL=https://waddleapi.vercel.app" >> $GITHUB_ENV
+          echo "STRIPE_SECRET_KEY=sk_test_51Q0lCJJ1vqI8s6tcBqAbHqYQcmompSqF3Nlh7bQ7RzVga7kHMYWlLSaz7xiFxALj5kaHXA9RLLBgM9o65NSNCbI1004n2VHSPr" >> $GITHUB_ENV
+          echo "STRIPE_ENDPOINT_SECRET=whsec_533ef27f4aa69f4accf9bd07ad54ca51b0c682adf8d95931ea21b1e3e013c1d8" >> $GITHUB_ENV
 
       - name: Wait for PostgreSQL to be ready
         run: |
