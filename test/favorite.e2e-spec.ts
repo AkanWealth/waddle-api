@@ -28,6 +28,10 @@ describe('Favorite (e2e)', () => {
     await app.init();
   });
 
+  afterEach(async () => {
+    await app.close();
+  });
+
   describe('Signin', () => {
     // testing for customer login
     test('(POST) => Should login for customer', () => {

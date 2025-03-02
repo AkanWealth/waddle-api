@@ -24,6 +24,10 @@ describe('Authentication and Vendor (e2e)', () => {
     await app.init();
   });
 
+  afterEach(async () => {
+    await app.close();
+  });
+
   describe('Auth', () => {
     describe('Signup', () => {
       // testing for signup with valid data

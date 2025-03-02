@@ -28,6 +28,10 @@ describe('Event (e2e)', () => {
     await app.init();
   });
 
+  afterEach(async () => {
+    await app.close();
+  });
+
   describe('Auth', () => {
     describe('Signup', () => {
       // testing for customer signup
