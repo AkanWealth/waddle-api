@@ -3,14 +3,14 @@ import { AppModule } from '../src/app.module';
 import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { SignInDto } from '../src/auth/dto/signin.dto';
-import { CreateFavoriteDto } from '../src/favorite/dto/create-favorite.dto';
+import { CreateReviewDto } from '../src/review/dto/create-review.dto';
 import { CreateEventDto } from '../src/event/dto/create-event.dto';
 
 /**
- * @group favorite
+ * @group review
  * @depends event
  */
-describe('Favorite (e2e)', () => {
+describe('Review (e2e)', () => {
   let app: INestApplication;
   let customerToken = '';
   let vendorToken = '';
@@ -100,58 +100,62 @@ describe('Favorite (e2e)', () => {
     });
   });
 
-  describe('Favorite', () => {
-    describe('Create favorite', () => {
-      // testing for creating favorite with customer authenticated
-      it('(POST) => Should create favorite with customer authenticated', async () => {
-        const event: CreateFavoriteDto = {
+  describe('Review', () => {
+    describe('Create review', () => {
+      // testing for creating review with customer authenticated
+      it('(POST) => Should create review with customer authenticated', async () => {
+        const review: CreateReviewDto = {
+          rating: 5,
+          comment: 'Such a wonderful event',
           eventId: eventID,
         };
         return await request(app.getHttpServer())
-          .post('/api/v1/favorites')
+          .post('/api/v1/reviews')
           .set('Authorization', 'Bearer ' + customerToken)
-          .send(event)
+          .send(review)
           .expect(201)
           .then((res) => {
             expect(res.body.id).toBeDefined();
           });
       });
 
-      // testing for creating favorite without customer authentication
-      it('(POST) => Should not create favorite without authentication', async () => {
-        const event: CreateFavoriteDto = {
+      // testing for creating review without customer authentication
+      it('(POST) => Should not create review without authentication', async () => {
+        const review: CreateReviewDto = {
+          rating: 5,
+          comment: 'Such a wonderful event',
           eventId: eventID,
         };
         return await request(app.getHttpServer())
-          .post('/api/v1/favorites')
-          .send(event)
+          .post('/api/v1/reviews')
+          .send(review)
           .expect(401);
       });
     });
 
-    describe('Get favorite', () => {
-      // testing for finding all favorites with customer authenticated
-      it('(GET) => Should find favorites with customer authentication', async () => {
+    describe('Get review', () => {
+      // testing for finding all reviews with customer authenticated
+      it('(GET) => Should find reviews with customer authentication', async () => {
         return await request(app.getHttpServer())
-          .get('/api/v1/favorites')
+          .get('/api/v1/reviews')
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
           .then((res) => expect(res.body[0].id).toBeDefined());
       });
 
-      // testing for finding all favorites without authentication
-      it('(GET) => Should not find favorites without authentication', async () => {
+      // testing for finding all reviews without authentication
+      it('(GET) => Should not find reviews without authentication', async () => {
         return await request(app.getHttpServer())
-          .get('/api/v1/favorites')
+          .get('/api/v1/reviews')
           .expect(401);
       });
     });
 
-    describe('Get one favorite by ID', () => {
-      // testing for finding one favorite with customer authenticated
-      it('(GET) => Should find one favorite by id with customer authentication', async () => {
+    describe('Get one review by ID', () => {
+      // testing for finding one review with customer authenticated
+      it('(GET) => Should find one review by id with customer authentication', async () => {
         return await request(app.getHttpServer())
-          .get(`/api/v1/favorites/${id}`)
+          .get(`/api/v1/reviews/${id}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
           .then((res) => {
@@ -160,28 +164,11 @@ describe('Favorite (e2e)', () => {
           });
       });
 
-      // testing for finding one favorite without authentication
-      it('(GET) => Should not find one favorite by id without authentication', async () => {
+      // testing for finding one review without authentication
+      it('(GET) => Should not find one review by id without authentication', async () => {
         return await request(app.getHttpServer())
-          .get(`/api/v1/favorites/${id}`)
+          .get(`/api/v1/reviews/${id}`)
           .expect(401);
-      });
-    });
-
-    describe('Delete favorite', () => {
-      // testing for deleting favorite without customer authenticated
-      it('(DELETE) => Should not delete favorite without customer authenticated', async () => {
-        return await request(app.getHttpServer())
-          .delete(`/api/v1/favorites/${id}`)
-          .expect(401);
-      });
-
-      // testing for deleting favorite with customer authenticated
-      it('(DELETE) => Should delete favorite with customer authenticated', async () => {
-        return await request(app.getHttpServer())
-          .delete(`/api/v1/favorites/${id}`)
-          .set('Authorization', 'Bearer ' + customerToken)
-          .expect(204);
       });
     });
   });
