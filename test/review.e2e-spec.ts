@@ -30,12 +30,12 @@ describe('Review (e2e)', () => {
 
   describe('Signin', () => {
     // testing for customer login
-    test('(POST) => Should login for customer', async () => {
+    test('(POST) => Should login for customer', () => {
       const customer: SignInDto = {
         email: 'test2@gmail.com',
         password: '12345678',
       };
-      return await request(app.getHttpServer())
+      return request(app.getHttpServer())
         .post('/api/v1/auth/signin/customer')
         .send(customer)
         .expect(200)
@@ -46,12 +46,12 @@ describe('Review (e2e)', () => {
     });
 
     // testing for vendor login
-    test('(POST) => Should login for vendor', async () => {
+    test('(POST) => Should login for vendor', () => {
       const vendor: SignInDto = {
         email: 'vendor2@gmail.com',
         password: '12345678',
       };
-      return await request(app.getHttpServer())
+      return request(app.getHttpServer())
         .post('/api/v1/auth/signin/vendor')
         .send(vendor)
         .expect(200)
@@ -78,8 +78,8 @@ describe('Review (e2e)', () => {
     };
 
     // testing for creating an event
-    test('(POST) => Should create event with vendor authenticated', async () => {
-      return await request(app.getHttpServer())
+    test('(POST) => Should create event with vendor authenticated', () => {
+      return request(app.getHttpServer())
         .post('/api/v1/events')
         .set('Authorization', 'Bearer ' + vendorToken)
         .send(event)
@@ -88,8 +88,8 @@ describe('Review (e2e)', () => {
     });
 
     // testing for getting an event
-    test('(GET) => Should get an event with customer authenticated', async () => {
-      return await request(app.getHttpServer())
+    test('(GET) => Should get an event with customer authenticated', () => {
+      return request(app.getHttpServer())
         .get('/api/v1/events')
         .set('Authorization', 'Bearer ' + customerToken)
         .expect(200)
@@ -103,13 +103,13 @@ describe('Review (e2e)', () => {
   describe('Review', () => {
     describe('Create review', () => {
       // testing for creating review with customer authenticated
-      it('(POST) => Should create review with customer authenticated', async () => {
+      it('(POST) => Should create review with customer authenticated', () => {
         const review: CreateReviewDto = {
           rating: 5,
           comment: 'Such a wonderful event',
           eventId: eventID,
         };
-        return await request(app.getHttpServer())
+        return request(app.getHttpServer())
           .post('/api/v1/reviews')
           .set('Authorization', 'Bearer ' + customerToken)
           .send(review)
@@ -120,13 +120,13 @@ describe('Review (e2e)', () => {
       });
 
       // testing for creating review without customer authentication
-      it('(POST) => Should not create review without authentication', async () => {
+      it('(POST) => Should not create review without authentication', () => {
         const review: CreateReviewDto = {
           rating: 5,
           comment: 'Such a wonderful event',
           eventId: eventID,
         };
-        return await request(app.getHttpServer())
+        return request(app.getHttpServer())
           .post('/api/v1/reviews')
           .send(review)
           .expect(401);
@@ -135,8 +135,8 @@ describe('Review (e2e)', () => {
 
     describe('Get review', () => {
       // testing for finding all reviews with customer authenticated
-      it('(GET) => Should find reviews with customer authentication', async () => {
-        return await request(app.getHttpServer())
+      it('(GET) => Should find reviews with customer authentication', () => {
+        return request(app.getHttpServer())
           .get('/api/v1/reviews')
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
@@ -144,17 +144,15 @@ describe('Review (e2e)', () => {
       });
 
       // testing for finding all reviews without authentication
-      it('(GET) => Should not find reviews without authentication', async () => {
-        return await request(app.getHttpServer())
-          .get('/api/v1/reviews')
-          .expect(401);
+      it('(GET) => Should not find reviews without authentication', () => {
+        return request(app.getHttpServer()).get('/api/v1/reviews').expect(401);
       });
     });
 
     describe('Get one review by ID', () => {
       // testing for finding one review with customer authenticated
-      it('(GET) => Should find one review by id with customer authentication', async () => {
-        return await request(app.getHttpServer())
+      it('(GET) => Should find one review by id with customer authentication', () => {
+        return request(app.getHttpServer())
           .get(`/api/v1/reviews/${id}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
@@ -165,8 +163,8 @@ describe('Review (e2e)', () => {
       });
 
       // testing for finding one review without authentication
-      it('(GET) => Should not find one review by id without authentication', async () => {
-        return await request(app.getHttpServer())
+      it('(GET) => Should not find one review by id without authentication', () => {
+        return request(app.getHttpServer())
           .get(`/api/v1/reviews/${id}`)
           .expect(401);
       });
