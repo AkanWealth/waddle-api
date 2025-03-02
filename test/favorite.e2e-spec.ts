@@ -30,12 +30,12 @@ describe('Favorite (e2e)', () => {
 
   describe('Signin', () => {
     // testing for customer login
-    test('(POST) => Should login for customer', async () => {
+    test('(POST) => Should login for customer', () => {
       const customer: SignInDto = {
         email: 'test2@gmail.com',
         password: '12345678',
       };
-      return await request(app.getHttpServer())
+      return request(app.getHttpServer())
         .post('/api/v1/auth/signin/customer')
         .send(customer)
         .expect(200)
@@ -46,12 +46,12 @@ describe('Favorite (e2e)', () => {
     });
 
     // testing for vendor login
-    test('(POST) => Should login for vendor', async () => {
+    test('(POST) => Should login for vendor', () => {
       const vendor: SignInDto = {
         email: 'vendor2@gmail.com',
         password: '12345678',
       };
-      return await request(app.getHttpServer())
+      return request(app.getHttpServer())
         .post('/api/v1/auth/signin/vendor')
         .send(vendor)
         .expect(200)
@@ -78,8 +78,8 @@ describe('Favorite (e2e)', () => {
     };
 
     // testing for creating an event
-    test('(POST) => Should create event with vendor authenticated', async () => {
-      return await request(app.getHttpServer())
+    test('(POST) => Should create event with vendor authenticated', () => {
+      return request(app.getHttpServer())
         .post('/api/v1/events')
         .set('Authorization', 'Bearer ' + vendorToken)
         .send(event)
@@ -88,8 +88,8 @@ describe('Favorite (e2e)', () => {
     });
 
     // testing for getting an event
-    test('(GET) => Should get an event with customer authenticated', async () => {
-      return await request(app.getHttpServer())
+    test('(GET) => Should get an event with customer authenticated', () => {
+      return request(app.getHttpServer())
         .get('/api/v1/events')
         .set('Authorization', 'Bearer ' + customerToken)
         .expect(200)
@@ -103,11 +103,11 @@ describe('Favorite (e2e)', () => {
   describe('Favorite', () => {
     describe('Create favorite', () => {
       // testing for creating favorite with customer authenticated
-      it('(POST) => Should create favorite with customer authenticated', async () => {
+      it('(POST) => Should create favorite with customer authenticated', () => {
         const event: CreateFavoriteDto = {
           eventId: eventID,
         };
-        return await request(app.getHttpServer())
+        return request(app.getHttpServer())
           .post('/api/v1/favorites')
           .set('Authorization', 'Bearer ' + customerToken)
           .send(event)
@@ -118,11 +118,11 @@ describe('Favorite (e2e)', () => {
       });
 
       // testing for creating favorite without customer authentication
-      it('(POST) => Should not create favorite without authentication', async () => {
+      it('(POST) => Should not create favorite without authentication', () => {
         const event: CreateFavoriteDto = {
           eventId: eventID,
         };
-        return await request(app.getHttpServer())
+        return request(app.getHttpServer())
           .post('/api/v1/favorites')
           .send(event)
           .expect(401);
@@ -131,8 +131,8 @@ describe('Favorite (e2e)', () => {
 
     describe('Get favorite', () => {
       // testing for finding all favorites with customer authenticated
-      it('(GET) => Should find favorites with customer authentication', async () => {
-        return await request(app.getHttpServer())
+      it('(GET) => Should find favorites with customer authentication', () => {
+        return request(app.getHttpServer())
           .get('/api/v1/favorites')
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
@@ -140,8 +140,8 @@ describe('Favorite (e2e)', () => {
       });
 
       // testing for finding all favorites without authentication
-      it('(GET) => Should not find favorites without authentication', async () => {
-        return await request(app.getHttpServer())
+      it('(GET) => Should not find favorites without authentication', () => {
+        return request(app.getHttpServer())
           .get('/api/v1/favorites')
           .expect(401);
       });
@@ -149,8 +149,8 @@ describe('Favorite (e2e)', () => {
 
     describe('Get one favorite by ID', () => {
       // testing for finding one favorite with customer authenticated
-      it('(GET) => Should find one favorite by id with customer authentication', async () => {
-        return await request(app.getHttpServer())
+      it('(GET) => Should find one favorite by id with customer authentication', () => {
+        return request(app.getHttpServer())
           .get(`/api/v1/favorites/${id}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
@@ -161,8 +161,8 @@ describe('Favorite (e2e)', () => {
       });
 
       // testing for finding one favorite without authentication
-      it('(GET) => Should not find one favorite by id without authentication', async () => {
-        return await request(app.getHttpServer())
+      it('(GET) => Should not find one favorite by id without authentication', () => {
+        return request(app.getHttpServer())
           .get(`/api/v1/favorites/${id}`)
           .expect(401);
       });
@@ -170,15 +170,15 @@ describe('Favorite (e2e)', () => {
 
     describe('Delete favorite', () => {
       // testing for deleting favorite without customer authenticated
-      it('(DELETE) => Should not delete favorite without customer authenticated', async () => {
-        return await request(app.getHttpServer())
+      it('(DELETE) => Should not delete favorite without customer authenticated', () => {
+        return request(app.getHttpServer())
           .delete(`/api/v1/favorites/${id}`)
           .expect(401);
       });
 
       // testing for deleting favorite with customer authenticated
-      it('(DELETE) => Should delete favorite with customer authenticated', async () => {
-        return await request(app.getHttpServer())
+      it('(DELETE) => Should delete favorite with customer authenticated', () => {
+        return request(app.getHttpServer())
           .delete(`/api/v1/favorites/${id}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(204);
