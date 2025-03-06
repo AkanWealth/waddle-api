@@ -23,6 +23,7 @@ import {
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -45,18 +46,21 @@ export class ReviewController {
   }
 
   @ApiOkResponse({ description: 'Successfull' })
-  @Get()
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get(':eventId')
   findAll(@Param('eventId') eventId: string) {
     return this.reviewService.findAll(eventId);
   }
 
   @ApiOkResponse({ description: 'Successfull' })
+  @ApiNotFoundResponse({ description: 'Not found' })
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.reviewService.findOne(id);
   }
 
   @ApiAcceptedResponse({ description: 'Data accepted' })
+  @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
   @Roles(Role.Admin)
@@ -65,6 +69,7 @@ export class ReviewController {
   }
 
   @ApiNoContentResponse({ description: 'Deleted successfully' })
+  @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   @Roles(Role.Admin)
