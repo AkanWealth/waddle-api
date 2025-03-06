@@ -3,14 +3,14 @@ import { AppModule } from '../src/app.module';
 import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { SignInDto } from '../src/auth/dto/signin.dto';
-import { CreateReviewDto } from '../src/review/dto/create-review.dto';
 import { CreateEventDto } from '../src/event/dto/create-event.dto';
+import { CreateLikeDto } from '../src/like/dto/create-like.dto';
 
 /**
- * @group review
+ * @group like
  * @depends event
  */
-describe('Review (e2e)', () => {
+describe('Favorite (e2e)', () => {
   let app: INestApplication;
   let customerToken = '';
   let vendorToken = '';
@@ -104,62 +104,58 @@ describe('Review (e2e)', () => {
     });
   });
 
-  describe('Review', () => {
-    describe('Create review', () => {
-      // testing for creating review with customer authenticated
-      it('(POST) => Should create review with customer authenticated', () => {
-        const review: CreateReviewDto = {
-          rating: 5,
-          comment: 'Such a wonderful event',
+  describe('Like', () => {
+    describe('Create like', () => {
+      // testing for creating likes with customer authenticated
+      it('(POST) => Should create likes with customer authenticated', () => {
+        const like: CreateLikeDto = {
           eventId: eventID,
         };
         return request(app.getHttpServer())
-          .post('/api/v1/reviews')
+          .post('/api/v1/likes')
           .set('Authorization', 'Bearer ' + customerToken)
-          .send(review)
+          .send(like)
           .expect(201)
           .then((res) => {
             expect(res.body.id).toBeDefined();
           });
       });
 
-      // testing for creating review without customer authentication
-      it('(POST) => Should not create review without authentication', () => {
-        const review: CreateReviewDto = {
-          rating: 5,
-          comment: 'Such a wonderful event',
+      // testing for creating likes without customer authentication
+      it('(POST) => Should not create likes without authentication', () => {
+        const like: CreateLikeDto = {
           eventId: eventID,
         };
         return request(app.getHttpServer())
-          .post('/api/v1/reviews')
-          .send(review)
+          .post('/api/v1/likes')
+          .send(like)
           .expect(401);
       });
     });
 
-    describe('Get review', () => {
-      // testing for finding all reviews with customer authenticated
-      it('(GET) => Should find reviews with customer authentication', () => {
+    describe('Get likes', () => {
+      // testing for finding all likes with customer authenticated
+      it('(GET) => Should find likes with customer authentication', () => {
         return request(app.getHttpServer())
-          .get(`/api/v1/reviews/${eventID}`)
+          .get(`/api/v1/likes/${eventID}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
           .then((res) => expect(res.body[0].id).toBeDefined());
       });
 
-      // testing for finding all reviews without authentication
-      it('(GET) => Should not find reviews without authentication', () => {
+      // testing for finding all likes without authentication
+      it('(GET) => Should not find likes without authentication', () => {
         return request(app.getHttpServer())
-          .get(`/api/v1/reviews/${eventID}`)
+          .get(`/api/v1/likes/${eventID}`)
           .expect(401);
       });
     });
 
-    describe('Get one review by ID', () => {
-      // testing for finding one review with customer authenticated
-      it('(GET) => Should find one review by id with customer authentication', () => {
+    describe('Get one like by ID', () => {
+      // testing for finding one like with customer authenticated
+      it('(GET) => Should find one like by id with customer authentication', () => {
         return request(app.getHttpServer())
-          .get(`/api/v1/reviews/${id}`)
+          .get(`/api/v1/likes/${id}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
           .then((res) => {
@@ -168,11 +164,28 @@ describe('Review (e2e)', () => {
           });
       });
 
-      // testing for finding one review without authentication
-      it('(GET) => Should not find one review by id without authentication', () => {
+      // testing for finding one like without authentication
+      it('(GET) => Should not find one like by id without authentication', () => {
         return request(app.getHttpServer())
-          .get(`/api/v1/reviews/${id}`)
+          .get(`/api/v1/likes/${id}`)
           .expect(401);
+      });
+    });
+
+    describe('Delete like', () => {
+      // testing for deleting like without customer authenticated
+      it('(DELETE) => Should not like favorite without customer authenticated', () => {
+        return request(app.getHttpServer())
+          .delete(`/api/v1/likes/${id}`)
+          .expect(401);
+      });
+
+      // testing for deleting like with customer authenticated
+      it('(DELETE) => Should delete like with customer authenticated', () => {
+        return request(app.getHttpServer())
+          .delete(`/api/v1/likes/${id}`)
+          .set('Authorization', 'Bearer ' + customerToken)
+          .expect(204);
       });
     });
   });
