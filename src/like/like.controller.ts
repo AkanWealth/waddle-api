@@ -11,9 +11,9 @@ import {
 } from '@nestjs/common';
 import { LikeService } from './like.service';
 import { CreateLikeDto } from './dto';
-import { GetUser } from 'src/auth/decorator';
 import { User } from '@prisma/client';
 import { JwtGuard } from '../auth/guard/auth.guard';
+import { GetUser } from '../auth/decorator/get-user.decorator';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
