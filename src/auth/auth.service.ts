@@ -77,7 +77,23 @@ export class AuthService {
       <p>Waddle Team</p>
       `;
 
-      return await this.notification.sendMail(customer.email, subject, message);
+      const mail = await this.notification.sendMail(
+        customer.email,
+        subject,
+        message,
+      );
+
+      const token = await this.signToken(
+        customer.id,
+        customer.email,
+        customer.role,
+      );
+
+      return {
+        message: mail.message,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+      };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -132,7 +148,7 @@ export class AuthService {
 
       // Check if the customer is locked
       if (!customer?.isActive) {
-        throw new UnauthorizedException('Account is locked, try again later!');
+        throw new ForbiddenException('Account is locked, try again later!');
       }
 
       // Lock the account after 3 failed attempts
@@ -141,7 +157,7 @@ export class AuthService {
           where: { id: customer.id },
           data: { isActive: false },
         });
-        throw new UnauthorizedException('Account is locked, try again later!');
+        throw new ForbiddenException('Account is locked, try again later!');
       }
 
       const isValidPassword = await argon.verify(
@@ -211,7 +227,18 @@ export class AuthService {
       <p>Waddle Team</p>
       `;
 
-      return await this.notification.sendMail(vendor.email, subject, message);
+      const mail = await this.notification.sendMail(
+        vendor.email,
+        subject,
+        message,
+      );
+      const token = await this.signToken(vendor.id, vendor.email, vendor.role);
+
+      return {
+        message: mail.message,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+      };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -264,7 +291,7 @@ export class AuthService {
 
       // Check if the vendor is locked
       if (!vendor.isActive) {
-        throw new UnauthorizedException('Account is locked, try again later!');
+        throw new ForbiddenException('Account is locked, try again later!');
       }
 
       // Lock the account after 3 failed attempts
@@ -273,7 +300,7 @@ export class AuthService {
           where: { id: vendor.id },
           data: { isActive: false },
         });
-        throw new UnauthorizedException('Account is locked, try again later!');
+        throw new ForbiddenException('Account is locked, try again later!');
       }
 
       const isValidPassword = await argon.verify(vendor.password, dto.password);
