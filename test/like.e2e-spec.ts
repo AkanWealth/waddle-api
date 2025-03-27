@@ -107,17 +107,18 @@ describe('Favorite (e2e)', () => {
   describe('Like', () => {
     describe('Create like', () => {
       // testing for creating likes with customer authenticated
-      it('(POST) => Should create likes with customer authenticated', () => {
+      it('(POST) => Should create likes with customer authenticated', async () => {
         const like: CreateLikeDto = {
           eventId: eventID,
         };
-        return request(app.getHttpServer())
+        return await request(app.getHttpServer())
           .post('/api/v1/likes')
           .set('Authorization', 'Bearer ' + customerToken)
           .send(like)
           .expect(201)
           .then((res) => {
             expect(res.body.id).toBeDefined();
+            id = res.body.id;
           });
       });
 
@@ -134,47 +135,26 @@ describe('Favorite (e2e)', () => {
     });
 
     describe('Get likes', () => {
-      // testing for finding all likes with customer authenticated
-      it('(GET) => Should find likes with customer authentication', () => {
-        return request(app.getHttpServer())
+      // testing for finding likes based on event with customer authenticated
+      it('(GET) => Should find likes based on event with customer authentication', async () => {
+        return await request(app.getHttpServer())
           .get(`/api/v1/likes/${eventID}`)
           .set('Authorization', 'Bearer ' + customerToken)
           .expect(200)
           .then((res) => expect(res.body[0].id).toBeDefined());
       });
 
-      // testing for finding all likes without authentication
-      it('(GET) => Should not find likes without authentication', () => {
+      // testing for finding likes based on event without authentication
+      it('(GET) => Should not find likes based on events without authentication', () => {
         return request(app.getHttpServer())
           .get(`/api/v1/likes/${eventID}`)
           .expect(401);
       });
     });
 
-    describe('Get one like by ID', () => {
-      // testing for finding one like with customer authenticated
-      it('(GET) => Should find one like by id with customer authentication', () => {
-        return request(app.getHttpServer())
-          .get(`/api/v1/likes/${id}`)
-          .set('Authorization', 'Bearer ' + customerToken)
-          .expect(200)
-          .then((res) => {
-            expect(res.body[0].id).toBeDefined();
-            id = res.body[0].id;
-          });
-      });
-
-      // testing for finding one like without authentication
-      it('(GET) => Should not find one like by id without authentication', () => {
-        return request(app.getHttpServer())
-          .get(`/api/v1/likes/${id}`)
-          .expect(401);
-      });
-    });
-
     describe('Delete like', () => {
       // testing for deleting like without customer authenticated
-      it('(DELETE) => Should not like favorite without customer authenticated', () => {
+      it('(DELETE) => Should not like without customer authenticated', () => {
         return request(app.getHttpServer())
           .delete(`/api/v1/likes/${id}`)
           .expect(401);
