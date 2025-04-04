@@ -16,6 +16,7 @@ import { BookingModule } from './booking/booking.module';
 import { WebhookModule } from './webhook/webhook.module';
 import { NotificationModule } from './notification/notification.module';
 import { LikeModule } from './like/like.module';
+import { TicketModule } from './ticket/ticket.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { LikeModule } from './like/like.module';
     WebhookModule,
     NotificationModule,
     LikeModule,
+    TicketModule,
   ],
   providers: [AppService],
   controllers: [AppController],

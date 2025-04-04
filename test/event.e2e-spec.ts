@@ -111,9 +111,9 @@ describe('Event (e2e)', () => {
         name: 'Mountain Hiking',
         description:
           'Experience the breathtaking views and fresh air while hiking through the beautiful mountain trails.',
-        price: 200,
+        price: '200.0',
         address: '123 Mountain Rd, Adventure Town, AT 12345',
-        total_ticket: 20,
+        total_ticket: '20',
         date: '2025-03-26',
         time: '11:30:00',
         age_range: '6-10',
@@ -185,7 +185,7 @@ describe('Event (e2e)', () => {
     });
 
     describe('Update event', () => {
-      const event: UpdateEventDto = { price: 50 };
+      const event: UpdateEventDto = { price: '50.0' };
 
       // testing for updating event with customer authenticated
       it('(PATCH) => Should not update event with customer authenticated', () => {

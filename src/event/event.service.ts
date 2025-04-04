@@ -50,6 +50,7 @@ export class EventService {
       const eventData: any = {
         ...dto,
         date,
+        total_ticket: Number(dto.total_ticket),
         images: fileName || null,
       };
 
@@ -252,7 +253,11 @@ export class EventService {
         where: {
           id: existingEvent.id,
         },
-        data: <any>{ ...dto, images: image || null },
+        data: <any>{
+          ...dto,
+          images: image || null,
+          total_ticket: Number(dto.total_ticket) || undefined,
+        },
       });
 
       return event;
