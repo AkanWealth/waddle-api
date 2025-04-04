@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -35,19 +34,19 @@ export class CreateEventDto {
 
   @ApiProperty({
     description: 'The price of the event',
-    example: 100.0,
+    example: '100.0',
   })
-  @IsNumber({}, { message: 'The price must be a number' })
+  @IsString({ message: 'The price must be a string' })
   @IsNotEmpty({ message: 'The price can not be blank' })
-  price: number;
+  price: string;
 
   @ApiProperty({
     description: 'The total ticket of the event',
-    example: 20,
+    example: '20',
   })
-  @IsNumber({}, { message: 'The total ticket must be a number' })
+  @IsString({ message: 'The total ticket must be a string' })
   @IsNotEmpty({ message: 'The total ticket can not be blank' })
-  total_ticket: number;
+  total_ticket: string;
 
   @ApiProperty({
     description: 'The date of the event',
