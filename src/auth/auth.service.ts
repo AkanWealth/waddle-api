@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import {
+  AdminSignUpDto,
   BlacklistTokenDto,
   SignInDto,
   UserSignUpDto,
@@ -66,9 +67,11 @@ export class AuthService {
         },
       });
 
+      if (!customer) throw new BadRequestException('Email already in use');
+
       // email verification section
       const subject = 'Email Verification';
-      const message = `<p>Hello,</p>
+      const message = `<p>Hello ${customer.name},</p>
 
       <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
 
@@ -117,9 +120,10 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new NotFoundException('Invalid or expired token');
+        throw new BadRequestException('Invalid or expired token');
       }
 
+      // Update user verification status in the database
       await this.prisma.user.update({
         where: { id: user.id },
         data: {
@@ -128,6 +132,7 @@ export class AuthService {
           verification_token_expiration: null,
         },
       });
+
       return { message: 'User verified' };
     } catch (error) {
       throw error;
@@ -216,9 +221,11 @@ export class AuthService {
         },
       });
 
+      if (!vendor) throw new BadRequestException('Email already in use');
+
       // email verification section
       const subject = 'Email Verification';
-      const message = `<p>Hello,</p>
+      const message = `<p>Hello ${vendor.name},</p>
 
       <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
 
@@ -262,9 +269,10 @@ export class AuthService {
       });
 
       if (!vendor) {
-        throw new NotFoundException('Invalid or expired token');
+        throw new BadRequestException('Invalid or expired token');
       }
 
+      // Update user verification status in the database
       await this.prisma.vendor.update({
         where: { id: vendor.id },
         data: {
@@ -273,6 +281,7 @@ export class AuthService {
           verification_token_expiration: null,
         },
       });
+
       return { message: 'Vendor verified' };
     } catch (error) {
       throw error;
@@ -327,6 +336,91 @@ export class AuthService {
     }
   }
 
+  // function to create a new admin
+  async createAdmin(dto: AdminSignUpDto) {
+    try {
+      const hash = await argon.hash(dto.password);
+
+      // generate token and expiration time
+      const verificatonToken = Math.random().toString(36).substr(2);
+      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+
+      const admin = await this.prisma.admin.create({
+        data: {
+          ...dto,
+          password: hash,
+          verification_token: verificatonToken,
+          verification_token_expiration: verificationTokenExpiration.toString(),
+        },
+      });
+
+      if (!admin) throw new BadRequestException('Email already in use');
+
+      // email verification section
+      const subject = 'Email Verification';
+      const message = `<p>Hello ${admin.first_name},</p>
+
+      <p>Thank you for signing up on Waddle as an admin, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+
+      <p>Warm regards,</p>
+
+      <p>Waddle Team</p>
+      `;
+
+      const mail = await this.notification.sendMail(
+        admin.email,
+        subject,
+        message,
+      );
+      const token = await this.signToken(admin.id, admin.email, admin.role);
+
+      return {
+        message: mail.message,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new BadRequestException('Credentials Taken');
+        }
+      }
+      throw error;
+    }
+  }
+
+  // function to update the verification process for the registered admin
+  async verifyAdminEmail(token: string) {
+    try {
+      const admin = await this.prisma.admin.findFirst({
+        where: {
+          verification_token: token,
+          verification_token_expiration: {
+            gte: Date.now().toString(),
+          },
+        },
+      });
+
+      if (!admin) {
+        throw new BadRequestException('Invalid or expired token');
+      }
+
+      // Update user verification status in the database
+      await this.prisma.admin.update({
+        where: { id: admin.id },
+        data: {
+          email_verify: true,
+          verification_token: null,
+          verification_token_expiration: null,
+        },
+      });
+
+      return { message: 'Admin verified' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // function to login as an admin
   async adminLogin(dto: SignInDto) {
     try {
@@ -338,6 +432,10 @@ export class AuthService {
       const isValidPassword = await argon.verify(admin.password, dto.password);
       if (!isValidPassword)
         throw new UnauthorizedException('Invalid Credential');
+
+      // Check if the admin is verified
+      if (!admin.email_verify)
+        throw new ForbiddenException('Your acount is not verified.');
 
       return this.signToken(admin.id, admin.email, admin.role);
     } catch (error) {
@@ -481,7 +579,7 @@ export class AuthService {
 
       const hashed = await argon.hash(password);
 
-      // save new password
+      // save new password to database
       await this.prisma.user.update({
         where: { id: user.id },
         data: {
@@ -506,7 +604,7 @@ export class AuthService {
         where: { email: userEmail },
       });
       if (!vendor) {
-        throw new NotFoundException('Customer not found');
+        throw new NotFoundException('Vendor not found');
       }
 
       // generate token and expiration time
@@ -562,13 +660,96 @@ export class AuthService {
 
       const hashed = await argon.hash(password);
 
-      // save new password
+      // save new password to database
       await this.prisma.vendor.update({
         where: { id: vendor.id },
         data: {
           password: hashed,
           isActive: true,
           failedLoginAttempts: 0,
+          reset_token: null,
+          reset_expiration: null,
+        },
+      });
+
+      return { message: 'Password reset successful' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function for generating the reset password token for admin
+  async generateResetTokenForAdmin(userEmail: string) {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { email: userEmail },
+      });
+      if (!admin) {
+        throw new NotFoundException('Admin not found');
+      }
+
+      // generate token and expiration time
+      const resetToken = Math.random().toString(36).substr(2);
+      const resetTokenExpiration = Date.now() + 3600000; // 1 hour
+
+      // save token and expiration time to database
+      await this.prisma.admin.update({
+        where: { id: admin.id },
+        data: {
+          reset_token: resetToken,
+          reset_expiration: resetTokenExpiration.toString(),
+        },
+      });
+
+      // send reset token to the user
+      const subject = `Password Reset Request`;
+      const message = `
+      <p>Hi ${admin.first_name},</p>
+
+      <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
+
+      <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
+
+      <p>Warm regards,</p>
+
+      <p><b>Waddle Team</b></p>
+      `;
+
+      const mail = await this.notification.sendMail(
+        admin.email,
+        subject,
+        message,
+      );
+
+      return { message: mail.message, resetToken };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function for admin password reset based on reset token
+  async resetAdminPassword(resetToken: string, password: string) {
+    try {
+      const admin = await this.prisma.admin.findFirst({
+        where: {
+          reset_token: resetToken,
+          reset_expiration: {
+            gte: Date.now().toString(),
+          },
+        },
+      });
+
+      if (!admin) {
+        throw new NotFoundException('Invalid or expired token');
+      }
+
+      const hashed = await argon.hash(password);
+
+      // save new password to database
+      await this.prisma.admin.update({
+        where: { id: admin.id },
+        data: {
+          password: hashed,
           reset_token: null,
           reset_expiration: null,
         },

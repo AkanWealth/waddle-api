@@ -16,7 +16,9 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
+  AdminSignUpDto,
   BlacklistTokenDto,
+  VerifyDto,
   ForgotPasswordDto,
   RefreshTokenDto,
   ResetPasswordDto,
@@ -119,9 +121,10 @@ export class AuthController {
   }
 
   @ApiAcceptedResponse({ description: 'Customer email verified' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('verification/customer')
-  verifyCustomerEmail(@Body() dto: RefreshTokenDto) {
+  verifyCustomerEmail(@Body() dto: VerifyDto) {
     return this.authService.verifyCustomerEmail(dto.token);
   }
 
@@ -205,9 +208,10 @@ export class AuthController {
   }
 
   @ApiAcceptedResponse({ description: 'Vendor email verified' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('verification/vendor')
-  verfiyVendorEmail(@Body() dto: RefreshTokenDto) {
+  verfiyVendorEmail(@Body() dto: VerifyDto) {
     return this.authService.verifyVendorEmail(dto.token);
   }
 
@@ -226,11 +230,60 @@ export class AuthController {
   }
 
   // --------------- admin routes ----------------------
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @ApiCreatedResponse({ description: 'Admin Created' })
+  @Post('create/host')
+  createAdmin(@Body() dto: AdminSignUpDto) {
+    return this.authService.createAdmin(dto);
+  }
+
+  @ApiOkResponse({ description: 'Verification mail sent' })
+  @HttpCode(HttpStatus.OK)
+  @Post('verification/send/admin')
+  async sendAdminVerification(@Body() dto: ForgotPasswordDto) {
+    try {
+      // generate token and expiration time
+      const verificatonToken = Math.random().toString(36).substr(2);
+      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+
+      // save token and expiration time to database
+      await this.prisma.admin.update({
+        where: { email: dto.email },
+        data: {
+          verification_token: verificatonToken,
+          verification_token_expiration: verificationTokenExpiration.toString(),
+        },
+      });
+
+      const subject = 'Email Verification';
+      const message = `<p>Hello,</p>
+
+      <p>Thank you for signing up on Waddle as an admin, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+
+      <p>Warm regards,</p>
+
+      <p>Waddle Team</p>
+      `;
+
+      return await this.notification.sendMail(dto.email, subject, message);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @ApiAcceptedResponse({ description: 'Admin email verified' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('verification/admin')
+  verfiyAdminEmail(@Body() dto: VerifyDto) {
+    return this.authService.verifyAdminEmail(dto.token);
+  }
+
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @ApiOkResponse({ description: 'Admin authenticated' })
   @HttpCode(HttpStatus.OK)
-  @Post('host')
-  admin(@Body() dto: SignInDto) {
+  @Post('signin/host')
+  adminLogin(@Body() dto: SignInDto) {
     return this.authService.adminLogin(dto);
   }
 
@@ -301,6 +354,14 @@ export class AuthController {
     return this.authService.generateResetTokenForVendor(dto.email);
   }
 
+  @ApiAcceptedResponse({ description: 'Reset token generated' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('forgot-password/admin')
+  generateResetTokenForAdmin(@Body() dto: ForgotPasswordDto) {
+    return this.authService.generateResetTokenForAdmin(dto.email);
+  }
+
   // reset password
   @ApiAcceptedResponse({ description: 'Password reset successful' })
   @ApiBadRequestResponse({ description: 'Reset token is required' })
@@ -322,6 +383,17 @@ export class AuthController {
     @Body() dto: ResetPasswordDto,
   ) {
     return this.authService.resetVendorPassword(token, dto.password);
+  }
+
+  @ApiAcceptedResponse({ description: 'Password reset successful' })
+  @ApiBadRequestResponse({ description: 'Reset token is required' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('reset-password/admin/:token')
+  resetAdminPassword(
+    @Param('token') token: string,
+    @Body() dto: ResetPasswordDto,
+  ) {
+    return this.authService.resetAdminPassword(token, dto.password);
   }
 
   // --------------- admin routes ----------------------

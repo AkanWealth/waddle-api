@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateEventDto, UpdateEventDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
@@ -34,6 +38,16 @@ export class EventService {
     file?: Buffer,
   ) {
     try {
+      const vendorVerify = await this.prisma.vendor.findUnique({
+        where: { id: userId },
+      });
+      const adminVerify = await this.prisma.admin.findUnique({
+        where: { id: userId },
+      });
+
+      if (!vendorVerify?.isVerified && !adminVerify?.email_verify)
+        throw new ForbiddenException('You are not veified');
+
       if (file) {
         await this.s3Client.send(
           new PutObjectCommand({
@@ -74,6 +88,36 @@ export class EventService {
   async findAll() {
     try {
       const event = await this.prisma.event.findMany({
+        include: { vendor: true, admin: true },
+      });
+
+      const eventWithImage = event.map((list) => {
+        const images = `${process.env.R2_PUBLIC_ENDPOINT}/${list.images}`;
+        return {
+          ...list,
+          images,
+        };
+      });
+
+      return eventWithImage;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to find all my event from the database
+  async findMyEvents(userId: string, userRole: string) {
+    try {
+      const whereClause: any = {};
+
+      if (userRole === Role.Vendor) {
+        whereClause.vendorId = userId;
+      } else if (userRole === Role.Admin) {
+        whereClause.adminId = userId;
+      }
+
+      const event = await this.prisma.event.findMany({
+        where: whereClause,
         include: { vendor: true, admin: true },
       });
 
@@ -206,6 +250,16 @@ export class EventService {
     file?: Buffer,
   ) {
     try {
+      const vendorVerify = await this.prisma.vendor.findUnique({
+        where: { id: userId },
+      });
+      const adminVerify = await this.prisma.admin.findUnique({
+        where: { id: userId },
+      });
+
+      if (!vendorVerify?.isVerified && !adminVerify?.email_verify)
+        throw new ForbiddenException('You are not veified');
+
       const whereClause: any = {};
 
       if (userRole === Role.Vendor) {
@@ -224,6 +278,9 @@ export class EventService {
         throw new NotFoundException(
           'Event with the provided ID does not exist.',
         );
+
+      if (new Date(existingEvent.date) <= new Date())
+        throw new ForbiddenException('Past event can not be updated');
 
       let image = existingEvent?.images || undefined;
 

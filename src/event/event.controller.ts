@@ -91,6 +91,13 @@ export class EventController {
     return this.eventService.findAll();
   }
 
+  @ApiOkResponse({ description: 'Successfull' })
+  @Get('me')
+  @Roles(Role.Admin, Role.Vendor)
+  findMyEvents(@GetUser() user: { id: string; role: string }) {
+    return this.eventService.findMyEvents(user.id, user.role);
+  }
+
   @ApiOkResponse({ description: 'Successfully searched' })
   @ApiQuery({ name: 'name', required: false, type: String })
   @ApiQuery({ name: 'age', required: false, type: String })

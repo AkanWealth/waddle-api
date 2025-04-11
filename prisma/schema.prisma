@@ -29,6 +29,7 @@ model Vendor {
   email_verify                  Boolean  @default(false)
   business_verify               Boolean  @default(false)
   isActive                      Boolean  @default(true)
+  isVerified                    Boolean  @default(false)
   failedLoginAttempts           Int      @default(0)
   business_url                  String?
   facebook_url                  String?
@@ -87,6 +88,7 @@ model Event {
   age_range       String
   instruction     String?
   category        String
+  isPublished     Boolean          @default(false)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   vendorId        String?
@@ -205,14 +207,20 @@ model Review {
 
 // Admin Model
 model Admin {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  role      Role     @default(Admin)
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  events    Event[]
+  id                            String   @id @default(cuid())
+  first_name                    String
+  last_name                     String
+  email                         String   @unique
+  role                          Role     @default(Admin)
+  password                      String
+  email_verify                  Boolean  @default(false)
+  verification_token            String?
+  verification_token_expiration String?
+  reset_token                   String?
+  reset_expiration              String?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  events                        Event[]
 
   @@map("admin")
 }
