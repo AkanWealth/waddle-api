@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CreateTicketDto, UpdateTicketDto } from './dto';
+import { CreateTicketDto } from './dto';
 
 @Injectable()
 export class TicketService {

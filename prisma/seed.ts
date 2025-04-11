@@ -5,16 +5,15 @@ const prisma = new PrismaClient();
 
 async function main() {
   const root = await prisma.admin.upsert({
-    where: { email: process.env.SEED_USER_EMAIL },
+    where: { email: process.env.SEED_EMAIL },
     update: {},
     create: <any>{
-      name: process.env.SEED_USER_NAME,
-      email: process.env.SEED_USER_EMAIL,
+      first_name: process.env.SEED_FIRST_NAME,
+      last_name: process.env.SEED_LAST_NAME,
+      email: process.env.SEED_EMAIL,
       password: await argon.hash(process.env.SEED_PASSWORD),
     },
   });
-
-  // console.log({ root });
 }
 
 main()
