@@ -26,17 +26,16 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: testdb
-          SEED_USER_NAME: Admin
-          SEED_USER_EMAIL: admin@waddle.uk
+          SEED_FIRST_NAME: Super
+          SEED_LAST_NAME: Admin
+          SEED_EMAIL: admin@waddle.uk
           SEED_PASSWORD: 12345678
           GOOGLE_CLIENT_ID: 237136003048-3mlogbmva2mmbscg5klvuv861ktvjmen.apps.googleusercontent.com
           GOOGLE_CLIENT_SECRET: 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
           GOOGLE_CALLBACK_URL: http://localhost:3030/api/v1/auth/google/callback
-
           FACEBOOK_CLIENT_ID: 464940513010541
           FACEBOOK_CLIENT_SECRET: 2c9a12d4b7790dac7cb34c707b3aa2fa
           FACEBOOK_CALLBACK_URL: http://localhost:3030/api/v1/auth/facebook/redirect
-
           PORT: 3030
           DATABASE_URL: 'postgresql://postgres:password@localhost:5432/testdb?schema=public'
           JWT_SECRET_KEY: NkM9Ci}gVsEjwfZI07gH@CEZ}?2h
@@ -59,6 +58,9 @@ jobs:
           BASE_URL: https://waddleapi.vercel.app
           STRIPE_SECRET_KEY: sk_test_51Q0lCJJ1vqI8s6tcBqAbHqYQcmompSqF3Nlh7bQ7RzVga7kHMYWlLSaz7xiFxALj5kaHXA9RLLBgM9o65NSNCbI1004n2VHSPr
           STRIPE_ENDPOINT_SECRET: whsec_533ef27f4aa69f4accf9bd07ad54ca51b0c682adf8d95931ea21b1e3e013c1d8
+          FRESHDESK_DOMAIN: philipoyelegbincom.freshdesk.com
+          FRESHDESK_EMAIL: support@philipoyelegbincom.freshdesk.com
+          FRESHDESK_API_KEY: nIV3Lubwi6Eo0qWM24Sy
 
         options: >-
           --health-cmd="pg_isready" 
@@ -92,8 +94,9 @@ jobs:
           echo "JWT_EXPIRATION_TIME=1h" >> $GITHUB_ENV
           echo "JWT_REFRESH_SECRET_KEY=jwfZI07gH@CEZ}?2hNkM9Ci}gVsE" >> $GITHUB_ENV
           echo "JWT_REFRESH_EXPIRATION_TIME=3d" >> $GITHUB_ENV
-          echo "SEED_USER_NAME=Admin" >> $GITHUB_ENV
-          echo "SEED_USER_EMAIL=admin@waddle.uk" >> $GITHUB_ENV
+          echo "SEED_FIRST_NAME=Super" >> $GITHUB_ENV
+          echo "SEED_LAST_NAME=Admin" >> $GITHUB_ENV
+          echo "SEED__EMAIL=admin@waddle.uk" >> $GITHUB_ENV
           echo "SEED_PASSWORD=12345678" >> $GITHUB_ENV
           echo "GOOGLE_CLIENT_ID=237136003048-3mlogbmva2mmbscg5klvuv861ktvjmen.apps.googleusercontent.com" >> $GITHUB_ENV
           echo "GOOGLE_CLIENT_SECRET=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" >> $GITHUB_ENV
@@ -116,6 +119,9 @@ jobs:
           echo "BASE_URL=https://waddleapi.vercel.app" >> $GITHUB_ENV
           echo "STRIPE_SECRET_KEY=sk_test_51Q0lCJJ1vqI8s6tcBqAbHqYQcmompSqF3Nlh7bQ7RzVga7kHMYWlLSaz7xiFxALj5kaHXA9RLLBgM9o65NSNCbI1004n2VHSPr" >> $GITHUB_ENV
           echo "STRIPE_ENDPOINT_SECRET=whsec_533ef27f4aa69f4accf9bd07ad54ca51b0c682adf8d95931ea21b1e3e013c1d8" >> $GITHUB_ENV
+          echo "FRESHDESK_DOMAIN=philipoyelegbincom.freshdesk.com" >> $GITHUB_ENV
+          echo "FRESHDESK_EMAIL=support@philipoyelegbincom.freshdesk.com" >> $GITHUB_ENV
+          echo "FRESHDESK_API_KEY=nIV3Lubwi6Eo0qWM24Sy" >> $GITHUB_ENV
 
       - name: Wait for PostgreSQL to be ready
         run: |
