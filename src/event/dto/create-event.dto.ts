@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsDateString,
   IsNotEmpty,
   IsOptional,
@@ -88,4 +89,12 @@ export class CreateEventDto {
   @IsString({ message: 'The category must be a string' })
   @IsNotEmpty({ message: 'The category can not be blank' })
   category: string;
+
+  @ApiPropertyOptional({
+    description: 'The published state of the event',
+    example: true,
+  })
+  @IsBoolean({ message: 'The published value must be a boolean' })
+  @IsOptional()
+  isPublished: true;
 }
