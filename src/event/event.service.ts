@@ -87,14 +87,18 @@ export class EventService {
   // function to find all Event from the database
   async findAll() {
     try {
-      const event = await this.prisma.event.findMany({
+      const events = await this.prisma.event.findMany({
+        where: { isPublished: true },
         include: { vendor: true, admin: true },
       });
 
-      const eventWithImage = event.map((list) => {
-        const images = `${process.env.R2_PUBLIC_ENDPOINT}/${list.images}`;
+      if (!events || events.length <= 0)
+        throw new NotFoundException('No event found');
+
+      const eventWithImage = events.map((event) => {
+        const images = `${process.env.R2_PUBLIC_ENDPOINT}/${event.images}`;
         return {
-          ...list,
+          ...event,
           images,
         };
       });
@@ -120,6 +124,9 @@ export class EventService {
         where: whereClause,
         include: { vendor: true, admin: true },
       });
+
+      if (!event || event.length <= 0)
+        throw new NotFoundException('No event found');
 
       const eventWithImage = event.map((list) => {
         const images = `${process.env.R2_PUBLIC_ENDPOINT}/${list.images}`;
@@ -165,14 +172,17 @@ export class EventService {
 
       if (name) {
         whereClause.name = { contains: name, mode: 'insensitive' };
+        whereClause.isPublished = true;
       }
 
       if (age) {
         whereClause.age_range = age;
+        whereClause.isPublished = true;
       }
 
       if (price) {
         whereClause.price = price;
+        whereClause.isPublished = true;
       }
 
       const event = await this.prisma.event.findMany({
@@ -205,14 +215,17 @@ export class EventService {
 
       if (age_range) {
         whereClause.age_range = age_range;
+        whereClause.isPublished = true;
       }
 
       if (address) {
         whereClause.address = { contains: address, mode: 'insensitive' };
+        whereClause.isPublished = true;
       }
 
       if (category) {
         whereClause.category = { equals: category, mode: 'insensitive' };
+        whereClause.isPublished = true;
       }
 
       const event = await this.prisma.event.findMany({
