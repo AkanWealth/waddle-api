@@ -8,6 +8,7 @@ import {
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Roles } from '../auth/decorator/role-decorator';
@@ -25,6 +26,10 @@ import { RolesGuard } from '../auth/guard/role.guard';
 export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
+  @ApiOperation({
+    summary: 'open a ticket',
+    description: 'Parents can open a ticket',
+  })
   @ApiCreatedResponse({ description: 'Created successfully' })
   @Post()
   @Roles(Role.User)
@@ -32,18 +37,30 @@ export class TicketController {
     return this.ticketService.create(dto);
   }
 
+  @ApiOperation({
+    summary: 'view all my tickets',
+    description: 'Parents can view all thier tickets',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @Get()
   findAll(@GetUser() user: User) {
     return this.ticketService.findAll(user.email);
   }
 
+  @ApiOperation({
+    summary: 'view a ticket by id',
+    description: 'Parents can view a ticket by id',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @Get(':id')
   findOne(@Param('id') id: number) {
     return this.ticketService.findOne(id);
   }
 
+  @ApiOperation({
+    summary: 'view a conversation by ticket id',
+    description: 'Parents can view a conversation by ticket id',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @Get(':id/conversations')
   findConversation(@Param('id') id: number) {

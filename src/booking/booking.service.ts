@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
 import { NotificationService } from '../notification/notification.service';
+import { Role } from '../auth/enum/role.enum';
 
 @Injectable()
 export class BookingService {
@@ -173,10 +174,35 @@ export class BookingService {
     return { received: true };
   }
 
-  // find all bookings created
+  // find all bookings
   async findAll() {
     try {
       const bookings = await this.prisma.booking.findMany({
+        include: { event: true },
+      });
+
+      if (!bookings || bookings.length <= 0)
+        throw new NotFoundException('No booking found');
+
+      return bookings;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // find all my bookings
+  async findMyBookings(userId: string, userRole: string) {
+    try {
+      const whereClause: any = {};
+
+      if (userRole === Role.Vendor) {
+        whereClause.vendorId = userId;
+      } else if (userRole === Role.Admin) {
+        whereClause.adminId = userId;
+      }
+
+      const bookings = await this.prisma.booking.findMany({
+        where: { event: whereClause },
         include: { event: true },
       });
 

@@ -22,6 +22,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
@@ -43,6 +44,10 @@ export class VendorController {
   constructor(private vendorService: VendorService) {}
 
   // get all vendor
+  @ApiOperation({
+    summary: 'view all vendors as an admin',
+    description: 'Admin can view all vendors',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @Get('all')
   @Roles(Role.Admin)
@@ -51,6 +56,10 @@ export class VendorController {
   }
 
   // get the loggedin vendor
+  @ApiOperation({
+    summary: 'view my details as a loggedin vendor',
+    description: 'Vendor can view their details',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @Get('me')
   @Roles(Role.Vendor)
@@ -59,6 +68,10 @@ export class VendorController {
   }
 
   // update the loggedin vendor
+  @ApiOperation({
+    summary: 'update my details as a loggedin vendor',
+    description: 'Vendor can update their details',
+  })
   @ApiAcceptedResponse({ description: 'Successfully updated' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
@@ -87,6 +100,10 @@ export class VendorController {
   }
 
   // delete a vendor
+  @ApiOperation({
+    summary: 'delete a vendor by id as an admin',
+    description: 'Admin can delete a vendor by id',
+  })
   @ApiNoContentResponse({ description: 'Deleted Successfully' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')

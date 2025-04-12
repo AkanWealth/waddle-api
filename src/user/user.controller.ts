@@ -23,6 +23,7 @@ import {
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
@@ -43,6 +44,10 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   // get all user
+  @ApiOperation({
+    summary: 'view all users as an admin',
+    description: 'Admin can view all users',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @ApiBearerAuth()
   @Get('all')
@@ -52,6 +57,10 @@ export class UserController {
   }
 
   // get the loggedin user
+  @ApiOperation({
+    summary: 'view my details as a loggedin user',
+    description: 'User can view their details',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @ApiBearerAuth()
   @Get('me')
@@ -61,6 +70,10 @@ export class UserController {
   }
 
   // update the loggedin user
+  @ApiOperation({
+    summary: 'update my details as a loggedin user',
+    description: 'User can update their details',
+  })
   @ApiAcceptedResponse({ description: 'Successfully updated' })
   @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
@@ -90,6 +103,10 @@ export class UserController {
   }
 
   // delete a user
+  @ApiOperation({
+    summary: 'delete a user by id as an admin',
+    description: 'Admin can delete a user by id',
+  })
   @ApiNoContentResponse({ description: 'Deleted Successfully' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiBearerAuth()

@@ -21,6 +21,7 @@ import {
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
@@ -32,12 +33,20 @@ import {
 export class LikeController {
   constructor(private readonly likeService: LikeService) {}
 
+  @ApiOperation({
+    summary: 'like an event',
+    description: 'Parents can like an event',
+  })
   @ApiCreatedResponse({ description: 'Like created successfully' })
   @Post()
   create(@GetUser() user: User, @Body() dto: CreateLikeDto) {
     return this.likeService.create(user.id, dto);
   }
 
+  @ApiOperation({
+    summary: 'view all likes by event',
+    description: 'Parents can view all likes by event',
+  })
   @ApiOkResponse({ description: 'Found likes' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get(':eventId')
@@ -45,6 +54,10 @@ export class LikeController {
     return this.likeService.findAll(eventId);
   }
 
+  @ApiOperation({
+    summary: 'unlike an event',
+    description: 'Parents can unlike an event',
+  })
   @ApiNoContentResponse({ description: 'Deleted successfully' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -1,10 +1,12 @@
 import { Controller, Post, Req, RawBodyRequest, Headers } from '@nestjs/common';
 import { BookingService } from '../booking/booking.service';
+import { ApiExcludeEndpoint } from '@nestjs/swagger';
 
 @Controller('webhook')
 export class WebhookController {
   constructor(private readonly bookingService: BookingService) {}
 
+  @ApiExcludeEndpoint()
   @Post('stripe')
   createHook(
     @Headers() headers: Record<string, string>,

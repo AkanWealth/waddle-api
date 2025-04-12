@@ -1,11 +1,13 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Response } from 'express';
 
 @Controller('.well-known')
 export class AppController {
   constructor(private config: ConfigService) {}
 
+  @ApiExcludeEndpoint()
   @Get('assetlinks.json')
   async getAssetLinks(@Res() res: Response) {
     const assetLinks = [

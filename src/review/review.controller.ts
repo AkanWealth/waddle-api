@@ -25,6 +25,7 @@ import {
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
@@ -38,6 +39,10 @@ import {
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
+  @ApiOperation({
+    summary: 'post a review for an evemt',
+    description: 'User can post a review',
+  })
   @ApiCreatedResponse({ description: 'Created Successfull' })
   @Post()
   @Roles(Role.User)
@@ -45,6 +50,10 @@ export class ReviewController {
     return this.reviewService.create(dto);
   }
 
+  @ApiOperation({
+    summary: 'view all reviews for an event',
+    description: 'View all reviews for an event',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get(':eventId')
@@ -52,6 +61,10 @@ export class ReviewController {
     return this.reviewService.findAll(eventId);
   }
 
+  @ApiOperation({
+    summary: 'view a review by id',
+    description: 'View a review by id',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get(':id')
@@ -59,6 +72,10 @@ export class ReviewController {
     return this.reviewService.findOne(id);
   }
 
+  @ApiOperation({
+    summary: 'update a review by id',
+    description: 'Update a review by id',
+  })
   @ApiAcceptedResponse({ description: 'Data accepted' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -68,6 +85,10 @@ export class ReviewController {
     return this.reviewService.update(id, dto);
   }
 
+  @ApiOperation({
+    summary: 'delete a review by id',
+    description: 'Delete a review by id',
+  })
   @ApiNoContentResponse({ description: 'Deleted successfully' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
