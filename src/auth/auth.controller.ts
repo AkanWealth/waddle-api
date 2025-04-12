@@ -30,9 +30,11 @@ import {
   ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiExcludeEndpoint,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { FacebookAuthGuard, GoogleAuthGuard } from './guard';
@@ -53,6 +55,10 @@ export class AuthController {
   ) {}
 
   // --------------- customer routes ----------------------
+  @ApiOperation({
+    summary: 'create a parent account',
+    description: 'Parent can create an account',
+  })
   @ApiCreatedResponse({ description: 'Customer created' })
   @ApiBadRequestResponse({ description: 'Credentials taken' })
   @Post('signup/customer')
@@ -86,6 +92,11 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({
+    summary: 'send token to parent to verify email',
+    description:
+      'Parent is sent a token to verify email if not received on registration',
+  })
   @ApiOkResponse({ description: 'Verification mail sent' })
   @HttpCode(HttpStatus.OK)
   @Post('verification/send/customer')
@@ -120,6 +131,10 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({
+    summary: 'verify parent email',
+    description: 'Parent can verify their email based on token received',
+  })
   @ApiAcceptedResponse({ description: 'Customer email verified' })
   @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -128,6 +143,10 @@ export class AuthController {
     return this.authService.verifyCustomerEmail(dto.token);
   }
 
+  @ApiOperation({
+    summary: 'login as a parent',
+    description: 'Parent can login after account creation',
+  })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @ApiOkResponse({ description: 'Customer authenticated' })
   @HttpCode(HttpStatus.OK)
@@ -137,6 +156,10 @@ export class AuthController {
     return this.authService.customerLogin(dto);
   }
 
+  @ApiOperation({
+    summary: 'logout as a parent',
+    description: 'Parent can logout of the app',
+  })
   @Post('logout/customer')
   async logoutUser(@Body() dto: BlacklistTokenDto) {
     await this.authService.addToken(dto);
@@ -144,6 +167,10 @@ export class AuthController {
   }
 
   // --------------- vendor routes ----------------------
+  @ApiOperation({
+    summary: 'create a vendor account',
+    description: 'Vendor can create an account',
+  })
   @ApiCreatedResponse({ description: 'Vendor created' })
   @ApiBadRequestResponse({ description: 'Credentials taken' })
   @Post('signup/vendor')
@@ -173,6 +200,11 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({
+    summary: 'send token to vendor to verify email',
+    description:
+      'Vendor is sent a token to verify email if not received on registration',
+  })
   @ApiOkResponse({ description: 'Verification mail sent' })
   @HttpCode(HttpStatus.OK)
   @Post('verification/send/vendor')
@@ -207,6 +239,10 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({
+    summary: 'verify a vendor email',
+    description: 'Vendors can verify their email',
+  })
   @ApiAcceptedResponse({ description: 'Vendor email verified' })
   @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -215,6 +251,10 @@ export class AuthController {
     return this.authService.verifyVendorEmail(dto.token);
   }
 
+  @ApiOperation({
+    summary: 'login as a vendor',
+    description: 'Vendor can login after account creation',
+  })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @ApiOkResponse({ description: 'Vendor authenticated' })
   @HttpCode(HttpStatus.OK)
@@ -223,6 +263,10 @@ export class AuthController {
     return this.authService.vendorLogin(dto);
   }
 
+  @ApiOperation({
+    summary: 'logout as a vendor',
+    description: 'Vendor can logout of the app',
+  })
   @Post('logout/vendor')
   async logoutVendor(@Body() dto: BlacklistTokenDto) {
     await this.authService.addToken(dto);
@@ -230,6 +274,10 @@ export class AuthController {
   }
 
   // --------------- admin routes ----------------------
+  @ApiOperation({
+    summary: 'create an admin account',
+    description: 'Admin can create an account',
+  })
   @ApiBadRequestResponse({ description: 'Bad request' })
   @ApiCreatedResponse({ description: 'Admin Created' })
   @Post('create/host')
@@ -237,6 +285,11 @@ export class AuthController {
     return this.authService.createAdmin(dto);
   }
 
+  @ApiOperation({
+    summary: 'send token to admin to verify email',
+    description:
+      'Admin is sent a token to verify email if not received on creation',
+  })
   @ApiOkResponse({ description: 'Verification mail sent' })
   @HttpCode(HttpStatus.OK)
   @Post('verification/send/admin')
@@ -271,6 +324,10 @@ export class AuthController {
     }
   }
 
+  @ApiOperation({
+    summary: 'verify an admin email',
+    description: 'Admin can verify their email',
+  })
   @ApiAcceptedResponse({ description: 'Admin email verified' })
   @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -279,6 +336,10 @@ export class AuthController {
     return this.authService.verifyAdminEmail(dto.token);
   }
 
+  @ApiOperation({
+    summary: 'login as an admin',
+    description: 'Admin can log into the app',
+  })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @ApiOkResponse({ description: 'Admin authenticated' })
   @HttpCode(HttpStatus.OK)
@@ -287,13 +348,30 @@ export class AuthController {
     return this.authService.adminLogin(dto);
   }
 
+  @ApiOperation({
+    summary: 'logout as an admin',
+    description: 'Admin can logout of the app',
+  })
+  @ApiOkResponse({ description: 'Logout successful' })
+  @HttpCode(HttpStatus.OK)
+  @Post('logout/admin')
+  async logoutAdmin(@Body() dto: BlacklistTokenDto) {
+    await this.authService.addToken(dto);
+    return { message: 'Logged out successfully' };
+  }
+
   // --------------- social routes ----------------------
+  @ApiOperation({
+    summary: 'login using google as a parent',
+    description: 'Parents can login using google',
+  })
   @ApiOkResponse({ description: 'Sign in with google' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(GoogleAuthGuard)
   @Get('google/signin')
   googleLogin() {}
 
+  @ApiExcludeEndpoint()
   @ApiOkResponse({ description: 'User authenticated' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(GoogleAuthGuard)
@@ -307,12 +385,17 @@ export class AuthController {
     return response;
   }
 
+  @ApiOperation({
+    summary: 'login using facebook as a parent',
+    description: 'Parents can login using facebook',
+  })
   @ApiOkResponse({ description: 'Sign in with facebook' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(FacebookAuthGuard)
   @Get('facebook/signin')
   facebookLogin() {}
 
+  @ApiExcludeEndpoint()
   @ApiOkResponse({ description: 'User authenticated' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(FacebookAuthGuard)
@@ -327,6 +410,10 @@ export class AuthController {
   }
 
   // --------------- refresh token ----------------------
+  @ApiOperation({
+    summary: 'generate a new access token',
+    description: 'Generate a new access token using the refresh token ',
+  })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @ApiOkResponse({ description: 'New token generated' })
   @HttpCode(HttpStatus.OK)
@@ -338,6 +425,10 @@ export class AuthController {
 
   // ------------ reset password ----------------
   // generate password reset token
+  @ApiOperation({
+    summary: 'generate token for parent password reset',
+    description: 'Parent is sent a token to reset their password',
+  })
   @ApiAcceptedResponse({ description: 'Reset token generated' })
   @ApiNotFoundResponse({ description: 'User not found' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -346,6 +437,10 @@ export class AuthController {
     return this.authService.generateResetTokenForUser(dto.email);
   }
 
+  @ApiOperation({
+    summary: 'generate token for vendor password reset',
+    description: 'Vendor is sent a token to reset their password',
+  })
   @ApiAcceptedResponse({ description: 'Reset token generated' })
   @ApiNotFoundResponse({ description: 'User not found' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -354,6 +449,10 @@ export class AuthController {
     return this.authService.generateResetTokenForVendor(dto.email);
   }
 
+  @ApiOperation({
+    summary: 'generate token for admin password reset',
+    description: 'Admin is sent a token to reset their password',
+  })
   @ApiAcceptedResponse({ description: 'Reset token generated' })
   @ApiNotFoundResponse({ description: 'User not found' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -363,6 +462,10 @@ export class AuthController {
   }
 
   // reset password
+  @ApiOperation({
+    summary: 'reset parent password',
+    description: 'Parent can reset their password',
+  })
   @ApiAcceptedResponse({ description: 'Password reset successful' })
   @ApiBadRequestResponse({ description: 'Reset token is required' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -374,6 +477,10 @@ export class AuthController {
     return this.authService.resetUserPassword(token, dto.password);
   }
 
+  @ApiOperation({
+    summary: 'reset vendor password',
+    description: 'Vendor can reset their password',
+  })
   @ApiAcceptedResponse({ description: 'Password reset successful' })
   @ApiBadRequestResponse({ description: 'Reset token is required' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -385,6 +492,10 @@ export class AuthController {
     return this.authService.resetVendorPassword(token, dto.password);
   }
 
+  @ApiOperation({
+    summary: 'reset admin password',
+    description: 'Admin can reset their password',
+  })
   @ApiAcceptedResponse({ description: 'Password reset successful' })
   @ApiBadRequestResponse({ description: 'Reset token is required' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -394,12 +505,5 @@ export class AuthController {
     @Body() dto: ResetPasswordDto,
   ) {
     return this.authService.resetAdminPassword(token, dto.password);
-  }
-
-  // --------------- admin routes ----------------------
-  @Post('logout/admin')
-  async logoutAdmin(@Body() dto: BlacklistTokenDto) {
-    await this.authService.addToken(dto);
-    return { message: 'Logged out successfully' };
   }
 }
