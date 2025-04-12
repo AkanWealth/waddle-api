@@ -26,6 +26,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiParam,
   ApiQuery,
   ApiUnauthorizedResponse,
@@ -47,6 +48,10 @@ import { Role } from '../auth/enum/role.enum';
 export class EventController {
   constructor(private readonly eventService: EventService) {}
 
+  @ApiOperation({
+    summary: 'for admin and vendor',
+    description: 'Admin or Vendor creates an event',
+  })
   @ApiCreatedResponse({ description: 'Created Successfull' })
   @Post()
   @Roles(Role.Admin, Role.Vendor)
@@ -85,12 +90,21 @@ export class EventController {
     }
   }
 
+  @ApiOperation({
+    summary: 'for all published events',
+    description:
+      'Parents, Admin and Vendors are able to see all published events',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @Get()
   findAll() {
     return this.eventService.findAll();
   }
 
+  @ApiOperation({
+    summary: 'for admin or vendors to view created events',
+    description: 'Fetch all events created by the logged in Vendor or Admin',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @Get('me')
   @Roles(Role.Admin, Role.Vendor)
@@ -98,6 +112,11 @@ export class EventController {
     return this.eventService.findMyEvents(user.id, user.role);
   }
 
+  @ApiOperation({
+    summary: 'search for published events by name, age or price',
+    description:
+      'Parents, Admin or Vendors are able to search for published events',
+  })
   @ApiOkResponse({ description: 'Successfully searched' })
   @ApiQuery({ name: 'name', required: false, type: String })
   @ApiQuery({ name: 'age', required: false, type: String })
@@ -111,6 +130,11 @@ export class EventController {
     return this.eventService.search(name, age, price);
   }
 
+  @ApiOperation({
+    summary: 'filter published events by age,category or address',
+    description:
+      'Parents, Admin and Vendors are able to filter published events',
+  })
   @ApiOkResponse({ description: 'Successfully filtered' })
   @ApiQuery({ name: 'age', required: false, type: String })
   @ApiQuery({ name: 'category', required: false, type: String })
@@ -124,6 +148,10 @@ export class EventController {
     return this.eventService.filter(age, category, address);
   }
 
+  @ApiOperation({
+    summary: 'find an event by the event id',
+    description: 'Parents, Admin and Vendors are able to find an event by id',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @ApiParam({ name: 'id' })
   @Get(':id')
@@ -131,6 +159,10 @@ export class EventController {
     return this.eventService.findOne(id);
   }
 
+  @ApiOperation({
+    summary: 'Update an event by the event id',
+    description: 'Update an event by id based on the logged in Vendor or Admin',
+  })
   @ApiAcceptedResponse({ description: 'Data accepted' })
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.ACCEPTED)
@@ -167,6 +199,11 @@ export class EventController {
     }
   }
 
+  @ApiOperation({
+    summary: 'delete an event by event id',
+    description:
+      'Delete an event by event id based on the logged in Vendor or Admin',
+  })
   @ApiNoContentResponse({ description: 'Deleted successfully' })
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.NO_CONTENT)

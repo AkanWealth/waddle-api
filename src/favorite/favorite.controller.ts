@@ -21,6 +21,7 @@ import {
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { JwtGuard } from '../auth/guard/auth.guard';
@@ -39,6 +40,10 @@ import { GetUser } from '../auth/decorator/get-user.decorator';
 export class FavoriteController {
   constructor(private readonly favoriteService: FavoriteService) {}
 
+  @ApiOperation({
+    summary: 'add an event to wishlist',
+    description: 'Parents can add an event to wishlist',
+  })
   @ApiCreatedResponse({ description: 'Created Successfull' })
   @Post()
   @Roles(Role.User)
@@ -46,6 +51,10 @@ export class FavoriteController {
     return this.favoriteService.create(user.id, dto);
   }
 
+  @ApiOperation({
+    summary: 'view all my wishlist',
+    description: 'Parents can view all their wishlist',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @Get()
   @Roles(Role.User)
@@ -53,6 +62,10 @@ export class FavoriteController {
     return this.favoriteService.findAll(user.id);
   }
 
+  @ApiOperation({
+    summary: 'view a wishlist by id',
+    description: 'Parents can view a wishlist by id',
+  })
   @ApiOkResponse({ description: 'Successfull' })
   @Get(':id')
   @Roles(Role.User)
@@ -60,6 +73,10 @@ export class FavoriteController {
     return this.favoriteService.findOne(id, user.id);
   }
 
+  @ApiOperation({
+    summary: 'update a wishlist by id',
+    description: 'Parents can update a wishlist by id',
+  })
   @ApiAcceptedResponse({ description: 'Data accepted' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
@@ -72,6 +89,10 @@ export class FavoriteController {
     return this.favoriteService.update(id, user.id, dto);
   }
 
+  @ApiOperation({
+    summary: 'delete a wishlist by id',
+    description: 'Parents can delete a wishlist by id',
+  })
   @ApiNoContentResponse({ description: 'Deleted successfully' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
