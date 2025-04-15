@@ -96,7 +96,7 @@ jobs:
           echo "JWT_REFRESH_EXPIRATION_TIME=3d" >> $GITHUB_ENV
           echo "SEED_FIRST_NAME=Super" >> $GITHUB_ENV
           echo "SEED_LAST_NAME=Admin" >> $GITHUB_ENV
-          echo "SEED__EMAIL=admin@waddle.uk" >> $GITHUB_ENV
+          echo "SEED_EMAIL=admin@waddle.uk" >> $GITHUB_ENV
           echo "SEED_PASSWORD=12345678" >> $GITHUB_ENV
           echo "GOOGLE_CLIENT_ID=237136003048-3mlogbmva2mmbscg5klvuv861ktvjmen.apps.googleusercontent.com" >> $GITHUB_ENV
           echo "GOOGLE_CLIENT_SECRET=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" >> $GITHUB_ENV
