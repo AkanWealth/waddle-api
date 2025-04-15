@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class SignInDto {
   @ApiProperty({
@@ -18,5 +24,12 @@ export class SignInDto {
   })
   @IsString({ message: 'The password must be a string' })
   @MinLength(8, { message: 'The password must be minimum of 8 characters' })
+  @Matches(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()-_=+[\]{};':",.<>/?\\|])\S{8,}$/,
+    {
+      message:
+        'Minimum 8 characters, at least one uppercase, one lowercase, one number, and one special character, and no spaces',
+    },
+  )
   password: string;
 }

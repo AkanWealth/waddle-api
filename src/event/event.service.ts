@@ -59,6 +59,7 @@ export class EventService {
       }
 
       const date = new Date(dto.date);
+      const isPublished = this.stringToBoolean(dto.isPublished);
 
       // Determine whether to store vendorId or adminId
       const eventData: any = {
@@ -66,6 +67,7 @@ export class EventService {
         date,
         total_ticket: Number(dto.total_ticket),
         images: fileName || null,
+        isPublished,
       };
 
       if (userRole === Role.Vendor) {
@@ -319,14 +321,17 @@ export class EventService {
         image = fileName;
       }
 
+      const isPublished = this.stringToBoolean(dto.isPublished);
       const event = await this.prisma.event.update({
         where: {
           id: existingEvent.id,
         },
         data: <any>{
           ...dto,
+          date: dto.date ? new Date(dto.date) : undefined,
           images: image || null,
           total_ticket: Number(dto.total_ticket) || undefined,
+          isPublished,
         },
       });
 
@@ -374,6 +379,26 @@ export class EventService {
       return { message: 'Event deleted.' };
     } catch (error) {
       throw error;
+    }
+  }
+
+  private stringToBoolean(str: any) {
+    if (typeof str !== 'string') {
+      return !!str; // handles non-string inputs
+    }
+
+    const lowerStr = str.toLowerCase();
+
+    if (lowerStr === 'true') {
+      return true;
+    } else if (lowerStr === 'false') {
+      return false;
+    } else {
+      //Handles cases of "1","0", or any other string.
+      if (!Number.isNaN(Number(str))) {
+        return !!Number(str);
+      }
+      return !!str; //Default behavior for any other string.
     }
   }
 }
