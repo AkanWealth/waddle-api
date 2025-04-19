@@ -93,8 +93,7 @@ export class BookingService {
           await this.prisma.event.update({
             where: { id: booking.event.id },
             data: {
-              total_ticket:
-                booking.event.total_ticket - booking.ticket_quantity,
+              ticket_booked: ++booking.ticket_quantity,
             },
           });
 
