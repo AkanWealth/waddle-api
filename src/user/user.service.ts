@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UpdateUserDto } from './dto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { UpdatePasswordDto, UpdateUserDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import {
@@ -126,6 +130,40 @@ export class UserService {
 
       delete user.password;
       return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to update the loggedin user password
+  async updatePassword(id: string, dto: UpdatePasswordDto) {
+    try {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id },
+      });
+      if (!existingUser) {
+        throw new NotFoundException(
+          'User with the provided ID does not exist.',
+        );
+      }
+
+      const isMatch = await argon.verify(
+        existingUser.password,
+        dto.old_password,
+      );
+      if (!isMatch) throw new BadRequestException('Old password is incorrect');
+
+      const hashed = await argon.hash(dto.new_password);
+
+      const user = await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          password: hashed,
+        },
+      });
+
+      delete user.password;
+      return { message: 'Password updated successful', user };
     } catch (error) {
       throw error;
     }
