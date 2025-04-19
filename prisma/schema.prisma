@@ -82,6 +82,7 @@ model Event {
   images          String?
   price           Decimal
   total_ticket    Int
+  ticket_booked   Int              @default(0)
   date            DateTime
   time            String
   age_range       String

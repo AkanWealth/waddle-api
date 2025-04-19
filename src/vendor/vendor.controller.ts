@@ -32,6 +32,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { Role } from '../auth/enum/role.enum';
+import { UpdatePasswordDto } from '../user/dto/update-password.dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({
@@ -97,6 +98,20 @@ export class VendorController {
     } else {
       return this.vendorService.update(id, dto);
     }
+  }
+
+  // update the loggedin user password
+  @ApiOperation({
+    summary: 'update my password as a loggedin vendor',
+    description: 'Vendor can update their password',
+  })
+  @ApiAcceptedResponse({ description: 'Successfully updated' })
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('me/password')
+  @Roles(Role.Vendor)
+  updatePassword(@GetUser('id') id: string, @Body() dto: UpdatePasswordDto) {
+    return this.vendorService.updatePassword(id, dto);
   }
 
   // delete a vendor

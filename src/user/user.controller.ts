@@ -15,7 +15,7 @@ import {
   FileTypeValidator,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UpdateUserDto } from './dto';
+import { UpdatePasswordDto, UpdateUserDto } from './dto';
 import {
   ApiAcceptedResponse,
   ApiBearerAuth,
@@ -100,6 +100,20 @@ export class UserController {
     } else {
       return this.userService.update(id, dto);
     }
+  }
+
+  // update the loggedin user password
+  @ApiOperation({
+    summary: 'update my password as a loggedin user',
+    description: 'User can update their password',
+  })
+  @ApiAcceptedResponse({ description: 'Successfully updated' })
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('me/password')
+  @Roles(Role.User)
+  updatePassword(@GetUser('id') id: string, @Body() dto: UpdatePasswordDto) {
+    return this.userService.updatePassword(id, dto);
   }
 
   // delete a user
