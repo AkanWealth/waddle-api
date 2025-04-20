@@ -177,7 +177,7 @@ export class BookingService {
   async findAll() {
     try {
       const bookings = await this.prisma.booking.findMany({
-        include: { event: true },
+        include: { event: true, user: true },
       });
 
       if (!bookings || bookings.length <= 0)
@@ -189,7 +189,7 @@ export class BookingService {
     }
   }
 
-  // find all my bookings
+  // find all my bookings as the event creator
   async findMyBookings(userId: string, userRole: string) {
     try {
       const whereClause: any = {};
@@ -202,7 +202,7 @@ export class BookingService {
 
       const bookings = await this.prisma.booking.findMany({
         where: { event: whereClause },
-        include: { event: true },
+        include: { event: true, user: true },
       });
 
       if (!bookings || bookings.length <= 0)
@@ -236,7 +236,7 @@ export class BookingService {
     try {
       const booking = await this.prisma.booking.findUnique({
         where: { id },
-        include: { event: true },
+        include: { event: true, user: true },
       });
 
       if (!booking)
