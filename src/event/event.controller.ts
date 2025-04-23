@@ -63,6 +63,7 @@ export class EventController {
   ) {
     if (file) {
       try {
+        console.log('file: ', file);
         new ParseFilePipe({
           validators: [
             new MaxFileSizeValidator({ maxSize: 10000000 }),
