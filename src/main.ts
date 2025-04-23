@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { setupRedoc } from './middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -47,13 +48,13 @@ async function bootstrap() {
     ],
   });
 
-  // // Expose Swagger JSON at `/api-json`
-  // app.use('/api-json', (req: any, res: any) => {
-  //   res.json(document);
-  // });
+  // Expose Swagger JSON at `/api-json`
+  app.use('/api-json', (req: any, res: any) => {
+    res.json(document);
+  });
 
-  // // Set up ReDoc at `/docs`
-  // setupRedoc(app as any);
+  // Set up ReDoc at `/docs`
+  setupRedoc(app as any);
 
   await app.listen(process.env.PORT ?? 3000);
   console.log(`Application is running on: ${await app.getUrl()}`);

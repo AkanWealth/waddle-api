@@ -49,6 +49,7 @@ export class EventService {
         throw new ForbiddenException('You are not veified');
 
       if (file) {
+        console.log('file: ', file);
         await this.s3Client.send(
           new PutObjectCommand({
             Bucket: this.config.getOrThrow('BUCKET_NAME'),
