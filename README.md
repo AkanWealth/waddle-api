@@ -16,8 +16,8 @@ This application provides an API endpoiint for managing guardian, vendors, activ
   - Create new account as a vendor using business name, business registration number, email and password
   - Signin to the account using email and password
   - View and update profile details.
-- **Activity Management:**
-  - Create and update activity as a vendor.
+- **Event Management:**
+  - Create and update event as a vendor or admin.
   - View all activity as a guardian.
 
 ## Technologies Used
@@ -27,6 +27,7 @@ This application provides an API endpoiint for managing guardian, vendors, activ
 - **Database:** PostgreSQL (using Prisma ORM)
 - **Testing:** Jest, Supertest
 - **API Documentation:** Swagger
+- **Payment gateway:** Stripe, and Stripe webhook
 
 ## Setup
 

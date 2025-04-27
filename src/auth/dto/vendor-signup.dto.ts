@@ -4,9 +4,9 @@ import { SignInDto } from './signin.dto';
 
 export class VendorSignUpDto extends SignInDto {
   @ApiProperty({
-    description: 'The name of the business',
+    description: 'The name of the Owner',
     required: true,
-    example: 'Mr Bigs',
+    example: 'Moly Parker',
   })
   @IsString({ message: 'The name must be a string' })
   @IsNotEmpty({ message: 'The name is required' })
@@ -20,6 +20,24 @@ export class VendorSignUpDto extends SignInDto {
   @IsString({ message: 'The address must be a string' })
   @IsNotEmpty({ message: 'The address is required' })
   address: string;
+
+  @ApiProperty({
+    description: 'The name of the business ',
+    required: true,
+    example: 'Mr Bigs',
+  })
+  @IsString({ message: 'The business name must be a string' })
+  @IsNotEmpty({ message: 'The business name is required' })
+  business_name: string;
+
+  @ApiProperty({
+    description: 'The category of the business ',
+    required: true,
+    example: 'Hospitality',
+  })
+  @IsString({ message: 'The business category must be a string' })
+  @IsNotEmpty({ message: 'The business category is required' })
+  business_category: string;
 
   @ApiProperty({
     description: 'The registration number of the business',
