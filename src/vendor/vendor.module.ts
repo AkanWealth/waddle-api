@@ -1,12 +1,6 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { Module, NestModule } from '@nestjs/common';
 import { VendorService } from './vendor.service';
 import { VendorController } from './vendor.controller';
-import { VendorsMiddleware } from '../middleware';
 import { JwtModule } from '@nestjs/jwt';
 
 @Module({
@@ -20,11 +14,5 @@ import { JwtModule } from '@nestjs/jwt';
   providers: [VendorService],
 })
 export class VendorModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    // consuming middleware for authorization
-    consumer
-      .apply(VendorsMiddleware)
-      .exclude({ path: '*', method: RequestMethod.GET })
-      .forRoutes(VendorController);
-  }
+  configure() {}
 }

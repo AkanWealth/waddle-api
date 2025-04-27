@@ -2,16 +2,18 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
 import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
 import { SignInDto, VendorSignUpDto } from '../src/auth/dto';
 import { UpdateVendorDto } from '../src/vendor/dto';
 
+/**
+ * @group vendor
+ * @depends app
+ */
 describe('Authentication and Vendor (e2e)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
   let jwtToken = '';
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -20,12 +22,11 @@ describe('Authentication and Vendor (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     app.setGlobalPrefix('/api/v1');
     await app.init();
-    await app.listen(3333);
-    prisma = app.get(PrismaService);
-    await prisma.cleanDb();
   });
 
-  afterAll(() => app.close());
+  afterEach(async () => {
+    await app.close();
+  });
 
   describe('Auth', () => {
     describe('Signup', () => {
@@ -37,6 +38,8 @@ describe('Authentication and Vendor (e2e)', () => {
           password: '12345678',
           phone_number: '+23480123456789',
           address: '12B Cresent Maryland',
+          business_name: 'Vendor1 Business',
+          business_category: 'Hospitality',
           registration_number: 's#kA6uA1LkTt[5P',
           business_url: 'https://xample.co.uk',
           facebook_url: 'https://facebook.com/xample-co-uk',
@@ -56,6 +59,8 @@ describe('Authentication and Vendor (e2e)', () => {
           phone_number: '+23480123456789',
           address: '12B Cresent Maryland',
           registration_number: '',
+          business_name: 'Vendor1 Business',
+          business_category: 'Hospitality',
           business_url: 'https://xample.co.uk',
           facebook_url: 'https://facebook.com/xample-co-uk',
         };
@@ -73,6 +78,8 @@ describe('Authentication and Vendor (e2e)', () => {
           password: '',
           phone_number: '+23480123456789',
           address: '12B Cresent Maryland',
+          business_name: 'Vendor1 Business',
+          business_category: 'Hospitality',
           registration_number: '',
           business_url: 'https://xample.co.uk',
           facebook_url: 'https://facebook.com/xample-co-uk',
@@ -91,6 +98,8 @@ describe('Authentication and Vendor (e2e)', () => {
           password: '12345678',
           phone_number: '+23480123456789',
           address: '12B Cresent Maryland',
+          business_name: 'Vendor1 Business',
+          business_category: 'Hospitality',
           registration_number: '',
           business_url: 'https://xample.co.uk',
           facebook_url: 'https://facebook.com/xample-co-uk',
@@ -109,6 +118,8 @@ describe('Authentication and Vendor (e2e)', () => {
           password: '12345678',
           phone_number: '+23480123456789',
           address: '12B Cresent Maryland',
+          business_name: 'Vendor1 Business',
+          business_category: 'Hospitality',
           registration_number: '',
           business_url: 'https://xample.co.uk',
           facebook_url: 'https://facebook.com/xample-co-uk',
@@ -193,7 +204,7 @@ describe('Authentication and Vendor (e2e)', () => {
       it('(GET) => Should not find current vendor without authentication', () => {
         return request(app.getHttpServer())
           .get('/api/v1/vendors/me')
-          .expect(400);
+          .expect(401);
       });
 
       // testing for getting current vendor data with authentication
@@ -219,7 +230,7 @@ describe('Authentication and Vendor (e2e)', () => {
         return request(app.getHttpServer())
           .patch('/api/v1/vendors/me')
           .send(vendor)
-          .expect(400);
+          .expect(401);
       });
 
       // testing for updating current vendor data with authentication

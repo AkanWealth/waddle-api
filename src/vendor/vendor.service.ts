@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UpdateVendorDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
@@ -8,6 +12,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { UpdatePasswordDto } from 'src/user/dto';
 
 @Injectable()
 export class VendorService {
@@ -125,6 +130,40 @@ export class VendorService {
 
       delete user.password;
       return user;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to update the loggedin user password
+  async updatePassword(id: string, dto: UpdatePasswordDto) {
+    try {
+      const existingVendor = await this.prisma.vendor.findUnique({
+        where: { id },
+      });
+      if (!existingVendor) {
+        throw new NotFoundException(
+          'Vendor with the provided ID does not exist.',
+        );
+      }
+
+      const isMatch = await argon.verify(
+        existingVendor.password,
+        dto.old_password,
+      );
+      if (!isMatch) throw new BadRequestException('Old password is incorrect');
+
+      const hashed = await argon.hash(dto.new_password);
+
+      const vendor = await this.prisma.vendor.update({
+        where: { id: existingVendor.id },
+        data: {
+          password: hashed,
+        },
+      });
+
+      delete vendor.password;
+      return { message: 'Password updated successful', vendor };
     } catch (error) {
       throw error;
     }
