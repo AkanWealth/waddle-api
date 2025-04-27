@@ -13,140 +13,247 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Activities {
-  id          String       @id @default(cuid())
-  name        String
-  description String
-  capacity    Int
-  address     String
-  amenities   String[]
-  images      String[]
-  collection  Collection[]
-  booking     Booking[]
-  Vendor      Vendor?      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  vendorId    String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  @@map("activities")
-}
-
-model Admin {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(Admin)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("admins")
-}
-
+// Vendor Model
 model Vendor {
-  id                  String       @id @default(cuid())
-  name                String
-  email               String       @unique
-  password            String
-  phone_number        String
-  business_logo       String?
-  address             String
-  registration_number String
-  role                Role         @default(Vendor)
-  email_verify        Boolean      @default(false)
-  business_verify     Boolean      @default(false)
-  business_url        String?
-  facebook_url        String?
-  reset_token         String?
-  reset_expiration    String?
-  activities          Activities[]
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  id                            String   @id @default(cuid())
+  name                          String
+  email                         String   @unique
+  password                      String
+  phone_number                  String
+  role                          Role     @default(Vendor)
+  business_logo                 String?
+  address                       String
+  business_name                 String   @unique
+  business_category             String
+  registration_number           String
+  email_verify                  Boolean  @default(true)
+  isActive                      Boolean  @default(true)
+  isVerified                    Boolean  @default(true)
+  failedLoginAttempts           Int      @default(0)
+  business_url                  String?
+  facebook_url                  String?
+  verification_token            String?
+  verification_token_expiration String?
+  reset_token                   String?
+  reset_expiration              String?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  events                        Event[]
 
-  @@map("vendors")
+  @@map("vendor")
 }
 
+// User Model
 model User {
-  id               String       @id @default(cuid())
-  profile_picture  String?
-  name             String
-  email            String       @unique
-  phone_number     String?
-  address          String?
-  password         String
-  guardian_type    String?
-  role             Role         @default(Customer)
-  collection       Collection[]
-  booking          Booking[]
-  email_verify     Boolean      @default(false)
-  reset_token      String?
-  reset_expiration String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
-  Invoice          Invoice[]
+  id                            String           @id @default(cuid())
+  profile_picture               String?
+  name                          String
+  email                         String           @unique
+  phone_number                  String?
+  address                       String?
+  password                      String
+  role                          Role             @default(User)
+  guardian_type                 String?
+  email_verify                  Boolean          @default(false)
+  isActive                      Boolean          @default(true)
+  failedLoginAttempts           Int              @default(0)
+  verification_token            String?
+  verification_token_expiration String?
+  reset_token                   String?
+  reset_expiration              String?
+  createdAt                     DateTime         @default(now())
+  updatedAt                     DateTime         @updatedAt
+  favorites                     Favorite[]
+  bookings                      Booking[]
+  payments                      Payment[]
+  notifications                 Notification[]
+  recommendation                Recommendation[]
+  like                          Like[]
 
-  @@map("users")
+  @@map("user")
 }
 
-model Collection {
-  id           String     @id @default(cuid())
-  userId       String     @unique
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activitiesId String
-  activities   Activities @relation(fields: [activitiesId], references: [id], onDelete: Cascade)
+// Event Model
+model Event {
+  id              String           @id @default(cuid())
+  name            String
+  description     String
+  address         String
+  images          String?
+  price           Decimal
+  total_ticket    Int
+  ticket_booked   Int              @default(0)
+  date            DateTime
+  time            String
+  age_range       String
+  instruction     String?
+  category        String
+  isPublished     Boolean?         @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  vendorId        String?
+  adminId         String?
+  vendor          Vendor?          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  admin           Admin?           @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  reviews         Review[]
+  bookings        Booking[]
+  favorites       Favorite?
+  recommendations Recommendation[]
+  like            Like?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("collections")
+  @@map("event")
 }
 
+// Bookings Model
 model Booking {
-  id           String     @id @default(cuid())
-  start_date   String
-  end_date     String
-  userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activitiesId String
-  activities   Activities @relation(fields: [activitiesId], references: [id], onDelete: Cascade)
-  status       Status     @default(Pending)
+  id              String        @id @default(cuid())
+  userId          String
+  eventId         String
+  ticket_quantity Int
+  sessionId       String?
+  status          BookingStatus @default(Pending)
+  payment         Payment[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Invoice   Invoice[]
-
-  @@map("bookings")
+  @@map("booking")
 }
 
-model Invoice {
-  id        String  @id @default(cuid())
-  amount    Decimal
-  userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookingId String
-  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  status    Payment @default(Pending)
+// Payment Model
+model Payment {
+  id            String        @id @default(cuid())
+  amount        Decimal
+  status        PaymentStatus @default(Pending)
+  paymentMethod String
+  transactionId String?
+  invoiceUrl    String?
+  userId        String
+  bookingId     String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
+  @@map("payment")
+}
+
+// Favourite Model
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("favorite")
+}
+
+// Like model
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("invoices")
+  @@map("like")
 }
 
+// Recommendation Model
+model Recommendation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reason    String // e.g., "similar to favorites", "nearby"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("recommendation")
+}
+
+// Notification Model
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String // e.g., "event_reminder", "booking_confirmation"
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Review Model
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+  verified  Boolean  @default(false)
+  eventId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("review")
+}
+
+// Admin Model
+model Admin {
+  id                            String   @id @default(cuid())
+  first_name                    String
+  last_name                     String
+  email                         String   @unique
+  role                          Role     @default(Admin)
+  password                      String
+  email_verify                  Boolean  @default(false)
+  verification_token            String?
+  verification_token_expiration String?
+  reset_token                   String?
+  reset_expiration              String?
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  events                        Event[]
+
+  @@map("admin")
+}
+
+// BlacklistedToken Model
+model BlacklistedToken {
+  id            String   @id @default(cuid())
+  access_token  String
+  refresh_token String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("blacklisted_token")
+}
+
+// Role Enumerator
 enum Role {
   Admin
   Vendor
-  Customer
+  User
 }
 
-enum Status {
+// Booking Status Enumerator
+enum BookingStatus {
   Pending
   Confirmed
+  Failed
   Cancelled
 }
 
-enum Payment {
+// Payment Status Enumerator
+enum PaymentStatus {
   Pending
-  Paid
+  Completed
   Failed
 }
