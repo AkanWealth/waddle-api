@@ -4,71 +4,79 @@ import { SignInDto } from './signin.dto';
 
 export class VendorSignUpDto extends SignInDto {
   @ApiProperty({
-    description: 'The name of the Owner',
-    required: true,
+    description: 'Founder name',
+    type: String,
     example: 'Moly Parker',
+    required: true,
   })
-  @IsString({ message: 'The name must be a string' })
-  @IsNotEmpty({ message: 'The name is required' })
+  @IsString({ message: 'Founder name must be a string' })
+  @IsNotEmpty({ message: 'Founder name is required' })
   name: string;
 
   @ApiProperty({
-    description: 'The address of the business',
-    required: true,
+    description: 'Business Address',
+    type: String,
     example: '12B Cresent Maryland',
+    required: true,
   })
-  @IsString({ message: 'The address must be a string' })
-  @IsNotEmpty({ message: 'The address is required' })
+  @IsString({ message: 'Business address must be a string' })
+  @IsNotEmpty({ message: 'Business address is required' })
   address: string;
 
   @ApiProperty({
-    description: 'The name of the business ',
-    required: true,
+    description: 'Business name',
+    type: String,
     example: 'Mr Bigs',
+    required: true,
   })
-  @IsString({ message: 'The business name must be a string' })
-  @IsNotEmpty({ message: 'The business name is required' })
+  @IsString({ message: 'Business name must be a string' })
+  @IsNotEmpty({ message: 'Business name is required' })
   business_name: string;
 
   @ApiProperty({
-    description: 'The category of the business ',
-    required: true,
+    description: 'Category',
+    type: String,
     example: 'Hospitality',
+    required: true,
   })
-  @IsString({ message: 'The business category must be a string' })
-  @IsNotEmpty({ message: 'The business category is required' })
+  @IsString({ message: 'Category must be a string' })
+  @IsNotEmpty({ message: 'Category is required' })
   business_category: string;
 
   @ApiProperty({
-    description: 'The registration number of the business',
-    required: true,
+    description: 'Registration number',
+    type: String,
     example: 's#kA6uA1LkTt[5P',
+    required: true,
   })
-  @IsString({ message: 'The registration number must be a string' })
-  @IsNotEmpty({ message: 'The registration number is required' })
+  @IsString({ message: 'Registration number must be a string' })
+  @IsNotEmpty({ message: 'Registration number is required' })
   registration_number: string;
 
   @ApiPropertyOptional({
-    description: 'The phone number of the business',
+    description: 'Phone number',
+    type: String,
     example: '080123456789',
   })
-  @IsString({ message: 'The phone number must be a string' })
+  @IsString({ message: 'Phone number must be a string' })
   @IsOptional()
   phone_number: string;
 
   @ApiPropertyOptional({
-    description: 'The business link of the business',
+    description: 'Website link',
+    type: String,
     example: 'https://xample.co.uk',
   })
-  @IsString({ message: 'The business link must be a string' })
+  @IsString({ message: 'Website link must be a string' })
   @IsOptional()
-  business_url: string;
+  website_url: string;
 
   @ApiPropertyOptional({
-    description: 'The facebook link of the business',
+    description: 'Facebook link',
+    type: String,
     example: 'https://facebook.com/xample-co-uk',
   })
-  @IsString({ message: 'The facebook link must be a string' })
+  @IsString({ message: 'Facebook link must be a string' })
   @IsOptional()
   facebook_url: string;
 }

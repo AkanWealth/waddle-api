@@ -19,6 +19,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { NotificationService } from '../notification/notification.service';
+import { AdminRole, VendorRole } from './enum';
 
 @Injectable()
 export class AuthService {
@@ -38,7 +39,7 @@ export class AuthService {
     private notification: NotificationService,
   ) {}
 
-  // function to create a new customer
+  // Start Customer
   async createCustomer(dto: UserSignUpDto, fileName?: string, file?: Buffer) {
     try {
       if (file) {
@@ -86,11 +87,7 @@ export class AuthService {
         message,
       );
 
-      const token = await this.signToken(
-        customer.id,
-        customer.email,
-        customer.role,
-      );
+      const token = await this.signToken(customer.id, customer.email, '');
 
       return {
         message: mail.message,
@@ -107,7 +104,6 @@ export class AuthService {
     }
   }
 
-  // function to update the verification process for the registered customer
   async verifyCustomerEmail(token: string) {
     try {
       const user = await this.prisma.user.findFirst({
@@ -139,7 +135,6 @@ export class AuthService {
     }
   }
 
-  // function to login as a customer
   async customerLogin(dto: SignInDto) {
     try {
       const customer = await this.prisma.user.findUnique({
@@ -152,7 +147,7 @@ export class AuthService {
       }
 
       // Check if the customer is locked
-      if (!customer?.isActive) {
+      if (!customer?.isLocked) {
         throw new ForbiddenException('Account is locked, try again later!');
       }
 
@@ -160,7 +155,7 @@ export class AuthService {
       if (customer?.failedLoginAttempts >= 3) {
         await this.prisma.user.update({
           where: { id: customer.id },
-          data: { isActive: false },
+          data: { isLocked: false },
         });
         throw new ForbiddenException('Account is locked, try again later!');
       }
@@ -186,264 +181,12 @@ export class AuthService {
       });
 
       // Proceed with your normal login logic (e.g., generating JWT)
-      return this.signToken(customer.id, customer.email, customer.role);
+      return this.signToken(customer.id, customer.email, '');
     } catch (error) {
       throw error;
     }
   }
 
-  // function to create a new vendor
-  async createVendor(dto: VendorSignUpDto, fileName?: string, file?: Buffer) {
-    try {
-      if (file) {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.config.getOrThrow('BUCKET_NAME'),
-            Key: fileName,
-            Body: file,
-          }),
-        );
-      }
-
-      const hash = await argon.hash(dto.password);
-
-      // generate token and expiration time
-      const verificatonToken = Math.random().toString(36).substr(2);
-      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
-
-      const vendor = await this.prisma.vendor.create({
-        data: {
-          ...dto,
-          business_logo: fileName || null,
-          password: hash,
-          verification_token: verificatonToken,
-          verification_token_expiration: verificationTokenExpiration.toString(),
-        },
-      });
-
-      if (!vendor) throw new BadRequestException('Email already in use');
-
-      // email verification section
-      const subject = 'Email Verification';
-      const message = `<p>Hello ${vendor.name},</p>
-
-      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
-
-      <p>Warm regards,</p>
-
-      <p>Waddle Team</p>
-      `;
-
-      const mail = await this.notification.sendMail(
-        vendor.email,
-        subject,
-        message,
-      );
-      const token = await this.signToken(vendor.id, vendor.email, vendor.role);
-
-      return {
-        message: mail.message,
-        access_token: token.access_token,
-        refresh_token: token.refresh_token,
-      };
-    } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          throw new BadRequestException('Credentials Taken');
-        }
-      }
-      throw error;
-    }
-  }
-
-  // function to update the verification process for the registered vendor
-  async verifyVendorEmail(token: string) {
-    try {
-      const vendor = await this.prisma.vendor.findFirst({
-        where: {
-          verification_token: token,
-          verification_token_expiration: {
-            gte: Date.now().toString(),
-          },
-        },
-      });
-
-      if (!vendor) {
-        throw new BadRequestException('Invalid or expired token');
-      }
-
-      // Update user verification status in the database
-      await this.prisma.vendor.update({
-        where: { id: vendor.id },
-        data: {
-          email_verify: true,
-          verification_token: null,
-          verification_token_expiration: null,
-        },
-      });
-
-      return { message: 'Vendor verified' };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // function to login as a vendor
-  async vendorLogin(dto: SignInDto) {
-    try {
-      const vendor = await this.prisma.vendor.findUnique({
-        where: { email: dto.email },
-      });
-      if (!vendor) {
-        throw new UnauthorizedException('Invalid Credential');
-      }
-
-      // Check if the vendor is locked
-      if (!vendor.isActive) {
-        throw new ForbiddenException('Account is locked, try again later!');
-      }
-
-      // Lock the account after 3 failed attempts
-      if (vendor.failedLoginAttempts >= 3) {
-        await this.prisma.vendor.update({
-          where: { id: vendor.id },
-          data: { isActive: false },
-        });
-        throw new ForbiddenException('Account is locked, try again later!');
-      }
-
-      const isValidPassword = await argon.verify(vendor.password, dto.password);
-
-      // If validation fails
-      if (!isValidPassword) {
-        await this.prisma.vendor.update({
-          where: { id: vendor.id },
-          data: { failedLoginAttempts: vendor.failedLoginAttempts + 1 },
-        });
-        throw new UnauthorizedException('Invalid Credential');
-      }
-
-      // Reset login attempts on successful attempt
-      await this.prisma.vendor.update({
-        where: { id: vendor.id },
-        data: { failedLoginAttempts: 0 },
-      });
-
-      // Proceed with your normal login logic (e.g., generating JWT)
-      return this.signToken(vendor.id, vendor.email, vendor.role);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // function to create a new admin
-  async createAdmin(dto: AdminSignUpDto) {
-    try {
-      const hash = await argon.hash(dto.password);
-
-      // generate token and expiration time
-      const verificatonToken = Math.random().toString(36).substr(2);
-      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
-
-      const admin = await this.prisma.admin.create({
-        data: {
-          ...dto,
-          password: hash,
-          verification_token: verificatonToken,
-          verification_token_expiration: verificationTokenExpiration.toString(),
-        },
-      });
-
-      if (!admin) throw new BadRequestException('Email already in use');
-
-      // email verification section
-      const subject = 'Email Verification';
-      const message = `<p>Hello ${admin.first_name},</p>
-
-      <p>Thank you for signing up on Waddle as an admin, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
-
-      <p>Warm regards,</p>
-
-      <p>Waddle Team</p>
-      `;
-
-      const mail = await this.notification.sendMail(
-        admin.email,
-        subject,
-        message,
-      );
-      const token = await this.signToken(admin.id, admin.email, admin.role);
-
-      return {
-        message: mail.message,
-        access_token: token.access_token,
-        refresh_token: token.refresh_token,
-      };
-    } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          throw new BadRequestException('Credentials Taken');
-        }
-      }
-      throw error;
-    }
-  }
-
-  // function to update the verification process for the registered admin
-  async verifyAdminEmail(token: string) {
-    try {
-      const admin = await this.prisma.admin.findFirst({
-        where: {
-          verification_token: token,
-          verification_token_expiration: {
-            gte: Date.now().toString(),
-          },
-        },
-      });
-
-      if (!admin) {
-        throw new BadRequestException('Invalid or expired token');
-      }
-
-      // Update user verification status in the database
-      await this.prisma.admin.update({
-        where: { id: admin.id },
-        data: {
-          email_verify: true,
-          verification_token: null,
-          verification_token_expiration: null,
-        },
-      });
-
-      return { message: 'Admin verified' };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // function to login as an admin
-  async adminLogin(dto: SignInDto) {
-    try {
-      const admin = await this.prisma.admin.findUnique({
-        where: { email: dto.email },
-      });
-      if (!admin) throw new UnauthorizedException('Invalid credential');
-
-      const isValidPassword = await argon.verify(admin.password, dto.password);
-      if (!isValidPassword)
-        throw new UnauthorizedException('Invalid Credential');
-
-      // Check if the admin is verified
-      if (!admin.email_verify)
-        throw new ForbiddenException('Your acount is not verified.');
-
-      return this.signToken(admin.id, admin.email, admin.role);
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // function to validate google user
   async validateGoogleUser(googleUser: UserSignUpDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: googleUser?.email },
@@ -456,7 +199,6 @@ export class AuthService {
     });
   }
 
-  // function to validate facebook user
   async validateFacebookUser(facebookUser: UserSignUpDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: facebookUser?.email },
@@ -469,54 +211,6 @@ export class AuthService {
     });
   }
 
-  // function to generate a token
-  async signToken(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
-
-    const access_token = await this.jwt.signAsync(payload, {
-      expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
-      secret: this.config.get<string>('JWT_SECRET_KEY'),
-    });
-
-    const refresh_token = await this.jwt.signAsync(payload, {
-      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
-      secret: this.config.get<string>('JWT_REFRESH_SECRET_KEY'),
-    });
-
-    return { access_token, refresh_token };
-  }
-
-  // function to generate a fresh token
-  async refreshToken(token: string) {
-    const blacklistToken = await this.prisma.blacklistedToken.findFirst({
-      where: { refresh_token: token },
-    });
-    if (blacklistToken) {
-      throw new ForbiddenException('Login, token has been blacklisted!');
-    }
-
-    const decoded = await this.jwt.verifyAsync(token, {
-      secret: process.env.JWT_REFRESH_SECRET_KEY,
-    });
-    if (!decoded) {
-      throw new UnauthorizedException('Token is invalid');
-    }
-
-    const payload = {
-      sub: decoded.sub,
-      email: decoded.email,
-      role: decoded.role,
-    };
-
-    const access_token = await this.jwt.signAsync(payload, {
-      expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
-      secret: this.config.get<string>('JWT_SECRET_KEY'),
-    });
-
-    return { access_token };
-  }
-
-  // function for generating the reset password token for user
   async generateResetTokenForUser(userEmail: string) {
     try {
       const user = await this.prisma.user.findUnique({
@@ -561,7 +255,6 @@ export class AuthService {
     }
   }
 
-  // function for user password reset based on reset token
   async resetUserPassword(resetToken: string, password: string) {
     try {
       const user = await this.prisma.user.findFirst({
@@ -584,7 +277,7 @@ export class AuthService {
         where: { id: user.id },
         data: {
           password: hashed,
-          isActive: true,
+          isLocked: true,
           failedLoginAttempts: 0,
           reset_token: null,
           reset_expiration: null,
@@ -596,8 +289,150 @@ export class AuthService {
       throw error;
     }
   }
+  // End Customer
 
-  // function for generating the reset password token for vendor
+  // Start Vendor
+  async createVendor(dto: VendorSignUpDto, fileName?: string, file?: Buffer) {
+    try {
+      const existingEmail = await this.prisma.vendor.findUnique({
+        where: { email: dto.email },
+      });
+      if (existingEmail) throw new BadRequestException('Email already in use');
+
+      if (file) {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.config.getOrThrow('BUCKET_NAME'),
+            Key: fileName,
+            Body: file,
+          }),
+        );
+      }
+
+      const hash = await argon.hash(dto.password);
+      const verificatonToken = Math.random().toString(36).substr(2);
+      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+
+      const vendor = await this.prisma.vendor.create({
+        data: {
+          ...dto,
+          business_logo: fileName || null,
+          password: hash,
+          verification_token: verificatonToken,
+          verification_token_expiration: verificationTokenExpiration.toString(),
+        },
+      });
+
+      const subject = 'Email Verification';
+      const message = `<p>Hello ${vendor.name},</p>
+
+      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+
+      <p>Warm regards,</p>
+
+      <p>Waddle Team</p>
+      `;
+
+      const mail = await this.notification.sendMail(
+        vendor.email,
+        subject,
+        message,
+      );
+      const token = await this.signToken(vendor.id, vendor.email, vendor.role);
+
+      return {
+        message: mail.message,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new BadRequestException('Credentials Taken');
+        }
+      }
+      throw error;
+    }
+  }
+
+  async verifyVendorEmail(token: string) {
+    try {
+      const vendor = await this.prisma.vendor.findFirst({
+        where: {
+          verification_token: token,
+          verification_token_expiration: {
+            gte: Date.now().toString(),
+          },
+        },
+      });
+
+      if (!vendor) {
+        throw new BadRequestException('Invalid or expired token');
+      }
+
+      // Update user verification status in the database
+      await this.prisma.vendor.update({
+        where: { id: vendor.id },
+        data: {
+          email_verify: true,
+          verification_token: null,
+          verification_token_expiration: null,
+        },
+      });
+
+      return { message: 'Vendor verified' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async vendorLogin(dto: SignInDto) {
+    try {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { email: dto.email },
+      });
+      if (!vendor) {
+        throw new UnauthorizedException('Invalid Credential');
+      }
+
+      // Check if the vendor is locked
+      if (!vendor.isLocked) {
+        throw new ForbiddenException('Account is locked, try again later!');
+      }
+
+      // Lock the account after 3 failed attempts
+      if (vendor.failedLoginAttempts >= 3) {
+        await this.prisma.vendor.update({
+          where: { id: vendor.id },
+          data: { isLocked: false },
+        });
+        throw new ForbiddenException('Account is locked, try again later!');
+      }
+
+      const isValidPassword = await argon.verify(vendor.password, dto.password);
+
+      // If validation fails
+      if (!isValidPassword) {
+        await this.prisma.vendor.update({
+          where: { id: vendor.id },
+          data: { failedLoginAttempts: vendor.failedLoginAttempts + 1 },
+        });
+        throw new UnauthorizedException('Invalid Credential');
+      }
+
+      // Reset login attempts on successful attempt
+      await this.prisma.vendor.update({
+        where: { id: vendor.id },
+        data: { failedLoginAttempts: 0 },
+      });
+
+      // Proceed with your normal login logic (e.g., generating JWT)
+      return this.signToken(vendor.id, vendor.email, vendor.role);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async generateResetTokenForVendor(userEmail: string) {
     try {
       const vendor = await this.prisma.vendor.findUnique({
@@ -642,7 +477,6 @@ export class AuthService {
     }
   }
 
-  // function for vendor password reset based on reset token
   async resetVendorPassword(resetToken: string, password: string) {
     try {
       const vendor = await this.prisma.vendor.findFirst({
@@ -665,7 +499,7 @@ export class AuthService {
         where: { id: vendor.id },
         data: {
           password: hashed,
-          isActive: true,
+          isLocked: true,
           failedLoginAttempts: 0,
           reset_token: null,
           reset_expiration: null,
@@ -677,8 +511,112 @@ export class AuthService {
       throw error;
     }
   }
+  // End Vendor
 
-  // function for generating the reset password token for admin
+  // Start Admin
+  async createAdmin(dto: AdminSignUpDto) {
+    try {
+      const existingEmail = await this.prisma.admin.findUnique({
+        where: { email: dto.email },
+      });
+      if (existingEmail) throw new BadRequestException('Email already in use');
+
+      const hash = await argon.hash(dto.password);
+      const verificatonToken = Math.random().toString(36).substr(2);
+      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+
+      const admin = await this.prisma.admin.create({
+        data: {
+          ...dto,
+          password: hash,
+          verification_token: verificatonToken,
+          verification_token_expiration: verificationTokenExpiration.toString(),
+          role: dto.role as AdminRole,
+        },
+      });
+
+      // email verification section
+      const subject = 'Email Verification';
+      const message = `<p>Hello ${admin.first_name},</p>
+
+      <p>Thank you for signing up on Waddle as an admin, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+
+      <p>Warm regards,</p>
+
+      <p>Waddle Team</p>
+      `;
+
+      const mail = await this.notification.sendMail(
+        admin.email,
+        subject,
+        message,
+      );
+      const token = await this.signToken(admin.id, admin.email, admin.role);
+
+      return {
+        message: mail.message,
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+      };
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          throw new BadRequestException('Credentials Taken');
+        }
+      }
+      throw error;
+    }
+  }
+
+  async verifyAdminEmail(token: string) {
+    try {
+      const admin = await this.prisma.admin.findFirst({
+        where: {
+          verification_token: token,
+          verification_token_expiration: {
+            gte: Date.now().toString(),
+          },
+        },
+      });
+
+      if (!admin) throw new BadRequestException('Invalid or expired token');
+
+      await this.prisma.admin.update({
+        where: { id: admin.id },
+        data: {
+          email_verify: true,
+          verification_token: null,
+          verification_token_expiration: null,
+        },
+      });
+
+      return { message: 'Admin verified' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async adminLogin(dto: SignInDto) {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { email: dto.email },
+      });
+      if (!admin) throw new UnauthorizedException('Invalid credential');
+
+      const isValidPassword = await argon.verify(admin.password, dto.password);
+      if (!isValidPassword)
+        throw new UnauthorizedException('Invalid Credential');
+
+      // Check if the admin is verified
+      if (!admin.email_verify)
+        throw new ForbiddenException('Your acount is not verified.');
+
+      return this.signToken(admin.id, admin.email, admin.role);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async generateResetTokenForAdmin(userEmail: string) {
     try {
       const admin = await this.prisma.admin.findUnique({
@@ -727,7 +665,6 @@ export class AuthService {
     }
   }
 
-  // function for admin password reset based on reset token
   async resetAdminPassword(resetToken: string, password: string) {
     try {
       const admin = await this.prisma.admin.findFirst({
@@ -760,8 +697,53 @@ export class AuthService {
       throw error;
     }
   }
+  // End Admin
 
-  // function to blacklist a token
+  async signToken(userId: string, email: string, role: string) {
+    const payload = { sub: userId, email, role };
+
+    const access_token = await this.jwt.signAsync(payload, {
+      expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
+      secret: this.config.get<string>('JWT_SECRET_KEY'),
+    });
+
+    const refresh_token = await this.jwt.signAsync(payload, {
+      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
+      secret: this.config.get<string>('JWT_REFRESH_SECRET_KEY'),
+    });
+
+    return { access_token, refresh_token };
+  }
+
+  async refreshToken(token: string) {
+    const blacklistToken = await this.prisma.blacklistedToken.findFirst({
+      where: { refresh_token: token },
+    });
+    if (blacklistToken) {
+      throw new ForbiddenException('Login, token has been blacklisted!');
+    }
+
+    const decoded = await this.jwt.verifyAsync(token, {
+      secret: process.env.JWT_REFRESH_SECRET_KEY,
+    });
+    if (!decoded) {
+      throw new UnauthorizedException('Token is invalid');
+    }
+
+    const payload = {
+      sub: decoded.sub,
+      email: decoded.email,
+      role: decoded.role,
+    };
+
+    const access_token = await this.jwt.signAsync(payload, {
+      expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
+      secret: this.config.get<string>('JWT_SECRET_KEY'),
+    });
+
+    return { access_token };
+  }
+
   async addToken(dto: BlacklistTokenDto) {
     try {
       await this.prisma.blacklistedToken.create({
