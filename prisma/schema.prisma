@@ -13,34 +13,81 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Admin Model
+model Admin {
+  id                            String    @id @default(cuid())
+  first_name                    String
+  last_name                     String
+  email                         String    @unique
+  role                          AdminRole @default(Editor)
+  password                      String
+  email_verify                  Boolean   @default(false)
+  verification_token            String?
+  verification_token_expiration String?
+  reset_token                   String?
+  reset_expiration              String?
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
+  events                        Event[]
+
+  @@map("admin")
+}
+
 // Vendor Model
 model Vendor {
-  id                            String   @id @default(cuid())
+  id                            String        @id @default(cuid())
   name                          String
-  email                         String   @unique
+  email                         String        @unique
   password                      String
   phone_number                  String
-  role                          Role     @default(Vendor)
+  role                          VendorRole    @default(Vendor)
   business_logo                 String?
   address                       String
-  business_name                 String   @unique
+  business_name                 String        @unique
   business_category             String
   registration_number           String
-  email_verify                  Boolean  @default(true)
-  isActive                      Boolean  @default(true)
-  isVerified                    Boolean  @default(true)
-  failedLoginAttempts           Int      @default(0)
-  business_url                  String?
+  email_verify                  Boolean       @default(true)
+  isLocked                      Boolean       @default(false)
+  isDeleted                     Boolean       @default(false)
+  isVerified                    Boolean       @default(true)
+  failedLoginAttempts           Int           @default(0)
+  website_url                   String?
   facebook_url                  String?
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime @default(now())
-  updatedAt                     DateTime @updatedAt
+  createdAt                     DateTime      @default(now())
+  updatedAt                     DateTime      @updatedAt
+  staffs                        VendorStaff[]
   events                        Event[]
 
   @@map("vendor")
+}
+
+// VendorStaff Model
+model VendorStaff {
+  id                            String     @id @default(cuid())
+  name                          String
+  email                         String     @unique
+  password                      String
+  phone_number                  String
+  role                          VendorRole @default(Representative)
+  email_verify                  Boolean    @default(true)
+  isLocked                      Boolean    @default(false)
+  isDeleted                     Boolean    @default(false)
+  failedLoginAttempts           Int        @default(0)
+  verification_token            String?
+  verification_token_expiration String?
+  reset_token                   String?
+  reset_expiration              String?
+  vendorId                      String
+  vendor                        Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  createdAt                     DateTime   @default(now())
+  updatedAt                     DateTime   @updatedAt
+  events                        Event[]
+
+  @@map("vendorstaff")
 }
 
 // User Model
@@ -52,10 +99,10 @@ model User {
   phone_number                  String?
   address                       String?
   password                      String
-  role                          Role             @default(User)
   guardian_type                 String?
   email_verify                  Boolean          @default(false)
-  isActive                      Boolean          @default(true)
+  isLocked                      Boolean          @default(false)
+  isDeleted                     Boolean          @default(false)
   failedLoginAttempts           Int              @default(0)
   verification_token            String?
   verification_token_expiration String?
@@ -89,17 +136,22 @@ model Event {
   instruction     String?
   category        String
   isPublished     Boolean?         @default(false)
+  isDeleted       Boolean?         @default(false)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  vendorId        String?
-  adminId         String?
-  vendor          Vendor?          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  admin           Admin?           @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  creatorId       String
+  creatorType      String
   reviews         Review[]
   bookings        Booking[]
   favorites       Favorite?
   recommendations Recommendation[]
   like            Like?
+  Admin           Admin?           @relation(fields: [adminId], references: [id])
+  adminId         String?
+  Vendor          Vendor?          @relation(fields: [vendorId], references: [id])
+  vendorId        String?
+  VendorStaff     VendorStaff?     @relation(fields: [vendorStaffId], references: [id])
+  vendorStaffId   String?
 
   @@map("event")
 }
@@ -112,9 +164,10 @@ model Booking {
   ticket_quantity Int
   sessionId       String?
   status          BookingStatus @default(Pending)
-  payment         Payment[]
+  isDeleted       Boolean?      @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  payment         Payment[]
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -125,14 +178,15 @@ model Booking {
 model Payment {
   id            String        @id @default(cuid())
   amount        Decimal
-  status        PaymentStatus @default(Pending)
   paymentMethod String
   transactionId String?
   invoiceUrl    String?
-  userId        String
-  bookingId     String
+  status        PaymentStatus @default(Pending)
+  isDeleted     Boolean?      @default(false)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  userId        String
+  bookingId     String
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
@@ -205,26 +259,6 @@ model Review {
   @@map("review")
 }
 
-// Admin Model
-model Admin {
-  id                            String   @id @default(cuid())
-  first_name                    String
-  last_name                     String
-  email                         String   @unique
-  role                          Role     @default(Admin)
-  password                      String
-  email_verify                  Boolean  @default(false)
-  verification_token            String?
-  verification_token_expiration String?
-  reset_token                   String?
-  reset_expiration              String?
-  createdAt                     DateTime @default(now())
-  updatedAt                     DateTime @updatedAt
-  events                        Event[]
-
-  @@map("admin")
-}
-
 // BlacklistedToken Model
 model BlacklistedToken {
   id            String   @id @default(cuid())
@@ -236,11 +270,18 @@ model BlacklistedToken {
   @@map("blacklisted_token")
 }
 
-// Role Enumerator
-enum Role {
+// AdminRole Enumerator
+enum AdminRole {
   Admin
+  Editor
+  Viewer
+}
+
+// VendorRole Enumerator
+enum VendorRole {
   Vendor
-  User
+  Representative
+  Support
 }
 
 // Booking Status Enumerator
@@ -249,6 +290,7 @@ enum BookingStatus {
   Confirmed
   Failed
   Cancelled
+  Refunded
 }
 
 // Payment Status Enumerator

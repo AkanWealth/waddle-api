@@ -31,12 +31,12 @@ import {
   ApiQuery,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { User } from '@prisma/client';
+import { User, VendorRole } from '@prisma/client';
 import { JwtGuard } from '../auth/guard/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
-import { Role } from '../auth/enum/role.enum';
+import { AdminRole } from 'src/auth/enum';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({
@@ -54,16 +54,15 @@ export class EventController {
   })
   @ApiCreatedResponse({ description: 'Created Successfull' })
   @Post()
-  @Roles(Role.Admin, Role.Vendor)
+  @Roles(AdminRole.Admin, AdminRole.Editor, VendorRole.Vendor, VendorRole.Representative)
   @UseInterceptors(FileInterceptor('images'))
   create(
-    @GetUser() user: User,
+    @GetUser() user: {id: string, role: string},
     @Body() dto: CreateEventDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (file) {
       try {
-        console.log('file: ', file);
         new ParseFilePipe({
           validators: [
             new MaxFileSizeValidator({ maxSize: 10000000 }),
@@ -73,7 +72,7 @@ export class EventController {
       } catch (error) {
         throw error;
       }
-      return this.eventService.create(
+      return this.eventService.createEvent(
         user.id,
         user.role,
         dto,
@@ -81,7 +80,7 @@ export class EventController {
         file.buffer,
       );
     } else {
-      return this.eventService.create(
+      return this.eventService.createEvent(
         user.id,
         user.role,
         dto,
@@ -99,7 +98,7 @@ export class EventController {
   @ApiOkResponse({ description: 'Successfull' })
   @Get()
   findAll() {
-    return this.eventService.findAll();
+    return this.eventService.viewAllEvent();
   }
 
   @ApiOperation({
@@ -108,9 +107,9 @@ export class EventController {
   })
   @ApiOkResponse({ description: 'Successfull' })
   @Get('me')
-  @Roles(Role.Admin, Role.Vendor)
-  findMyEvents(@GetUser() user: { id: string; role: string }) {
-    return this.eventService.findMyEvents(user.id, user.role);
+  @Roles(AdminRole.Admin, AdminRole.Editor, VendorRole.Vendor, VendorRole.Representative)
+  findMyEvents(@GetUser() user: { id: string }) {
+    return this.eventService.viewMyEvents(user.id);
   }
 
   @ApiOperation({
@@ -123,12 +122,12 @@ export class EventController {
   @ApiQuery({ name: 'age', required: false, type: String })
   @ApiQuery({ name: 'price', required: false, type: String })
   @Get('search')
-  search(
+  searchEvent(
     @Query('name') name: string,
     @Query('age') age: string,
     @Query('price') price: string,
   ) {
-    return this.eventService.search(name, age, price);
+    return this.eventService.searchEvent(name, age, price);
   }
 
   @ApiOperation({
@@ -146,7 +145,7 @@ export class EventController {
     @Query('category') category: string,
     @Query('address') address: string,
   ) {
-    return this.eventService.filter(age, category, address);
+    return this.eventService.filterEvent(age, category, address);
   }
 
   @ApiOperation({
@@ -156,8 +155,8 @@ export class EventController {
   @ApiOkResponse({ description: 'Successfull' })
   @ApiParam({ name: 'id' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.eventService.findOne(id);
+  viewOneEvent(@Param('id') id: string) {
+    return this.eventService.viewOneEvent(id);
   }
 
   @ApiOperation({
@@ -168,9 +167,9 @@ export class EventController {
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
-  @Roles(Role.Admin, Role.Vendor)
+  @Roles(AdminRole.Admin, AdminRole.Editor, VendorRole.Vendor, VendorRole.Representative)
   @UseInterceptors(FileInterceptor('images'))
-  update(
+  updateEvent(
     @Param('id') id: string,
     @GetUser() user: User,
     @Body() dto: UpdateEventDto,
@@ -187,16 +186,15 @@ export class EventController {
       } catch (error) {
         throw error;
       }
-      return this.eventService.update(
+      return this.eventService.updateEvent(
         id,
         user.id,
-        user.role,
         dto,
         file.originalname,
         file.buffer,
       );
     } else {
-      return this.eventService.update(id, user.id, user.role, dto);
+      return this.eventService.updateEvent(id, user.id, dto);
     }
   }
 
@@ -209,8 +207,8 @@ export class EventController {
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  @Roles(Role.Admin, Role.Vendor)
-  remove(@Param('id') id: string, @GetUser() user: User) {
-    return this.eventService.remove(id, user.id, user.role);
+  @Roles(AdminRole.Admin, AdminRole.Editor, VendorRole.Vendor, VendorRole.Representative)
+  deleteEvent(@Param('id') id: string, @GetUser() user: User) {
+    return this.eventService.deleteEvent(id, user.id);
   }
 }

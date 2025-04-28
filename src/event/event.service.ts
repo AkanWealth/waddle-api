@@ -12,6 +12,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { AdminRole } from 'src/auth/enum';
 
 @Injectable()
 export class EventService {
@@ -29,27 +30,15 @@ export class EventService {
     private config: ConfigService,
   ) {}
 
-  // function to add a event to the database
-  async create(
-    userId: string,
-    userRole: string,
+  async createEvent(
+    creatorId: string,
+    creatorType: string,
     dto: CreateEventDto,
     fileName?: string,
     file?: Buffer,
   ) {
     try {
-      const vendorVerify = await this.prisma.vendor.findUnique({
-        where: { id: userId },
-      });
-      const adminVerify = await this.prisma.admin.findUnique({
-        where: { id: userId },
-      });
-
-      if (!vendorVerify?.isVerified && !adminVerify?.email_verify)
-        throw new ForbiddenException('You are not veified');
-
       if (file) {
-        console.log('file: ', file);
         await this.s3Client.send(
           new PutObjectCommand({
             Bucket: this.config.getOrThrow('BUCKET_NAME'),
@@ -62,37 +51,28 @@ export class EventService {
       const date = new Date(dto.date);
       const isPublished = this.stringToBoolean(dto.isPublished);
 
-      // Determine whether to store vendorId or adminId
-      const eventData: any = {
-        ...dto,
-        date,
-        total_ticket: Number(dto.total_ticket),
-        images: fileName || null,
-        isPublished,
-      };
-
-      if (userRole === Role.Vendor) {
-        eventData.vendorId = userId;
-      } else if (userRole === Role.Admin) {
-        eventData.adminId = userId;
-      }
-
       const event = await this.prisma.event.create({
-        data: eventData,
+        data: {
+          ...dto,
+          date,
+          total_ticket: Number(dto.total_ticket),
+          images: fileName || null,
+          isPublished,
+          creatorId,
+          creatorType,
+        },
       });
 
-      return event;
+      return {message: "Event created", event};
     } catch (error) {
       throw error;
     }
   }
 
-  // function to find all Event from the database
-  async findAll() {
+  async viewAllEvent() {
     try {
       const events = await this.prisma.event.findMany({
         where: { isPublished: true },
-        include: { vendor: true, admin: true },
       });
 
       if (!events || events.length <= 0)
@@ -106,26 +86,16 @@ export class EventService {
         };
       });
 
-      return eventWithImage;
+      return {message: "All events found", events: eventWithImage};
     } catch (error) {
       throw error;
     }
   }
 
-  // function to find all my event from the database
-  async findMyEvents(userId: string, userRole: string) {
+  async viewMyEvents(creatorId: string) {
     try {
-      const whereClause: any = {};
-
-      if (userRole === Role.Vendor) {
-        whereClause.vendorId = userId;
-      } else if (userRole === Role.Admin) {
-        whereClause.adminId = userId;
-      }
-
       const event = await this.prisma.event.findMany({
-        where: whereClause,
-        include: { vendor: true, admin: true },
+        where: {creatorId},
       });
 
       if (!event || event.length <= 0)
@@ -139,21 +109,16 @@ export class EventService {
         };
       });
 
-      return eventWithImage;
+      return {message: "Events found", events: eventWithImage};
     } catch (error) {
       throw error;
     }
   }
 
-  // function to find a event from the database
-  async findOne(id: string) {
+  async viewOneEvent(id: string) {
     try {
       const event = await this.prisma.event.findUnique({
         where: { id },
-        include: {
-          vendor: true,
-          admin: true,
-        },
       });
       if (!event)
         throw new NotFoundException(
@@ -162,14 +127,13 @@ export class EventService {
 
       const images = `${process.env.R2_PUBLIC_ENDPOINT}/${event.images}`;
 
-      return { ...event, images };
+      return { message: "Event found", event: {...event, images} };
     } catch (error) {
       throw error;
     }
   }
 
-  // function to search for event from the database
-  async search(name: string, age: string, price: string) {
+  async searchEvent(name: string, age: string, price: string) {
     try {
       const whereClause: any = {};
 
@@ -190,7 +154,6 @@ export class EventService {
 
       const event = await this.prisma.event.findMany({
         where: whereClause,
-        include: { vendor: true, admin: true },
       });
       if (!event || event.length === 0)
         throw new NotFoundException(
@@ -205,14 +168,13 @@ export class EventService {
         };
       });
 
-      return eventWithImage;
+      return {message: "Event found", event: eventWithImage};
     } catch (error) {
       throw error;
     }
   }
 
-  // function to filter event by age range or category from the database
-  async filter(age_range?: string, category?: string, address?: string) {
+  async filterEvent(age_range?: string, category?: string, address?: string) {
     try {
       const whereClause: any = {};
 
@@ -233,7 +195,6 @@ export class EventService {
 
       const event = await this.prisma.event.findMany({
         where: whereClause,
-        include: { vendor: true, admin: true },
       });
 
       if (!event || event.length === 0) {
@@ -250,44 +211,22 @@ export class EventService {
         };
       });
 
-      return eventWithImage;
+      return {message: "Event found", event: eventWithImage};
     } catch (error) {
       throw error;
     }
   }
 
-  // function to update an event in the database
-  async update(
+  async updateEvent(
     id: string,
-    userId: string,
-    userRole: string,
+    creatorId: string,
     dto: UpdateEventDto,
     fileName?: string,
     file?: Buffer,
   ) {
     try {
-      const vendorVerify = await this.prisma.vendor.findUnique({
-        where: { id: userId },
-      });
-      const adminVerify = await this.prisma.admin.findUnique({
-        where: { id: userId },
-      });
-
-      if (!vendorVerify?.isVerified && !adminVerify?.email_verify)
-        throw new ForbiddenException('You are not veified');
-
-      const whereClause: any = {};
-
-      if (userRole === Role.Vendor) {
-        whereClause.id = id;
-        whereClause.vendorId = userId;
-      } else if (userRole === Role.Admin) {
-        whereClause.id = id;
-        whereClause.adminId = userId;
-      }
-
       const existingEvent = await this.prisma.event.findUnique({
-        where: whereClause,
+        where: {id, creatorId},
       });
 
       if (!existingEvent)
@@ -336,27 +275,16 @@ export class EventService {
         },
       });
 
-      return event;
+      return {message: "Event updated", event};
     } catch (error) {
       throw error;
     }
   }
 
-  // function to delete an event from the database
-  async remove(id: string, userId: string, userRole: string) {
+  async deleteEvent(id: string, creatorId: string) {
     try {
-      const whereClause: any = {};
-
-      if (userRole === Role.Vendor) {
-        whereClause.id = id;
-        whereClause.vendorId = userId;
-      } else if (userRole === Role.Admin) {
-        whereClause.id = id;
-        whereClause.adminId = userId;
-      }
-
       const existingEvent = await this.prisma.event.findUnique({
-        where: whereClause,
+        where: {id, creatorId},
       });
 
       if (!existingEvent)
