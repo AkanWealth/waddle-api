@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { UpdateVendorDto } from './dto';
+import { CreateVendorStaffDto, UpdateVendorDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +13,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { UpdatePasswordDto } from 'src/user/dto';
+import { VendorRole } from 'src/auth/enum';
 
 @Injectable()
 export class VendorService {
@@ -30,8 +31,8 @@ export class VendorService {
     private config: ConfigService,
   ) {}
 
-  // function to find all the vendor
-  async findAll() {
+  // Start Vendor
+  async viewAllVendor() {
     try {
       const vendor = await this.prisma.vendor.findMany();
 
@@ -43,29 +44,28 @@ export class VendorService {
         };
       });
 
-      return vendorsWithLogo;
+      return { message: 'All vendors found', vendor: vendorsWithLogo };
     } catch (error) {
       throw error;
     }
   }
 
-  // function to find the loggedin vendor
-  async findMe(authVendor: string) {
+  async viewMe(authVendor: string) {
     try {
       const vendor = await this.prisma.vendor.findUnique({
         where: { id: authVendor },
+        include: { staffs: true },
       });
 
       const business_logo = `${process.env.R2_PUBLIC_ENDPOINT}/${vendor.business_logo}`;
 
-      return { ...vendor, business_logo };
+      return { message: 'Profile found', vendor: { ...vendor, business_logo } };
     } catch (error) {
       throw error;
     }
   }
 
-  // function to update the loggedin user
-  async update(
+  async updateProfile(
     id: string,
     dto: UpdateVendorDto,
     fileName?: string,
@@ -125,17 +125,19 @@ export class VendorService {
       // if no password is provided, update the user without changing the password
       const user = await this.prisma.vendor.update({
         where: { id },
-        data: { ...dto, business_logo: businessLogo || null },
+        data: {
+          ...dto,
+          business_logo: businessLogo || null,
+        },
       });
 
       delete user.password;
-      return user;
+      return { message: 'Profile updated', user };
     } catch (error) {
       throw error;
     }
   }
 
-  // function to update the loggedin user password
   async updatePassword(id: string, dto: UpdatePasswordDto) {
     try {
       const existingVendor = await this.prisma.vendor.findUnique({
@@ -169,8 +171,26 @@ export class VendorService {
     }
   }
 
-  // function to delete the a user by ID
-  async removeOne(id: string) {
+  async deleteVendorTemp(id: string) {
+    try {
+      const existingVendor = await this.prisma.vendor.findUnique({
+        where: { id },
+      });
+
+      if (!existingVendor) throw new NotFoundException('Vendor not found');
+
+      const vendor = await this.prisma.vendor.update({
+        where: { id: existingVendor.id },
+        data: { isDeleted: true },
+      });
+
+      return { mesaage: 'Vendor deleted' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async deleteVendor(id: string) {
     try {
       const existingVendor = await this.prisma.vendor.findUnique({
         where: { id },
@@ -196,4 +216,75 @@ export class VendorService {
       throw error;
     }
   }
+  // End Vendor
+
+  // Start staff
+  async createStaff(vendorId: string, dto: CreateVendorStaffDto) {
+    try {
+      const existingVendorEmail = await this.prisma.vendor.findUnique({
+        where: { email: dto.email },
+      });
+      const existingStaffEmail = await this.prisma.vendorStaff.findUnique({
+        where: { email: dto.email },
+      });
+      if (existingVendorEmail || existingStaffEmail)
+        throw new BadRequestException('Email has been used.');
+
+      const hashedPassword = await argon.hash(dto.password);
+      const staff = await this.prisma.vendorStaff.create({
+        data: {
+          ...dto,
+          role: dto.role as VendorRole,
+          password: hashedPassword,
+          vendor: { connect: { id: vendorId } },
+        },
+      });
+
+      return { message: 'Staff created', staff };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async viewAllStaff(vendorId: string) {
+    const staffs = await this.prisma.vendorStaff.findMany({
+      where: { vendorId },
+    });
+    if (!staffs || staffs.length <= 0) throw new NotFoundException('Not found');
+
+    return { message: 'All staff found', staffs };
+  }
+
+  async viewStaff(vendorId: string, id: string) {
+    const staff = await this.prisma.vendorStaff.findUnique({
+      where: { id, vendorId },
+    });
+    if (!staff) throw new NotFoundException('Not found');
+
+    return { message: 'Staff found', staff };
+  }
+
+  async deleteStaffTemp(vendorId: string, id: string) {
+    const findStaff = await this.prisma.vendorStaff.findUnique({
+      where: { id, vendorId },
+    });
+    if (!findStaff) throw new NotFoundException('Not found');
+
+    await this.prisma.vendorStaff.update({
+      where: { id: findStaff.id },
+      data: { isDeleted: true },
+    });
+    return { message: 'Staff deleted' };
+  }
+
+  async deleteStaff(vendorId: string, id: string) {
+    const findStaff = await this.prisma.vendorStaff.findUnique({
+      where: { id, vendorId },
+    });
+    if (!findStaff) throw new NotFoundException('Not found');
+
+    await this.prisma.vendorStaff.delete({ where: { id: findStaff.id } });
+    return { message: 'Staff deleted' };
+  }
+  // End Staff
 }

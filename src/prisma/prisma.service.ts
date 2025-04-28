@@ -22,7 +22,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     return this.$transaction([
       this.event.deleteMany(),
       this.vendor.deleteMany(),
-      this.user.deleteMany({ where: { role: 'User' } }),
+      this.user.deleteMany(),
     ]);
   }
 }
