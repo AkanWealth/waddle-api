@@ -3,7 +3,7 @@ import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateBookingDto {
   @ApiProperty({
-    description: 'The event ID booked',
+    description: 'Event ID',
     example: 'cm7539b180003u0qavzlq72p4',
     required: true,
   })
@@ -12,11 +12,11 @@ export class CreateBookingDto {
   eventId: string;
 
   @ApiProperty({
-    description: 'The ticket quantity booked',
+    description: 'Ticket quantity',
     example: 3,
     required: true,
   })
-  @IsNumber({}, { message: 'Event ID must be a number' })
-  @IsNotEmpty({ message: 'Event ID can not be empty' })
+  @IsNumber({}, { message: 'Ticket quantity must be a number' })
+  @IsNotEmpty({ message: 'Ticket quantity can not be empty' })
   ticket_quantity: number;
 }

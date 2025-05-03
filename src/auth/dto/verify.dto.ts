@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 
 export class VerifyDto {
   @ApiProperty({
-    description: 'The token',
+    description: 'Token',
     required: true,
     example: '8rs4syl53gd',
   })

@@ -4,7 +4,8 @@ import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateBookingDto extends PartialType(CreateBookingDto) {
   @ApiPropertyOptional({
-    description: 'The status of the booked event',
+    description: 'Status',
+    type: String,
     example: 'Confirmed',
   })
   @IsString({ message: 'Status of the booked event must be a string' })

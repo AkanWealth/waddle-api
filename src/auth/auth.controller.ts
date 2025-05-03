@@ -16,7 +16,6 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import {
-  AdminSignUpDto,
   BlacklistTokenDto,
   VerifyDto,
   ForgotPasswordDto,
@@ -24,7 +23,7 @@ import {
   ResetPasswordDto,
   SignInDto,
   UserSignUpDto,
-  VendorSignUpDto,
+  OrganiserSignUpDto,
 } from './dto';
 import {
   ApiAcceptedResponse,
@@ -41,7 +40,6 @@ import { FacebookAuthGuard, GoogleAuthGuard } from './guard';
 import { GetUser } from './decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { Role } from './enum/role.enum';
 import { NotificationService } from '../notification/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -59,8 +57,8 @@ export class AuthController {
     summary: 'create a parent account',
     description: 'Parent can create an account',
   })
-  @ApiCreatedResponse({ description: 'Customer created' })
-  @ApiBadRequestResponse({ description: 'Credentials taken' })
+  @ApiCreatedResponse({ description: 'Created' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
   @Post('signup/customer')
   @UseInterceptors(FileInterceptor('profile_picture'))
   createCustomer(
@@ -71,7 +69,7 @@ export class AuthController {
       try {
         new ParseFilePipe({
           validators: [
-            new MaxFileSizeValidator({ maxSize: 10000000 }),
+            new MaxFileSizeValidator({ maxSize: 5000000 }),
             new FileTypeValidator({ fileType: 'image/*' }),
           ],
         }).transform(file);
@@ -97,7 +95,7 @@ export class AuthController {
     description:
       'Parent is sent a token to verify email if not received on registration',
   })
-  @ApiOkResponse({ description: 'Verification mail sent' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
   @Post('verification/send/customer')
   async sendCustomerVerification(@Body() dto: ForgotPasswordDto) {
@@ -135,7 +133,7 @@ export class AuthController {
     summary: 'verify parent email',
     description: 'Parent can verify their email based on token received',
   })
-  @ApiAcceptedResponse({ description: 'Customer email verified' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('verification/customer')
@@ -147,8 +145,8 @@ export class AuthController {
     summary: 'login as a parent',
     description: 'Parent can login after account creation',
   })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  @ApiOkResponse({ description: 'Customer authenticated' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(ThrottlerGuard)
   @Post('signin/customer')
@@ -160,39 +158,44 @@ export class AuthController {
     summary: 'logout as a parent',
     description: 'Parent can logout of the app',
   })
+  @ApiOkResponse({ description: 'Ok' })
   @Post('logout/customer')
   async logoutUser(@Body() dto: BlacklistTokenDto) {
     await this.authService.addToken(dto);
     return { message: 'Logged out successfully' };
   }
 
-  // --------------- vendor routes ----------------------
+  // --------------- organiser routes ----------------------
   @ApiOperation({
-    summary: 'create a vendor account',
-    description: 'Vendor can create an account',
+    summary: 'create a organiser account',
+    description: 'Organiser can create an account',
   })
-  @ApiCreatedResponse({ description: 'Vendor created' })
-  @ApiBadRequestResponse({ description: 'Credentials taken' })
-  @Post('signup/vendor')
+  @ApiCreatedResponse({ description: 'Created' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @Post('signup/organiser')
   @UseInterceptors(FileInterceptor('business_logo'))
-  createVendor(
-    @Body() dto: VendorSignUpDto,
+  createOrganiser(
+    @Body() dto: OrganiserSignUpDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (file) {
       try {
         new ParseFilePipe({
           validators: [
-            new MaxFileSizeValidator({ maxSize: 10000000 }),
+            new MaxFileSizeValidator({ maxSize: 5000000 }),
             new FileTypeValidator({ fileType: 'image/*' }),
           ],
         }).transform(file);
       } catch (error) {
         throw error;
       }
-      return this.authService.createVendor(dto, file.originalname, file.buffer);
+      return this.authService.createOrganiser(
+        dto,
+        file.originalname,
+        file.buffer,
+      );
     } else {
-      return this.authService.createVendor(
+      return this.authService.createOrganiser(
         dto,
         file?.originalname,
         file?.buffer,
@@ -201,21 +204,21 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'send token to vendor to verify email',
+    summary: 'send token to organiser to verify email',
     description:
-      'Vendor is sent a token to verify email if not received on registration',
+      'Organiser is sent a token to verify email if not received on registration',
   })
-  @ApiOkResponse({ description: 'Verification mail sent' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
-  @Post('verification/send/vendor')
-  async sendVendorVerification(@Body() dto: ForgotPasswordDto) {
+  @Post('verification/send/organiser')
+  async sendOrganiserVerification(@Body() dto: ForgotPasswordDto) {
     try {
       // generate token and expiration time
       const verificatonToken = Math.random().toString(36).substr(2);
       const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
 
       // save token and expiration time to database
-      await this.prisma.vendor.update({
+      await this.prisma.organiser.update({
         where: { email: dto.email },
         data: {
           verification_token: verificatonToken,
@@ -240,59 +243,49 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'verify a vendor email',
-    description: 'Vendors can verify their email',
+    summary: 'verify a organiser email',
+    description: 'Organisers can verify their email',
   })
-  @ApiAcceptedResponse({ description: 'Vendor email verified' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('verification/vendor')
-  verfiyVendorEmail(@Body() dto: VerifyDto) {
-    return this.authService.verifyVendorEmail(dto.token);
+  @Patch('verification/organiser')
+  verfiyOrganiserEmail(@Body() dto: VerifyDto) {
+    return this.authService.verifyOrganiserEmail(dto.token);
   }
 
   @ApiOperation({
-    summary: 'login as a vendor',
-    description: 'Vendor can login after account creation',
+    summary: 'login as a organiser',
+    description: 'Organiser can login after account creation',
   })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  @ApiOkResponse({ description: 'Vendor authenticated' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
-  @Post('signin/vendor')
-  vendorLogin(@Body() dto: SignInDto) {
-    return this.authService.vendorLogin(dto);
+  @Post('signin/organiser')
+  organiserLogin(@Body() dto: SignInDto) {
+    return this.authService.organiserLogin(dto);
   }
 
   @ApiOperation({
-    summary: 'logout as a vendor',
-    description: 'Vendor can logout of the app',
+    summary: 'logout as a organiser',
+    description: 'Organiser can logout of the app',
   })
-  @Post('logout/vendor')
-  async logoutVendor(@Body() dto: BlacklistTokenDto) {
+  @ApiOkResponse({ description: 'Ok' })
+  @Post('logout/organiser')
+  async logoutOrganiser(@Body() dto: BlacklistTokenDto) {
     await this.authService.addToken(dto);
     return { message: 'Logged out successfully' };
   }
 
   // --------------- admin routes ----------------------
   @ApiOperation({
-    summary: 'create an admin account',
-    description: 'Admin can create an account',
-  })
-  @ApiBadRequestResponse({ description: 'Bad request' })
-  @ApiCreatedResponse({ description: 'Admin Created' })
-  @Post('create/host')
-  createAdmin(@Body() dto: AdminSignUpDto) {
-    return this.authService.createAdmin(dto);
-  }
-
-  @ApiOperation({
     summary: 'send token to admin to verify email',
     description:
       'Admin is sent a token to verify email if not received on creation',
   })
-  @ApiOkResponse({ description: 'Verification mail sent' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
-  @Post('verification/send/admin')
+  @Post('verification/send/host')
   async sendAdminVerification(@Body() dto: ForgotPasswordDto) {
     try {
       // generate token and expiration time
@@ -328,10 +321,10 @@ export class AuthController {
     summary: 'verify an admin email',
     description: 'Admin can verify their email',
   })
-  @ApiAcceptedResponse({ description: 'Admin email verified' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('verification/admin')
+  @Patch('verification/host')
   verfiyAdminEmail(@Body() dto: VerifyDto) {
     return this.authService.verifyAdminEmail(dto.token);
   }
@@ -340,8 +333,8 @@ export class AuthController {
     summary: 'login as an admin',
     description: 'Admin can log into the app',
   })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  @ApiOkResponse({ description: 'Admin authenticated' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
   @Post('signin/host')
   adminLogin(@Body() dto: SignInDto) {
@@ -352,9 +345,9 @@ export class AuthController {
     summary: 'logout as an admin',
     description: 'Admin can logout of the app',
   })
-  @ApiOkResponse({ description: 'Logout successful' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
-  @Post('logout/admin')
+  @Post('logout/host')
   async logoutAdmin(@Body() dto: BlacklistTokenDto) {
     await this.authService.addToken(dto);
     return { message: 'Logged out successfully' };
@@ -365,14 +358,14 @@ export class AuthController {
     summary: 'login using google as a parent',
     description: 'Parents can login using google',
   })
-  @ApiOkResponse({ description: 'Sign in with google' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(GoogleAuthGuard)
   @Get('google/signin')
   googleLogin() {}
 
   @ApiExcludeEndpoint()
-  @ApiOkResponse({ description: 'User authenticated' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
@@ -380,7 +373,7 @@ export class AuthController {
     @GetUser('id') id: string,
     @GetUser('email') email: string,
   ) {
-    const response = await this.authService.signToken(id, email, Role.User);
+    const response = await this.authService.signToken(id, email, '');
 
     return response;
   }
@@ -389,14 +382,14 @@ export class AuthController {
     summary: 'login using facebook as a parent',
     description: 'Parents can login using facebook',
   })
-  @ApiOkResponse({ description: 'Sign in with facebook' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(FacebookAuthGuard)
   @Get('facebook/signin')
   facebookLogin() {}
 
   @ApiExcludeEndpoint()
-  @ApiOkResponse({ description: 'User authenticated' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(FacebookAuthGuard)
   @Get('facebook/redirect')
@@ -404,7 +397,7 @@ export class AuthController {
     @GetUser('id') id: string,
     @GetUser('email') email: string,
   ) {
-    const response = await this.authService.signToken(id, email, Role.User);
+    const response = await this.authService.signToken(id, email, '');
 
     return response;
   }
@@ -414,8 +407,8 @@ export class AuthController {
     summary: 'generate a new access token',
     description: 'Generate a new access token using the refresh token ',
   })
-  @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  @ApiOkResponse({ description: 'New token generated' })
+  @ApiUnauthorizedResponse({ description: 'Unauthrized' })
+  @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(ThrottlerGuard)
   @Post('refresh')
@@ -429,8 +422,8 @@ export class AuthController {
     summary: 'generate token for parent password reset',
     description: 'Parent is sent a token to reset their password',
   })
-  @ApiAcceptedResponse({ description: 'Reset token generated' })
-  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('forgot-password/user')
   generateResetTokenForUser(@Body() dto: ForgotPasswordDto) {
@@ -438,25 +431,25 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'generate token for vendor password reset',
-    description: 'Vendor is sent a token to reset their password',
+    summary: 'generate token for organiser password reset',
+    description: 'Organiser is sent a token to reset their password',
   })
-  @ApiAcceptedResponse({ description: 'Reset token generated' })
-  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('forgot-password/vendor')
-  generateResetTokenForVendor(@Body() dto: ForgotPasswordDto) {
-    return this.authService.generateResetTokenForVendor(dto.email);
+  @Patch('forgot-password/organiser')
+  generateResetTokenForOrganiser(@Body() dto: ForgotPasswordDto) {
+    return this.authService.generateResetTokenForOrganiser(dto.email);
   }
 
   @ApiOperation({
     summary: 'generate token for admin password reset',
     description: 'Admin is sent a token to reset their password',
   })
-  @ApiAcceptedResponse({ description: 'Reset token generated' })
-  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('forgot-password/admin')
+  @Patch('forgot-password/host')
   generateResetTokenForAdmin(@Body() dto: ForgotPasswordDto) {
     return this.authService.generateResetTokenForAdmin(dto.email);
   }
@@ -466,8 +459,8 @@ export class AuthController {
     summary: 'reset parent password',
     description: 'Parent can reset their password',
   })
-  @ApiAcceptedResponse({ description: 'Password reset successful' })
-  @ApiBadRequestResponse({ description: 'Reset token is required' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('reset-password/user/:token')
   resetUserPassword(
@@ -478,28 +471,28 @@ export class AuthController {
   }
 
   @ApiOperation({
-    summary: 'reset vendor password',
-    description: 'Vendor can reset their password',
+    summary: 'reset organiser password',
+    description: 'Organiser can reset their password',
   })
-  @ApiAcceptedResponse({ description: 'Password reset successful' })
-  @ApiBadRequestResponse({ description: 'Reset token is required' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('reset-password/vendor/:token')
-  resetVendorPassword(
+  @Patch('reset-password/organiser/:token')
+  resetOrganiserPassword(
     @Param('token') token: string,
     @Body() dto: ResetPasswordDto,
   ) {
-    return this.authService.resetVendorPassword(token, dto.password);
+    return this.authService.resetOrganiserPassword(token, dto.password);
   }
 
   @ApiOperation({
     summary: 'reset admin password',
     description: 'Admin can reset their password',
   })
-  @ApiAcceptedResponse({ description: 'Password reset successful' })
-  @ApiBadRequestResponse({ description: 'Reset token is required' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('reset-password/admin/:token')
+  @Patch('reset-password/host/:token')
   resetAdminPassword(
     @Param('token') token: string,
     @Body() dto: ResetPasswordDto,

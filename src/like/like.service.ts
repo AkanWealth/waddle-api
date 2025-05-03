@@ -7,7 +7,7 @@ export class LikeService {
   constructor(private prisma: PrismaService) {}
 
   // like the event
-  async create(userId: string, dto: CreateLikeDto) {
+  async createLike(userId: string, dto: CreateLikeDto) {
     try {
       const like = await this.prisma.like.create({ data: { ...dto, userId } });
       return like;
@@ -16,8 +16,8 @@ export class LikeService {
     }
   }
 
-  // find all likes based on events
-  async findAll(eventId: string) {
+  // view all likes based on events
+  async viewAllLikes(eventId: string) {
     try {
       const likes = await this.prisma.like.findMany({
         where: { eventId: eventId },
@@ -33,7 +33,7 @@ export class LikeService {
   }
 
   // unlike the event
-  async remove(userId: string, id: string) {
+  async deleteLike(userId: string, id: string) {
     try {
       const like = await this.prisma.like.findUnique({
         where: { id, userId },

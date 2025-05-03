@@ -5,7 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
-import { VendorModule } from './vendor/vendor.module';
+import { OrganiserModule } from './organiser/organiser.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { LocationModule } from './location/location.module';
@@ -17,6 +17,8 @@ import { WebhookModule } from './webhook/webhook.module';
 import { NotificationModule } from './notification/notification.module';
 import { LikeModule } from './like/like.module';
 import { TicketModule } from './ticket/ticket.module';
+import { OrganiserStaffModule } from './organiser-staff/organiser-staff.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -32,7 +34,7 @@ import { TicketModule } from './ticket/ticket.module';
     }),
     AuthModule,
     UserModule,
-    VendorModule,
+    OrganiserModule,
     EventModule,
     PrismaModule,
     LocationModule,
@@ -43,6 +45,8 @@ import { TicketModule } from './ticket/ticket.module';
     NotificationModule,
     LikeModule,
     TicketModule,
+    OrganiserStaffModule,
+    AdminModule,
   ],
   providers: [AppService],
   controllers: [AppController],

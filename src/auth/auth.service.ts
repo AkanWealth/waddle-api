@@ -6,11 +6,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import {
-  AdminSignUpDto,
   BlacklistTokenDto,
   SignInDto,
   UserSignUpDto,
-  VendorSignUpDto,
+  OrganiserSignUpDto,
 } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
@@ -19,16 +18,14 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { NotificationService } from '../notification/notification.service';
-import { AdminRole, VendorRole } from './enum';
 
 @Injectable()
 export class AuthService {
   private readonly s3Client = new S3Client({
-    region: 'auto',
-    endpoint: this.config.getOrThrow('S3_API'),
+    region: 'eu-north-1',
     credentials: {
-      accessKeyId: this.config.getOrThrow('ACCESS_KEY_ID'),
-      secretAccessKey: this.config.getOrThrow('SECRET_ACCESS_KEY'),
+      accessKeyId: this.config.getOrThrow('AWS_ACCESS_KEY'),
+      secretAccessKey: this.config.getOrThrow('AWS_SECRET_KEY'),
     },
   });
 
@@ -45,8 +42,8 @@ export class AuthService {
       if (file) {
         await this.s3Client.send(
           new PutObjectCommand({
-            Bucket: this.config.getOrThrow('BUCKET_NAME'),
-            Key: fileName,
+            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+            Key: `${this.config.getOrThrow('S3_USER_FOLDER')}/${fileName}`,
             Body: file,
           }),
         );
@@ -146,8 +143,15 @@ export class AuthService {
         throw new UnauthorizedException('Invalid Credential');
       }
 
+      // Check if the customer is deleted
+      if (customer?.isDeleted) {
+        throw new ForbiddenException(
+          'Account is trashed, contact support to restore.',
+        );
+      }
+
       // Check if the customer is locked
-      if (!customer?.isLocked) {
+      if (customer?.isLocked) {
         throw new ForbiddenException('Account is locked, try again later!');
       }
 
@@ -218,6 +222,13 @@ export class AuthService {
       });
       if (!user) {
         throw new NotFoundException('Customer not found');
+      }
+
+      // Check if the staff is deleted
+      if (user?.isDeleted) {
+        throw new ForbiddenException(
+          'Account is trashed, contact support to restore.',
+        );
       }
 
       // generate token and expiration time
@@ -291,10 +302,14 @@ export class AuthService {
   }
   // End Customer
 
-  // Start Vendor
-  async createVendor(dto: VendorSignUpDto, fileName?: string, file?: Buffer) {
+  // Start Organiser
+  async createOrganiser(
+    dto: OrganiserSignUpDto,
+    fileName?: string,
+    file?: Buffer,
+  ) {
     try {
-      const existingEmail = await this.prisma.vendor.findUnique({
+      const existingEmail = await this.prisma.organiser.findUnique({
         where: { email: dto.email },
       });
       if (existingEmail) throw new BadRequestException('Email already in use');
@@ -302,8 +317,8 @@ export class AuthService {
       if (file) {
         await this.s3Client.send(
           new PutObjectCommand({
-            Bucket: this.config.getOrThrow('BUCKET_NAME'),
-            Key: fileName,
+            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+            Key: `${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${fileName}`,
             Body: file,
           }),
         );
@@ -313,7 +328,7 @@ export class AuthService {
       const verificatonToken = Math.random().toString(36).substr(2);
       const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
 
-      const vendor = await this.prisma.vendor.create({
+      const organiser = await this.prisma.organiser.create({
         data: {
           ...dto,
           business_logo: fileName || null,
@@ -324,7 +339,7 @@ export class AuthService {
       });
 
       const subject = 'Email Verification';
-      const message = `<p>Hello ${vendor.name},</p>
+      const message = `<p>Hello ${organiser.name},</p>
 
       <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
 
@@ -334,11 +349,15 @@ export class AuthService {
       `;
 
       const mail = await this.notification.sendMail(
-        vendor.email,
+        organiser.email,
         subject,
         message,
       );
-      const token = await this.signToken(vendor.id, vendor.email, vendor.role);
+      const token = await this.signToken(
+        organiser.id,
+        organiser.email,
+        organiser.role,
+      );
 
       return {
         message: mail.message,
@@ -355,9 +374,9 @@ export class AuthService {
     }
   }
 
-  async verifyVendorEmail(token: string) {
+  async verifyOrganiserEmail(token: string) {
     try {
-      const vendor = await this.prisma.vendor.findFirst({
+      const organiser = await this.prisma.organiser.findFirst({
         where: {
           verification_token: token,
           verification_token_expiration: {
@@ -366,13 +385,13 @@ export class AuthService {
         },
       });
 
-      if (!vendor) {
+      if (!organiser) {
         throw new BadRequestException('Invalid or expired token');
       }
 
       // Update user verification status in the database
-      await this.prisma.vendor.update({
-        where: { id: vendor.id },
+      await this.prisma.organiser.update({
+        where: { id: organiser.id },
         data: {
           email_verify: true,
           verification_token: null,
@@ -380,66 +399,83 @@ export class AuthService {
         },
       });
 
-      return { message: 'Vendor verified' };
+      return { message: 'Organiser verified' };
     } catch (error) {
       throw error;
     }
   }
 
-  async vendorLogin(dto: SignInDto) {
+  async organiserLogin(dto: SignInDto) {
     try {
-      const vendor = await this.prisma.vendor.findUnique({
+      const organiser = await this.prisma.organiser.findUnique({
         where: { email: dto.email },
       });
-      if (!vendor) {
+      if (!organiser) {
         throw new UnauthorizedException('Invalid Credential');
       }
 
-      // Check if the vendor is locked
-      if (!vendor.isLocked) {
+      // Check if the organiser is deleted
+      if (organiser?.isDeleted) {
+        throw new ForbiddenException(
+          'Account is trashed, contact support to restore.',
+        );
+      }
+
+      // Check if the organiser is locked
+      if (organiser?.isLocked) {
         throw new ForbiddenException('Account is locked, try again later!');
       }
 
       // Lock the account after 3 failed attempts
-      if (vendor.failedLoginAttempts >= 3) {
-        await this.prisma.vendor.update({
-          where: { id: vendor.id },
+      if (organiser.failedLoginAttempts >= 3) {
+        await this.prisma.organiser.update({
+          where: { id: organiser.id },
           data: { isLocked: false },
         });
         throw new ForbiddenException('Account is locked, try again later!');
       }
 
-      const isValidPassword = await argon.verify(vendor.password, dto.password);
+      const isValidPassword = await argon.verify(
+        organiser.password,
+        dto.password,
+      );
 
       // If validation fails
       if (!isValidPassword) {
-        await this.prisma.vendor.update({
-          where: { id: vendor.id },
-          data: { failedLoginAttempts: vendor.failedLoginAttempts + 1 },
+        await this.prisma.organiser.update({
+          where: { id: organiser.id },
+          data: { failedLoginAttempts: organiser.failedLoginAttempts + 1 },
         });
         throw new UnauthorizedException('Invalid Credential');
       }
 
       // Reset login attempts on successful attempt
-      await this.prisma.vendor.update({
-        where: { id: vendor.id },
+      await this.prisma.organiser.update({
+        where: { id: organiser.id },
         data: { failedLoginAttempts: 0 },
       });
 
       // Proceed with your normal login logic (e.g., generating JWT)
-      return this.signToken(vendor.id, vendor.email, vendor.role);
+      return this.signToken(organiser.id, organiser.email, organiser.role);
     } catch (error) {
       throw error;
     }
   }
 
-  async generateResetTokenForVendor(userEmail: string) {
+  async generateResetTokenForOrganiser(userEmail: string) {
     try {
-      const vendor = await this.prisma.vendor.findUnique({
+      const organiser = await this.prisma.organiser.findUnique({
         where: { email: userEmail },
       });
-      if (!vendor) {
-        throw new NotFoundException('Vendor not found');
+      if (!organiser) {
+        throw new NotFoundException('Organiser not found');
+      }
+
+      // Check if the staff is deleted
+      if (organiser?.isDeleted) {
+        throw new ForbiddenException(
+          'Account is trashed, contact support to restore.',
+        );
       }
 
       // generate token and expiration time
@@ -447,8 +483,8 @@ export class AuthService {
       const resetTokenExpiration = Date.now() + 3600000; // 1 hour
 
       // save token and expiration time to database
-      await this.prisma.vendor.update({
-        where: { id: vendor.id },
+      await this.prisma.organiser.update({
+        where: { id: organiser.id },
         data: {
           reset_token: resetToken,
           reset_expiration: resetTokenExpiration.toString(),
@@ -469,7 +505,7 @@ export class AuthService {
       <p><b>Waddle Team</b></p>
       `;
 
-      await this.notification.sendMail(vendor.email, subject, message);
+      await this.notification.sendMail(organiser.email, subject, message);
 
       return { resetToken };
     } catch (error) {
@@ -477,9 +513,9 @@ export class AuthService {
     }
   }
 
-  async resetVendorPassword(resetToken: string, password: string) {
+  async resetOrganiserPassword(resetToken: string, password: string) {
     try {
-      const vendor = await this.prisma.vendor.findFirst({
+      const organiser = await this.prisma.organiser.findFirst({
         where: {
           reset_token: resetToken,
           reset_expiration: {
@@ -488,15 +524,15 @@ export class AuthService {
         },
       });
 
-      if (!vendor) {
+      if (!organiser) {
         throw new NotFoundException('Invalid or expired token');
       }
 
       const hashed = await argon.hash(password);
 
       // save new password to database
-      await this.prisma.vendor.update({
-        where: { id: vendor.id },
+      await this.prisma.organiser.update({
+        where: { id: organiser.id },
         data: {
           password: hashed,
           isLocked: true,
@@ -511,63 +547,9 @@ export class AuthService {
       throw error;
     }
   }
-  // End Vendor
+  // End Organiser
 
   // Start Admin
-  async createAdmin(dto: AdminSignUpDto) {
-    try {
-      const existingEmail = await this.prisma.admin.findUnique({
-        where: { email: dto.email },
-      });
-      if (existingEmail) throw new BadRequestException('Email already in use');
-
-      const hash = await argon.hash(dto.password);
-      const verificatonToken = Math.random().toString(36).substr(2);
-      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
-
-      const admin = await this.prisma.admin.create({
-        data: {
-          ...dto,
-          password: hash,
-          verification_token: verificatonToken,
-          verification_token_expiration: verificationTokenExpiration.toString(),
-          role: dto.role as AdminRole,
-        },
-      });
-
-      // email verification section
-      const subject = 'Email Verification';
-      const message = `<p>Hello ${admin.first_name},</p>
-
-      <p>Thank you for signing up on Waddle as an admin, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
-
-      <p>Warm regards,</p>
-
-      <p>Waddle Team</p>
-      `;
-
-      const mail = await this.notification.sendMail(
-        admin.email,
-        subject,
-        message,
-      );
-      const token = await this.signToken(admin.id, admin.email, admin.role);
-
-      return {
-        message: mail.message,
-        access_token: token.access_token,
-        refresh_token: token.refresh_token,
-      };
-    } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          throw new BadRequestException('Credentials Taken');
-        }
-      }
-      throw error;
-    }
-  }
-
   async verifyAdminEmail(token: string) {
     try {
       const admin = await this.prisma.admin.findFirst({
@@ -712,7 +694,7 @@ export class AuthService {
       secret: this.config.get<string>('JWT_REFRESH_SECRET_KEY'),
     });
 
-    return { access_token, refresh_token };
+    return { message: 'Login successful', access_token, refresh_token };
   }
 
   async refreshToken(token: string) {

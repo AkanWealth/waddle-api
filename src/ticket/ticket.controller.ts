@@ -11,17 +11,12 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Roles } from '../auth/decorator/role-decorator';
-import { Role } from '../auth/enum/role.enum';
 import { JwtGuard } from '../auth/guard/auth.guard';
-import { RolesGuard } from '../auth/guard/role.guard';
 
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({
-  description: 'The user is not authorized to perform this action',
-})
+@ApiUnauthorizedResponse({ description: 'Unauthorized' })
 @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-@UseGuards(JwtGuard, RolesGuard)
+@UseGuards(JwtGuard)
 @Controller('ticket')
 export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
@@ -30,53 +25,52 @@ export class TicketController {
     summary: 'open a ticket',
     description: 'Parents can open a ticket',
   })
-  @ApiCreatedResponse({ description: 'Created successfully' })
+  @ApiCreatedResponse({ description: 'Created' })
   @Post()
-  @Roles(Role.User)
-  create(@Body() dto: CreateTicketDto) {
-    return this.ticketService.create(dto);
+  createTicket(@Body() dto: CreateTicketDto) {
+    return this.ticketService.createTicket(dto);
   }
 
   @ApiOperation({
     summary: 'view all my tickets',
     description: 'Parents can view all thier tickets',
   })
-  @ApiOkResponse({ description: 'Successfull' })
+  @ApiOkResponse({ description: 'Ok' })
   @Get()
-  findAll(@GetUser() user: User) {
-    return this.ticketService.findAll(user.email);
+  viewAllTickets(@GetUser() user: User) {
+    return this.ticketService.viewAllTickets(user.email);
   }
 
   @ApiOperation({
-    summary: 'view a ticket by id',
-    description: 'Parents can view a ticket by id',
+    summary: 'view a ticket by ID',
+    description: 'Parents can view a ticket by ID',
   })
-  @ApiOkResponse({ description: 'Successfull' })
+  @ApiOkResponse({ description: 'Ok' })
   @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.ticketService.findOne(id);
+  viewTicket(@Param('id') id: number) {
+    return this.ticketService.viewTicket(id);
   }
 
   @ApiOperation({
-    summary: 'view a conversation by ticket id',
-    description: 'Parents can view a conversation by ticket id',
+    summary: 'view a conversation by ticket ID',
+    description: 'Parents can view a conversation by ticket ID',
   })
-  @ApiOkResponse({ description: 'Successfull' })
+  @ApiOkResponse({ description: 'Ok' })
   @Get(':id/conversations')
-  findConversation(@Param('id') id: number) {
-    return this.ticketService.findConversation(id);
+  viewConversation(@Param('id') id: number) {
+    return this.ticketService.viewConversation(id);
   }
 
   // @Patch(':id')
-  // update(@Param('id') id: number, @Body() dto: UpdateTicketDto) {
-  //   return this.ticketService.update(id, dto);
+  // updateTicket(@Param('id') id: number, @Body() dto: UpdateTicketDto) {
+  //   return this.ticketService.updateTicket(id, dto);
   // }
 
-  // @ApiNoContentResponse({ description: 'Deleted successfully' })
+  // @ApiNoContentResponse({ description: 'No content' })
   // @HttpCode(HttpStatus.NO_CONTENT)
   // @Delete(':id')
   // @Roles(Role.Admin)
-  // remove(@Param('id') id: number) {
-  //   return this.ticketService.remove(id);
+  // deleteTicket(@Param('id') id: number) {
+  //   return this.ticketService.deleteTicket(id);
   // }
 }

@@ -25,17 +25,35 @@ async function bootstrap() {
 
   // setting up swagger ui documentation
   const config = new DocumentBuilder()
-    .setTitle('Waddle API')
+    .setTitle('Waddle App API')
     .setDescription(
-      'This application provides an API endpoiint for managing guardian, vendors, events and bookings for the waddle mobile and web app.',
+      `This application provides a multi-role system with distinct functionalities for administrators, guardians, and orgornisers:
+
+      - Admin Management: Administrators can manage the entire system, including user roles (sub-admins, orgornisers, guardians), and events.  They can also create admin and sub-admin accounts, and sign in/out.
+
+      - Guardian Management: Guardians can create accounts (via email/password or SSO), sign in, and manage their profiles.
+
+      - Orgorniser Management: Orgornisers can create accounts, sign in, manage their profiles, create and manage events, and invite staff.
+
+      - Event Management: Orgornisers, orgorniser staffs, and admins can create and update events, with guardians able to view published events.  Event creation includes the ability to save drafts.`,
     )
     .setExternalDoc('Redoc Documenation', '/docs')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config, {
+    deepScanRoutes: true,
+  });
   SwaggerModule.setup('/', app, document, {
+    swaggerOptions: {
+      docExpansion: 'none',
+      // defaultModelsExpandDepth: -1,
+      persistAuthorization: true,
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+    },
     customfavIcon: 'https://avatars.githubusercontent.com/u/6936373?s=200&v=4',
     customJs: [
       'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
@@ -57,6 +75,6 @@ async function bootstrap() {
   setupRedoc(app as any);
 
   await app.listen(process.env.PORT ?? 3000);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  console.log(`Application is running...`);
 }
 bootstrap();

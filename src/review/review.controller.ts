@@ -14,7 +14,6 @@ import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { Roles } from '../auth/decorator/role-decorator';
-import { Role } from '../auth/enum/role.enum';
 import { JwtGuard } from '../auth/guard/auth.guard';
 import { RolesGuard } from '../auth/guard/role.guard';
 import {
@@ -28,11 +27,10 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { AdminRole } from 'src/auth/enum';
 
 @ApiBearerAuth()
-@ApiUnauthorizedResponse({
-  description: 'The user is not unathorized to perform this action',
-})
+@ApiUnauthorizedResponse({ description: 'Unauthorized' })
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
 @UseGuards(JwtGuard, RolesGuard)
 @Controller('reviews')
@@ -43,58 +41,57 @@ export class ReviewController {
     summary: 'post a review for an evemt',
     description: 'User can post a review',
   })
-  @ApiCreatedResponse({ description: 'Created Successfull' })
+  @ApiCreatedResponse({ description: 'Created' })
   @Post()
-  @Roles(Role.User)
-  create(@Body() dto: CreateReviewDto) {
-    return this.reviewService.create(dto);
+  createReview(@Body() dto: CreateReviewDto) {
+    return this.reviewService.createReview(dto);
   }
 
   @ApiOperation({
     summary: 'view all reviews for an event',
     description: 'View all reviews for an event',
   })
-  @ApiOkResponse({ description: 'Successfull' })
+  @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get(':eventId')
-  findAll(@Param('eventId') eventId: string) {
-    return this.reviewService.findAll(eventId);
+  viewAllReviews(@Param('eventId') eventId: string) {
+    return this.reviewService.viewAllReviews(eventId);
   }
 
   @ApiOperation({
     summary: 'view a review by id',
     description: 'View a review by id',
   })
-  @ApiOkResponse({ description: 'Successfull' })
+  @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.reviewService.findOne(id);
+  viewReview(@Param('id') id: string) {
+    return this.reviewService.viewReview(id);
   }
 
   @ApiOperation({
     summary: 'update a review by id',
     description: 'Update a review by id',
   })
-  @ApiAcceptedResponse({ description: 'Data accepted' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
-  @Roles(Role.Admin)
-  update(@Param('id') id: string, @Body() dto: UpdateReviewDto) {
-    return this.reviewService.update(id, dto);
+  @Roles(AdminRole.Admin || AdminRole.Editor)
+  updateReview(@Param('id') id: string, @Body() dto: UpdateReviewDto) {
+    return this.reviewService.updateReview(id, dto);
   }
 
   @ApiOperation({
     summary: 'delete a review by id',
     description: 'Delete a review by id',
   })
-  @ApiNoContentResponse({ description: 'Deleted successfully' })
+  @ApiNoContentResponse({ description: 'No content' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  @Roles(Role.Admin)
-  remove(@Param('id') id: string) {
-    return this.reviewService.remove(id);
+  @Roles(AdminRole.Admin)
+  deleteReview(@Param('id') id: string) {
+    return this.reviewService.deleteReview(id);
   }
 }

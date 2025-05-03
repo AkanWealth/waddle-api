@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateFavoriteDto {
   @ApiProperty({
-    description: 'The Id of the event',
+    description: 'Event ID',
     example: 'jyiy29723877de339y98yr8e',
     required: true,
   })

@@ -16,11 +16,10 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class UserService {
   private readonly s3Client = new S3Client({
-    region: 'auto',
-    endpoint: this.config.getOrThrow('S3_API'),
+    region: 'eu-north-1',
     credentials: {
-      accessKeyId: this.config.getOrThrow('ACCESS_KEY_ID'),
-      secretAccessKey: this.config.getOrThrow('SECRET_ACCESS_KEY'),
+      accessKeyId: this.config.getOrThrow('AWS_ACCESS_KEY'),
+      secretAccessKey: this.config.getOrThrow('AWS_SECRET_KEY'),
     },
   });
 
@@ -35,7 +34,7 @@ export class UserService {
       const user = await this.prisma.user.findMany();
 
       const usersWithImage = user.map((list) => {
-        const profile_picture = `${process.env.R2_PUBLIC_ENDPOINT}/${list.profile_picture}`;
+        const profile_picture = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_USER_FOLDER')}/${list.profile_picture}`;
         return {
           ...list,
           profile_picture,
@@ -56,7 +55,7 @@ export class UserService {
       });
       delete user.password;
 
-      const profile_picture = `${process.env.R2_PUBLIC_ENDPOINT}/${user.profile_picture}`;
+      const profile_picture = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_USER_FOLDER')}/${user.profile_picture}`;
 
       return { ...user, profile_picture };
     } catch (error) {
@@ -88,8 +87,8 @@ export class UserService {
       if (profileImage !== fileName) {
         await this.s3Client.send(
           new PutObjectCommand({
-            Bucket: this.config.getOrThrow('BUCKET_NAME'),
-            Key: fileName,
+            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+            Key: `${this.config.getOrThrow('S3_USER_FOLDER')}/${fileName}`,
             Body: file,
           }),
         );
@@ -97,8 +96,10 @@ export class UserService {
         // Delete the old image from bucket
         await this.s3Client.send(
           new DeleteObjectCommand({
-            Bucket: this.config.getOrThrow('BUCKET_NAME'),
-            Key: profileImage || 'null',
+            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+            Key:
+              `${this.config.getOrThrow('S3_USER_FOLDER')}/${profileImage}` ||
+              'null',
           }),
         );
 
@@ -169,11 +170,27 @@ export class UserService {
     }
   }
 
-  // function to delete the a user by ID
-  async removeOne(id: string) {
+  // function to delete a user temporarily by ID
+  async deleteUserTemp(id: string) {
     try {
       const existingUser = await this.prisma.user.findUnique({ where: { id } });
+      if (!existingUser) throw new NotFoundException('User not found');
 
+      await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: { isDeleted: true },
+      });
+
+      return { message: 'User deleted' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to delete a user permanently by ID
+  async deleteUser(id: string) {
+    try {
+      const existingUser = await this.prisma.user.findUnique({ where: { id } });
       if (!existingUser) throw new NotFoundException('User not found');
 
       const user = await this.prisma.user.delete({
@@ -183,8 +200,8 @@ export class UserService {
       if (user?.profile_picture) {
         await this.s3Client.send(
           new DeleteObjectCommand({
-            Bucket: this.config.getOrThrow('BUCKET_NAME'),
-            Key: user.profile_picture,
+            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+            Key: `${this.config.getOrThrow('S3_USER_FOLDER')}/${user.profile_picture}`,
           }),
         );
       }

@@ -4,7 +4,7 @@ import * as argon from 'argon2';
 const prisma = new PrismaClient();
 
 async function main() {
-  const root = await prisma.admin.upsert({
+  await prisma.admin.upsert({
     where: { email: process.env.SEED_EMAIL },
     update: {},
     create: <any>{

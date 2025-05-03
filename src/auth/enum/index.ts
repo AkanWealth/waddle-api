@@ -1,2 +1,2 @@
-export * from "./admin.enum";
-export * from "./vendor.enum";
+export * from './admin.enum';
+export * from './organiser.enum';
