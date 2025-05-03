@@ -1,22 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class UpdateTicketDto {
   @ApiProperty({
-    description: 'The email of the sender',
+    description: 'Email',
     example: 'example@mail.com',
     required: true,
   })
-  @IsString({ message: 'The email value must be a string' })
-  @IsNotEmpty({ message: 'The email value can not be empty' })
+  @IsEmail({}, { message: 'Email value must be a string' })
+  @IsNotEmpty({ message: 'Email value can not be empty' })
   email: string;
 
   @ApiProperty({
-    description: 'The description of the mail',
+    description: 'Description',
     example: 'Some content of the mail here...',
     required: true,
   })
-  @IsString({ message: 'The description value must be a string' })
-  @IsNotEmpty({ message: 'The description value can not be empty' })
+  @IsString({ message: 'Description value must be a string' })
+  @IsNotEmpty({ message: 'Description value can not be empty' })
   description: string;
 }

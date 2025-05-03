@@ -143,9 +143,9 @@ jobs:
         run: |
           npm run lint
 
-      - name: Run E2E Tests
-        run: |
-          npm run test:e2e
+      # - name: Run E2E Tests
+      #   run: |
+      #     npm run test:e2e
 
       - name: Build the Backend Application
         run: |

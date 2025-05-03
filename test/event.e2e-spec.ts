@@ -4,7 +4,7 @@ import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { SignInDto } from '../src/auth/dto/signin.dto';
 import { UserSignUpDto } from '../src/auth/dto/user-signup.dto';
-import { VendorSignUpDto } from '../src/auth/dto/vendor-signup.dto';
+import { OrganiserSignUpDto } from '../src/auth/dto/organiser-signup.dto';
 import { CreateEventDto, UpdateEventDto } from '../src/event/dto';
 
 /**
@@ -14,7 +14,7 @@ import { CreateEventDto, UpdateEventDto } from '../src/event/dto';
 describe('Event (e2e)', () => {
   let app: INestApplication;
   let customerToken = '';
-  let vendorToken = '';
+  let organiserToken = '';
   let id = '';
 
   beforeEach(async () => {
@@ -49,23 +49,23 @@ describe('Event (e2e)', () => {
           .expect(201);
       });
 
-      // testing for vendor signup
-      it('(POST) => Should register a new vendor', () => {
-        const vendor: VendorSignUpDto = {
-          name: 'E2E Vendor1',
-          email: 'vendor2@gmail.com',
+      // testing for organiser signup
+      it('(POST) => Should register a new organiser', () => {
+        const organiser: OrganiserSignUpDto = {
+          name: 'E2E Organiser1',
+          email: 'organiser2@gmail.com',
           password: '12345678',
           address: '12B Cresent Maryland',
           business_name: 'Mr Bigs',
           business_category: 'Hospitality',
           registration_number: 's#kA6uA1LkTt[5P',
           phone_number: '080123456789',
-          business_url: 'https://xample.co.uk',
+          website_url: 'https://xample.co.uk',
           facebook_url: 'https://facebook.com/xample-co-uk',
         };
         return request(app.getHttpServer())
-          .post('/api/v1/auth/signup/vendor')
-          .send(vendor)
+          .post('/api/v1/auth/signup/organiser')
+          .send(organiser)
           .expect(201);
       });
     });
@@ -87,19 +87,19 @@ describe('Event (e2e)', () => {
           });
       });
 
-      // testing for vendor login
-      test('(POST) => Should login for vendor', () => {
-        const vendor: SignInDto = {
-          email: 'vendor2@gmail.com',
+      // testing for organiser login
+      test('(POST) => Should login for organiser', () => {
+        const organiser: SignInDto = {
+          email: 'organiser2@gmail.com',
           password: '12345678',
         };
         return request(app.getHttpServer())
-          .post('/api/v1/auth/signin/vendor')
-          .send(vendor)
+          .post('/api/v1/auth/signin/organiser')
+          .send(organiser)
           .expect(200)
           .then((res) => {
             expect(res.body.access_token).toBeDefined();
-            vendorToken = res.body.access_token;
+            organiserToken = res.body.access_token;
           });
       });
     });
@@ -130,11 +130,11 @@ describe('Event (e2e)', () => {
           .expect(403);
       });
 
-      // testing for creating event with vendor authenticated
-      it('(POST) => Should create event with vendor authenticated', () => {
+      // testing for creating event with organiser authenticated
+      it('(POST) => Should create event with organiser authenticated', () => {
         return request(app.getHttpServer())
           .post('/api/v1/events')
-          .set('Authorization', 'Bearer ' + vendorToken)
+          .set('Authorization', 'Bearer ' + organiserToken)
           .send(event)
           .expect(201)
           .then((res) => expect(res.body.id).toBeDefined());
@@ -151,11 +151,11 @@ describe('Event (e2e)', () => {
           .then((res) => expect(res.body[0].id).toBeDefined());
       });
 
-      // testing for finding all events with vendor authenticated
-      it('(GET) => Should find events with vendor authentication', () => {
+      // testing for finding all events with organiser authenticated
+      it('(GET) => Should find events with organiser authentication', () => {
         return request(app.getHttpServer())
           .get('/api/v1/events')
-          .set('Authorization', 'Bearer ' + vendorToken)
+          .set('Authorization', 'Bearer ' + organiserToken)
           .expect(200)
           .then((res) => {
             expect(res.body[0].id).toBeDefined();
@@ -174,11 +174,11 @@ describe('Event (e2e)', () => {
           .then((res) => expect(res.body.id).toBeDefined());
       });
 
-      // testing for finding one event with vendor authenticated
-      it('(GET) => Should find one event by id with vendor authentication', () => {
+      // testing for finding one event with organiser authenticated
+      it('(GET) => Should find one event by id with organiser authentication', () => {
         return request(app.getHttpServer())
           .get(`/api/v1/events/${id}`)
-          .set('Authorization', 'Bearer ' + vendorToken)
+          .set('Authorization', 'Bearer ' + organiserToken)
           .expect(200)
           .then((res) => expect(res.body.id).toBeDefined());
       });
@@ -196,11 +196,11 @@ describe('Event (e2e)', () => {
           .expect(403);
       });
 
-      // testing for updating event with vendor authenticated
-      it('(PATCH) => Should update event with vendor authenticated', () => {
+      // testing for updating event with organiser authenticated
+      it('(PATCH) => Should update event with organiser authenticated', () => {
         return request(app.getHttpServer())
           .patch(`/api/v1/events/${id}`)
-          .set('Authorization', 'Bearer ' + vendorToken)
+          .set('Authorization', 'Bearer ' + organiserToken)
           .send(event)
           .expect(202)
           .then((res) => expect(res.body.id).toBeDefined());
@@ -216,11 +216,11 @@ describe('Event (e2e)', () => {
           .expect(403);
       });
 
-      // testing for deleting event with vendor authenticated
-      it('(DELETE) => Should delete event with vendor authenticated', () => {
+      // testing for deleting event with organiser authenticated
+      it('(DELETE) => Should delete event with organiser authenticated', () => {
         return request(app.getHttpServer())
           .delete(`/api/v1/events/${id}`)
-          .set('Authorization', 'Bearer ' + vendorToken)
+          .set('Authorization', 'Bearer ' + organiserToken)
           .expect(204);
       });
     });

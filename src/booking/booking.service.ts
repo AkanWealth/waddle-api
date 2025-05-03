@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
 import { NotificationService } from '../notification/notification.service';
-import { Role } from '../auth/enum/role.enum';
+import { AdminRole, OrganiserRole } from 'src/auth/enum';
 
 @Injectable()
 export class BookingService {
@@ -19,7 +19,7 @@ export class BookingService {
     const stripeSecretKey = this.config.getOrThrow('STRIPE_SECRET_KEY');
 
     this.stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2025-01-27.acacia',
+      apiVersion: '2025-02-24.acacia',
     });
   }
 
@@ -173,8 +173,8 @@ export class BookingService {
     return { received: true };
   }
 
-  // find all bookings
-  async findAll() {
+  // view all bookings
+  async viewAllBookings() {
     try {
       const bookings = await this.prisma.booking.findMany({
         include: { event: true, user: true },
@@ -190,13 +190,13 @@ export class BookingService {
   }
 
   // find all my bookings as the event creator
-  async findMyBookings(userId: string, userRole: string) {
+  async viewMyBookings(userId: string, userRole: string) {
     try {
       const whereClause: any = {};
 
-      if (userRole === Role.Vendor) {
-        whereClause.vendorId = userId;
-      } else if (userRole === Role.Admin) {
+      if (userRole === OrganiserRole.Organiser) {
+        whereClause.organiserId = userId;
+      } else if (userRole === AdminRole.Admin) {
         whereClause.adminId = userId;
       }
 
@@ -215,7 +215,7 @@ export class BookingService {
   }
 
   // find all bookings created by a loggedin user
-  async findAllForUser(userId: string) {
+  async viewAllBookingForUser(userId: string) {
     try {
       const bookings = await this.prisma.booking.findMany({
         where: { userId },
@@ -232,7 +232,7 @@ export class BookingService {
   }
 
   // find a booking by id
-  async findOne(id: string) {
+  async viewBooking(id: string) {
     try {
       const booking = await this.prisma.booking.findUnique({
         where: { id },
@@ -249,7 +249,7 @@ export class BookingService {
   }
 
   // update a booking by id
-  async update(id: string, dto: UpdateBookingDto) {
+  async updateBooking(id: string, dto: UpdateBookingDto) {
     try {
       const existingBooking = await this.prisma.booking.findUnique({
         where: { id },
@@ -270,7 +270,7 @@ export class BookingService {
   }
 
   // delete a booking by id
-  async remove(id: string) {
+  async deleteBooking(id: string) {
     try {
       const booking = await this.prisma.booking.findUnique({
         where: { id },

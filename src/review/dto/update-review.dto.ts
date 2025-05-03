@@ -4,7 +4,7 @@ import { IsBoolean, IsOptional } from 'class-validator';
 
 export class UpdateReviewDto extends PartialType(CreateReviewDto) {
   @ApiPropertyOptional({
-    description: 'Verify if the review is approved',
+    description: 'Verify review',
     example: true,
   })
   @IsBoolean({ message: 'Verified must a boolean value' })

@@ -19,7 +19,8 @@ model Admin {
   first_name                    String
   last_name                     String
   email                         String    @unique
-  role                          AdminRole @default(Editor)
+  adminId                       String?
+  role                          AdminRole @default(ADMIN)
   password                      String
   email_verify                  Boolean   @default(false)
   verification_token            String?
@@ -33,61 +34,58 @@ model Admin {
   @@map("admin")
 }
 
-// Vendor Model
-model Vendor {
-  id                            String        @id @default(cuid())
+// Organiser Model
+model Organiser {
+  id                            String           @id @default(cuid())
   name                          String
-  email                         String        @unique
+  email                         String           @unique
   password                      String
   phone_number                  String
-  role                          VendorRole    @default(Vendor)
+  role                          OrganiserRole    @default(ORGANISER)
   business_logo                 String?
   address                       String
-  business_name                 String        @unique
+  business_name                 String           @unique
   business_category             String
   registration_number           String
-  email_verify                  Boolean       @default(true)
-  isLocked                      Boolean       @default(false)
-  isDeleted                     Boolean       @default(false)
-  isVerified                    Boolean       @default(true)
-  failedLoginAttempts           Int           @default(0)
+  email_verify                  Boolean          @default(true)
+  isLocked                      Boolean          @default(false)
+  isDeleted                     Boolean          @default(false)
+  isVerified                    Boolean          @default(true)
+  failedLoginAttempts           Int              @default(0)
   website_url                   String?
   facebook_url                  String?
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime      @default(now())
-  updatedAt                     DateTime      @updatedAt
-  staffs                        VendorStaff[]
+  createdAt                     DateTime         @default(now())
+  updatedAt                     DateTime         @updatedAt
+  staffs                        OrganiserStaff[]
   events                        Event[]
 
-  @@map("vendor")
+  @@map("organiser")
 }
 
-// VendorStaff Model
-model VendorStaff {
-  id                            String     @id @default(cuid())
-  name                          String
-  email                         String     @unique
-  password                      String
-  phone_number                  String
-  role                          VendorRole @default(Representative)
-  email_verify                  Boolean    @default(true)
-  isLocked                      Boolean    @default(false)
-  isDeleted                     Boolean    @default(false)
-  failedLoginAttempts           Int        @default(0)
-  verification_token            String?
-  verification_token_expiration String?
-  reset_token                   String?
-  reset_expiration              String?
-  vendorId                      String
-  vendor                        Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  createdAt                     DateTime   @default(now())
-  updatedAt                     DateTime   @updatedAt
-  events                        Event[]
+// OrganiserStaff Model
+model OrganiserStaff {
+  id                  String        @id @default(cuid())
+  name                String
+  email               String        @unique
+  password            String
+  phone_number        String
+  role                OrganiserRole @default(MANAGER)
+  isLocked            Boolean       @default(false)
+  isDeleted           Boolean       @default(false)
+  failedLoginAttempts Int           @default(0)
+  reset_token         String?
+  reset_expiration    String?
+  organiserId         String
+  organiser           Organiser     @relation(fields: [organiserId], references: [id], onDelete: Cascade)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  events              Event[]
 
-  @@map("vendorstaff")
+  @@map("organiser_staff")
 }
 
 // User Model
@@ -113,7 +111,6 @@ model User {
   favorites                     Favorite[]
   bookings                      Booking[]
   payments                      Payment[]
-  notifications                 Notification[]
   recommendation                Recommendation[]
   like                          Like[]
 
@@ -122,36 +119,36 @@ model User {
 
 // Event Model
 model Event {
-  id              String           @id @default(cuid())
-  name            String
-  description     String
-  address         String
-  images          String?
-  price           Decimal
-  total_ticket    Int
-  ticket_booked   Int              @default(0)
-  date            DateTime
-  time            String
-  age_range       String
-  instruction     String?
-  category        String
-  isPublished     Boolean?         @default(false)
-  isDeleted       Boolean?         @default(false)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  creatorId       String
+  id               String           @id @default(cuid())
+  name             String
+  description      String
+  address          String
+  images           String?
+  price            Decimal
+  total_ticket     Int
+  ticket_booked    Int              @default(0)
+  date             DateTime
+  time             String
+  age_range        String
+  instruction      String?
+  category         String
+  isPublished      Boolean?         @default(false)
+  isDeleted        Boolean?         @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  creatorId        String
   creatorType      String
-  reviews         Review[]
-  bookings        Booking[]
-  favorites       Favorite?
-  recommendations Recommendation[]
-  like            Like?
-  Admin           Admin?           @relation(fields: [adminId], references: [id])
-  adminId         String?
-  Vendor          Vendor?          @relation(fields: [vendorId], references: [id])
-  vendorId        String?
-  VendorStaff     VendorStaff?     @relation(fields: [vendorStaffId], references: [id])
-  vendorStaffId   String?
+  reviews          Review[]
+  bookings         Booking[]
+  favorites        Favorite?
+  recommendations  Recommendation[]
+  like             Like?
+  Admin            Admin?           @relation(fields: [adminId], references: [id])
+  adminId          String?
+  organiser        Organiser?       @relation(fields: [organiserId], references: [id])
+  organiserId      String?
+  organiserStaff   OrganiserStaff?  @relation(fields: [organiserStaffId], references: [id])
+  organiserStaffId String?
 
   @@map("event")
 }
@@ -233,18 +230,6 @@ model Recommendation {
   @@map("recommendation")
 }
 
-// Notification Model
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  type      String // e.g., "event_reminder", "booking_confirmation"
-  message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 // Review Model
 model Review {
   id        String   @id @default(cuid())
@@ -272,16 +257,14 @@ model BlacklistedToken {
 
 // AdminRole Enumerator
 enum AdminRole {
-  Admin
-  Editor
-  Viewer
+  ADMIN
+  EDITOR
 }
 
-// VendorRole Enumerator
-enum VendorRole {
-  Vendor
-  Representative
-  Support
+// OrganiserRole Enumerator
+enum OrganiserRole {
+  ORGANISER
+  MANAGER
 }
 
 // Booking Status Enumerator

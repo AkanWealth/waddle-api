@@ -8,7 +8,7 @@ export class FavoriteService {
   constructor(private prisma: PrismaService) {}
 
   // create new favorite event
-  async create(userId: string, dto: CreateFavoriteDto) {
+  async createFavorite(userId: string, dto: CreateFavoriteDto) {
     try {
       const favorite = await this.prisma.favorite.create({
         data: { ...dto, userId },
@@ -20,7 +20,7 @@ export class FavoriteService {
   }
 
   // find all favorite event for a user
-  async findAll(userId: string) {
+  async viewAllFavorite(userId: string) {
     try {
       const favorites = await this.prisma.favorite.findMany({
         where: { userId },
@@ -36,7 +36,7 @@ export class FavoriteService {
   }
 
   // find one favorite event based on id for a user
-  async findOne(id: string, userId: string) {
+  async viewFavorite(id: string, userId: string) {
     try {
       const favorite = await this.prisma.favorite.findUnique({
         where: { id, userId },
@@ -54,7 +54,7 @@ export class FavoriteService {
   }
 
   // update one favorite event based on id for a user
-  async update(id: string, userId: string, dto: UpdateFavoriteDto) {
+  async updateFavorite(id: string, userId: string, dto: UpdateFavoriteDto) {
     try {
       const existingFavorite = await this.prisma.favorite.findUnique({
         where: { id, userId },
@@ -73,8 +73,8 @@ export class FavoriteService {
     }
   }
 
-  // remove a favorite event based on id for a user
-  async remove(id: string, userId: string) {
+  // delete a favorite event based on id for a user
+  async deleteFavorite(id: string, userId: string) {
     try {
       const existingFavorite = await this.prisma.favorite.findUnique({
         where: { id, userId },

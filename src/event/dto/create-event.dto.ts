@@ -8,92 +8,92 @@ import {
 
 export class CreateEventDto {
   @ApiProperty({
-    description: 'The name of the event',
+    description: 'Event name',
     example: 'Art Workshop',
   })
-  @IsNotEmpty({ message: 'The name can not be blank' })
-  @IsString({ message: 'The name must be a string' })
+  @IsNotEmpty({ message: 'Name can not be blank' })
+  @IsString({ message: 'Name must be a string' })
   name: string;
 
   @ApiProperty({
-    description: 'The description of the event',
+    description: 'Description',
     example:
       'Unleash your creativity in our art workshop, suitable for all skill levels.',
   })
-  @IsString({ message: 'The description must be a string' })
-  @IsNotEmpty({ message: 'The description cannot be empty' })
+  @IsString({ message: 'Description must be a string' })
+  @IsNotEmpty({ message: 'Description cannot be empty' })
   description: string;
 
   @ApiProperty({
-    description: 'The address of the event',
+    description: 'Address',
     example: '321 Art Ave, Creative City, CC 98765',
   })
-  @IsString({ message: 'The address must be a string' })
-  @IsNotEmpty({ message: 'The address can not be blank' })
+  @IsString({ message: 'Address must be a string' })
+  @IsNotEmpty({ message: 'Address can not be blank' })
   address: string;
 
   @ApiProperty({
-    description: 'The price of the event',
+    description: 'Price',
     example: '100.0',
   })
-  @IsString({ message: 'The price must be a string' })
-  @IsNotEmpty({ message: 'The price can not be blank' })
+  @IsString({ message: 'Price must be a string' })
+  @IsNotEmpty({ message: 'Price can not be blank' })
   price: string;
 
   @ApiProperty({
-    description: 'The total ticket of the event',
+    description: 'Total ticket ',
     example: '20',
   })
-  @IsString({ message: 'The total ticket must be a string' })
-  @IsNotEmpty({ message: 'The total ticket can not be blank' })
+  @IsString({ message: 'Total ticket must be a string' })
+  @IsNotEmpty({ message: 'Total ticket can not be blank' })
   total_ticket: string;
 
   @ApiProperty({
-    description: 'The date of the event',
+    description: 'Date',
     example: '2025-03-26',
   })
-  @IsDateString({}, { message: 'The date must be a date string' })
-  @IsNotEmpty({ message: 'The date can not be blank' })
+  @IsDateString({}, { message: 'Date must be a date string' })
+  @IsNotEmpty({ message: 'Date can not be blank' })
   date: string;
 
   @ApiProperty({
-    description: 'The time of the event in 24 hours',
+    description: 'Time in 24 hours',
     example: '11:30:00',
   })
-  @IsString({ message: 'The time must be a string' })
-  @IsNotEmpty({ message: 'The time can not be blank' })
+  @IsString({ message: 'Time must be a string' })
+  @IsNotEmpty({ message: 'Time can not be blank' })
   time: string;
 
   @ApiProperty({
-    description: 'The age range of the event',
+    description: 'Age range',
     example: '6-10',
   })
-  @IsString({ message: 'The age range must be a string' })
-  @IsNotEmpty({ message: 'The age range can not be blank' })
+  @IsString({ message: 'Age range must be a string' })
+  @IsNotEmpty({ message: 'Age range can not be blank' })
   age_range: string;
 
   @ApiPropertyOptional({
-    description: 'The instruction of the event',
+    description: 'Instruction',
     example: 'Parent supervision is required',
   })
-  @IsString({ message: 'The instruction must be a string' })
+  @IsString({ message: 'Instruction must be a string' })
   @IsOptional()
   instruction: string;
 
   @ApiProperty({
-    description: 'The category of the event',
+    description: 'Category',
     example: 'Games',
     required: true,
   })
-  @IsString({ message: 'The category must be a string' })
-  @IsNotEmpty({ message: 'The category can not be blank' })
+  @IsString({ message: 'Category must be a string' })
+  @IsNotEmpty({ message: 'Category can not be blank' })
   category: string;
 
   @ApiPropertyOptional({
-    description: 'The published state of the event',
+    description: 'Published status',
     example: true,
   })
-  @IsString({ message: 'The published value must be a string' })
+  @IsString({ message: 'Published value must be a string' })
   @IsOptional()
-  isPublished: true;
+  isPublished: string;
 }
