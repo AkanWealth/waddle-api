@@ -4,7 +4,7 @@ import { SignInDto } from './signin.dto';
 
 export class UserSignUpDto extends SignInDto {
   @ApiPropertyOptional({
-    description: 'Parent name',
+    description: 'Name',
     type: String,
     example: 'John Doe',
   })

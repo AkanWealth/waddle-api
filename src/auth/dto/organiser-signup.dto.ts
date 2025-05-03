@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { SignInDto } from './signin.dto';
 
-export class VendorSignUpDto extends SignInDto {
+export class OrganiserSignUpDto extends SignInDto {
   @ApiProperty({
     description: 'Founder name',
     type: String,

@@ -14,7 +14,7 @@ export class TicketService {
     this.freshdeskApiUrl = `https://${this.freshdeskDomain}/api/v2`;
   }
 
-  async create(dto: CreateTicketDto) {
+  async createTicket(dto: CreateTicketDto) {
     const headers = {
       'Content-Type': 'application/json',
       Authorization: `Basic ${Buffer.from(this.freshdeskApiKey).toString('base64')}`,
@@ -33,7 +33,7 @@ export class TicketService {
     }
   }
 
-  async findAll(email: string) {
+  async viewAllTickets(email: string) {
     const headers = {
       'Content-Type': 'application/json',
       Authorization: `Basic ${Buffer.from(this.freshdeskApiKey).toString('base64')}`,
@@ -53,7 +53,7 @@ export class TicketService {
     }
   }
 
-  async findOne(id: number) {
+  async viewTicket(id: number) {
     const headers = {
       'Content-Type': 'application/json',
       Authorization: `Basic ${Buffer.from(this.freshdeskApiKey).toString('base64')}`,
@@ -73,7 +73,7 @@ export class TicketService {
     }
   }
 
-  async findConversation(id: number) {
+  async viewConversation(id: number) {
     const headers = {
       'Content-Type': 'application/json',
       Authorization: `Basic ${Buffer.from(this.freshdeskApiKey).toString('base64')}`,
@@ -96,7 +96,7 @@ export class TicketService {
     }
   }
 
-  // async update(id: number, dto: UpdateTicketDto) {
+  // async updateTicket(id: number, dto: UpdateTicketDto) {
   //   const headers = {
   //     'Content-Type': 'application/json',
   //     Authorization: `Basic ${Buffer.from(this.freshdeskApiKey).toString('base64')}`,
@@ -116,7 +116,7 @@ export class TicketService {
   //   }
   // }
 
-  async remove(id: number) {
+  async deleteTicket(id: number) {
     const headers = {
       'Content-Type': 'application/json',
       Authorization: `Basic ${Buffer.from(this.freshdeskApiKey).toString('base64')}`,

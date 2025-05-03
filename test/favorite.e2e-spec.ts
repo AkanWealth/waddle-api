@@ -13,7 +13,7 @@ import { CreateEventDto } from '../src/event/dto/create-event.dto';
 describe('Favorite (e2e)', () => {
   let app: INestApplication;
   let customerToken = '';
-  let vendorToken = '';
+  let organiserToken = '';
   let eventID = '';
   let id = '';
 
@@ -49,19 +49,19 @@ describe('Favorite (e2e)', () => {
         });
     });
 
-    // testing for vendor login
-    test('(POST) => Should login for vendor', () => {
-      const vendor: SignInDto = {
-        email: 'vendor2@gmail.com',
+    // testing for organiser login
+    test('(POST) => Should login for organiser', () => {
+      const organiser: SignInDto = {
+        email: 'organiser2@gmail.com',
         password: '12345678',
       };
       return request(app.getHttpServer())
-        .post('/api/v1/auth/signin/vendor')
-        .send(vendor)
+        .post('/api/v1/auth/signin/organiser')
+        .send(organiser)
         .expect(200)
         .then((res) => {
           expect(res.body.access_token).toBeDefined();
-          vendorToken = res.body.access_token;
+          organiserToken = res.body.access_token;
         });
     });
   });
@@ -82,10 +82,10 @@ describe('Favorite (e2e)', () => {
     };
 
     // testing for creating an event
-    test('(POST) => Should create event with vendor authenticated', () => {
+    test('(POST) => Should create event with organiser authenticated', () => {
       return request(app.getHttpServer())
         .post('/api/v1/events')
-        .set('Authorization', 'Bearer ' + vendorToken)
+        .set('Authorization', 'Bearer ' + organiserToken)
         .send(event)
         .expect(201)
         .then((res) => expect(res.body.id).toBeDefined());

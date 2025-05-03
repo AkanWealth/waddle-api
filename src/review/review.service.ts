@@ -7,7 +7,7 @@ export class ReviewService {
   constructor(private prisma: PrismaService) {}
 
   // create a new review for an event
-  async create(dto: CreateReviewDto) {
+  async createReview(dto: CreateReviewDto) {
     try {
       const review = await this.prisma.review.create({
         data: <any>{ ...dto },
@@ -19,7 +19,7 @@ export class ReviewService {
   }
 
   // find all reviews based on the event id
-  async findAll(eventId: string) {
+  async viewAllReviews(eventId: string) {
     try {
       const reviews = await this.prisma.review.findMany({
         where: { eventId },
@@ -36,7 +36,7 @@ export class ReviewService {
   }
 
   // find one review based on the review id
-  async findOne(id: string) {
+  async viewReview(id: string) {
     try {
       const reviews = await this.prisma.review.findUnique({
         where: { id },
@@ -53,7 +53,7 @@ export class ReviewService {
   }
 
   // update a review based on id
-  async update(id: string, dto: UpdateReviewDto) {
+  async updateReview(id: string, dto: UpdateReviewDto) {
     try {
       const review = await this.prisma.review.findUnique({
         where: { id },
@@ -73,8 +73,8 @@ export class ReviewService {
     }
   }
 
-  // remove a review based on id
-  async remove(id: string) {
+  // delete a review based on id
+  async deleteReview(id: string) {
     try {
       const review = await this.prisma.review.findUnique({
         where: { id },

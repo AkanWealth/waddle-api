@@ -1,8 +1,8 @@
 import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsOptional } from 'class-validator';
-import { VendorSignUpDto } from '../../auth/dto';
+import { OrganiserSignUpDto } from '../../auth/dto';
 
-export class UpdateVendorDto extends PartialType(VendorSignUpDto) {
+export class UpdateOrganiserDto extends PartialType(OrganiserSignUpDto) {
   @ApiPropertyOptional({ description: 'Name' })
   @IsOptional()
   name: string;
@@ -27,5 +27,5 @@ export class UpdateVendorDto extends PartialType(VendorSignUpDto) {
     example: true,
   })
   @IsOptional()
-  business_verify: boolean;
+  isVerified: boolean;
 }

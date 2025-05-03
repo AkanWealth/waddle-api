@@ -32,10 +32,10 @@ import { GetUser } from '../auth/decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
-import { Role } from '../auth/enum/role.enum';
+import { AdminRole } from 'src/auth/enum';
 
 @ApiUnauthorizedResponse({
-  description: 'The user is not unathorized to perform this action',
+  description: 'Unauthorized',
 })
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @UseGuards(JwtGuard, RolesGuard)
@@ -48,10 +48,10 @@ export class UserController {
     summary: 'view all users as an admin',
     description: 'Admin can view all users',
   })
-  @ApiOkResponse({ description: 'Successfull' })
+  @ApiOkResponse({ description: 'Ok' })
   @ApiBearerAuth()
   @Get('all')
-  @Roles(Role.Admin)
+  @Roles(AdminRole.Admin || AdminRole.Editor)
   findAll() {
     return this.userService.findAll();
   }
@@ -61,10 +61,9 @@ export class UserController {
     summary: 'view my details as a loggedin user',
     description: 'User can view their details',
   })
-  @ApiOkResponse({ description: 'Successfull' })
+  @ApiOkResponse({ description: 'Ok' })
   @ApiBearerAuth()
   @Get('me')
-  @Roles(Role.User)
   findOne(@GetUser() user: User) {
     return this.userService.findMe(user.id);
   }
@@ -74,11 +73,10 @@ export class UserController {
     summary: 'update my details as a loggedin user',
     description: 'User can update their details',
   })
-  @ApiAcceptedResponse({ description: 'Successfully updated' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
-  @Roles(Role.User)
   @UseInterceptors(FileInterceptor('profile_picture'))
   update(
     @GetUser('id') id: string,
@@ -89,7 +87,7 @@ export class UserController {
       try {
         new ParseFilePipe({
           validators: [
-            new MaxFileSizeValidator({ maxSize: 10000000 }),
+            new MaxFileSizeValidator({ maxSize: 5000000 }),
             new FileTypeValidator({ fileType: 'image/*' }),
           ],
         }).transform(file);
@@ -107,27 +105,41 @@ export class UserController {
     summary: 'update my password as a loggedin user',
     description: 'User can update their password',
   })
-  @ApiAcceptedResponse({ description: 'Successfully updated' })
+  @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me/password')
-  @Roles(Role.User)
   updatePassword(@GetUser('id') id: string, @Body() dto: UpdatePasswordDto) {
     return this.userService.updatePassword(id, dto);
   }
 
-  // delete a user
+  // delete a user temporarily
   @ApiOperation({
-    summary: 'delete a user by id as an admin',
-    description: 'Admin can delete a user by id',
+    summary: 'delete a user temporarily by id as an admin',
+    description: 'Admin can delete a user temporarily by id',
   })
-  @ApiNoContentResponse({ description: 'Deleted Successfully' })
+  @ApiNoContentResponse({ description: 'No content' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('temp/:id')
+  @Roles(AdminRole.Admin || AdminRole.Editor)
+  deleteUserTemp(@Param('id') id: string) {
+    return this.userService.deleteUserTemp(id);
+  }
+
+  // delete a user permanently
+  @ApiOperation({
+    summary: 'delete a user permanently by id as an admin',
+    description: 'Admin can delete a user permanently by id',
+  })
+  @ApiNoContentResponse({ description: 'No content' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  @Roles(Role.Admin)
-  removeOne(@Param('id') id: string) {
-    return this.userService.removeOne(id);
+  @Roles(AdminRole.Admin)
+  deleteUser(@Param('id') id: string) {
+    return this.userService.deleteUser(id);
   }
 }

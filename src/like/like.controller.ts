@@ -25,7 +25,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
-@ApiUnauthorizedResponse({ description: 'Login to perform this action' })
+@ApiUnauthorizedResponse({ description: 'Unauthorized' })
 @ApiInternalServerErrorResponse({ description: 'Internal server error' })
 @ApiBearerAuth()
 @UseGuards(JwtGuard)
@@ -37,32 +37,32 @@ export class LikeController {
     summary: 'like an event',
     description: 'Parents can like an event',
   })
-  @ApiCreatedResponse({ description: 'Like created successfully' })
+  @ApiCreatedResponse({ description: 'Created' })
   @Post()
-  create(@GetUser() user: User, @Body() dto: CreateLikeDto) {
-    return this.likeService.create(user.id, dto);
+  createLike(@GetUser() user: User, @Body() dto: CreateLikeDto) {
+    return this.likeService.createLike(user.id, dto);
   }
 
   @ApiOperation({
     summary: 'view all likes by event',
     description: 'Parents can view all likes by event',
   })
-  @ApiOkResponse({ description: 'Found likes' })
+  @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get(':eventId')
-  findAll(@Param('eventId') eventId: string) {
-    return this.likeService.findAll(eventId);
+  viewAllLikes(@Param('eventId') eventId: string) {
+    return this.likeService.viewAllLikes(eventId);
   }
 
   @ApiOperation({
     summary: 'unlike an event',
     description: 'Parents can unlike an event',
   })
-  @ApiNoContentResponse({ description: 'Deleted successfully' })
+  @ApiNoContentResponse({ description: 'No content' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  remove(@GetUser() user: User, @Param('id') id: string) {
-    return this.likeService.remove(user.id, id);
+  deleteLike(@GetUser() user: User, @Param('id') id: string) {
+    return this.likeService.deleteLike(user.id, id);
   }
 }

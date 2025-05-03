@@ -23,16 +23,16 @@ export class RefreshJwtStrategy extends PassportStrategy(
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
-    const vendor = await this.prisma.vendor.findUnique({
+    const organiser = await this.prisma.organiser.findUnique({
       where: { id: payload.sub },
     });
     const admin = await this.prisma.admin.findUnique({
       where: { id: payload.sub },
     });
 
-    if (vendor) {
-      delete vendor.password;
-      return vendor;
+    if (organiser) {
+      delete organiser.password;
+      return organiser;
     } else if (admin) {
       delete admin.password;
       return admin;
