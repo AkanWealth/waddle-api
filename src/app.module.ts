@@ -1,19 +1,54 @@
 import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
-import { ActivitiesModule } from './activities/activities.module';
-import { VendorModule } from './vendor/vendor.module';
+import { OrganiserModule } from './organiser/organiser.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
+import { LocationModule } from './location/location.module';
+import { ReviewModule } from './review/review.module';
+import { EventModule } from './event/event.module';
+import { FavoriteModule } from './favorite/favorite.module';
+import { BookingModule } from './booking/booking.module';
+import { WebhookModule } from './webhook/webhook.module';
+import { NotificationModule } from './notification/notification.module';
+import { LikeModule } from './like/like.module';
+import { TicketModule } from './ticket/ticket.module';
+import { OrganiserStaffModule } from './organiser-staff/organiser-staff.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRootAsync({
+      useFactory: () =>
+        ({
+          ttl: 60,
+          limit: 3,
+          throttlers: [], // Add the throttlers property here
+        }) as ThrottlerModuleOptions,
+    }),
     AuthModule,
     UserModule,
-    VendorModule,
-    ActivitiesModule,
+    OrganiserModule,
+    EventModule,
     PrismaModule,
+    LocationModule,
+    ReviewModule,
+    FavoriteModule,
+    BookingModule,
+    WebhookModule,
+    NotificationModule,
+    LikeModule,
+    TicketModule,
+    OrganiserStaffModule,
+    AdminModule,
   ],
+  providers: [AppService],
+  controllers: [AppController],
 })
 export class AppModule {}

@@ -1,0 +1,112 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
+import { AdminService } from './admin.service';
+import {
+  ApiAcceptedResponse,
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiInternalServerErrorResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { CreateAdminDto, UpdateAdminDto } from './dto';
+import { GetUser } from 'src/auth/decorator';
+import { AdminRole } from 'src/auth/enum';
+import { Roles } from 'src/auth/decorator/role-decorator';
+import { User } from '@prisma/client';
+import { UpdatePasswordDto } from 'src/user/dto';
+import { JwtGuard } from 'src/auth/guard';
+import { RolesGuard } from 'src/auth/guard/role.guard';
+
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'Unathorized' })
+@ApiInternalServerErrorResponse({ description: 'Internal Server error' })
+@UseGuards(JwtGuard, RolesGuard)
+@Controller('host')
+export class AdminController {
+  constructor(private readonly adminService: AdminService) {}
+
+  @ApiOperation({
+    summary: 'create other admin account',
+    description: 'Super admin can create other admin account',
+  })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('create')
+  @Roles(AdminRole.Admin)
+  createAdmin(@GetUser() admin: { id: string }, @Body() dto: CreateAdminDto) {
+    return this.adminService.createAdmin(admin.id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'view all admins as an admin',
+    description: 'Admin with admin role can view all admins',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('all')
+  @Roles(AdminRole.Admin)
+  viewAllAdmin(@GetUser() admin: User) {
+    if (admin) return this.adminService.viewAllAdmin();
+  }
+
+  @ApiOperation({
+    summary: 'view my details as a loggedin admin',
+    description: 'Admin can view their details',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('me')
+  @Roles(AdminRole.Admin || AdminRole.Editor)
+  viewMe(@GetUser() admin: User) {
+    return this.adminService.viewMe(admin.id);
+  }
+
+  @ApiOperation({
+    summary: 'update my details as a loggedin admin',
+    description: 'Admin can update their details',
+  })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('me')
+  @Roles(AdminRole.Admin || AdminRole.Editor)
+  updateProfile(@GetUser('id') id: string, @Body() dto: UpdateAdminDto) {
+    return this.adminService.updateProfile(id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'update my password as a loggedin admin',
+    description: 'Admin can update their password',
+  })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('me/password')
+  @Roles(AdminRole.Admin || AdminRole.Editor)
+  updatePassword(@GetUser('id') id: string, @Body() dto: UpdatePasswordDto) {
+    return this.adminService.updatePassword(id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'delete an admin',
+    description: 'Admin with admin role can delete an admin by id',
+  })
+  @ApiNoContentResponse({ description: 'No content' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':id')
+  @Roles(AdminRole.Admin)
+  deleteAdmin(@GetUser() admin: User, @Param('id') id: string) {
+    if (admin) return this.adminService.deleteAdmin(id);
+  }
+}
