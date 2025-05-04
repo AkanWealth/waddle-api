@@ -1,14 +1,14 @@
 # Waddle Application
 
-This application provides a multi-role system with distinct functionalities for administrators, guardians, and vendors:
+This application provides a multi-role system with distinct functionalities for administrators, guardians, and orgarnisers:
 
-- Admin Management: Administrators can manage the entire system, including user roles (sub-admins, orgornisers, guardians), and events. They can also create admin and sub-admin accounts, and sign in/out.
+- Admin Management: Administrators can manage the entire system, including user roles (sub-admins, orgarnisers, guardians), and events. They can also create admin and sub-admin accounts, and sign in/out.
 
 - Guardian Management: Guardians can create accounts (via email/password or SSO), sign in, and manage their profiles.
 
-- Orgorniser Management: Orgornisers can create accounts, sign in, manage their profiles, create and manage events, and invite staff.
+- Orgarniser Management: Orgarnisers can create accounts, sign in, manage their profiles, create and manage events, and invite staff.
 
-- Event Management: Orgornisers, orgorniser staffs, and admins can create and update events, with guardians able to view published events. Event creation includes the ability to save drafts.
+- Event Management: Orgarnisers, orgarniser staffs, and admins can create and update events, with guardians able to view published events. Event creation includes the ability to save drafts.
 
 ## Technologies Used
 
