@@ -47,14 +47,14 @@ export class EventController {
   constructor(private readonly eventService: EventService) {}
 
   @ApiOperation({
-    summary: 'create an event by admin and vendor',
-    description: 'Create an event by the main admin or vendor',
+    summary: 'create an event by vendor',
+    description: 'Create an event by the main vendor',
   })
   @ApiCreatedResponse({ description: 'Created' })
-  @Post()
-  @Roles(AdminRole.Admin, AdminRole.Editor, OrganiserRole.Organiser)
+  @Post('vendor')
+  @Roles(OrganiserRole.Organiser)
   @UseInterceptors(FileInterceptor('images'))
-  createEvent(
+  createEventByVendor(
     @GetUser() user: { id: string; role: string },
     @Body() dto: CreateEventDto,
     @UploadedFile() file?: Express.Multer.File,
@@ -70,7 +70,7 @@ export class EventController {
       } catch (error) {
         throw error;
       }
-      return this.eventService.createEvent(
+      return this.eventService.createEventByVendor(
         user.id,
         user.role,
         dto,
@@ -78,7 +78,49 @@ export class EventController {
         file.buffer,
       );
     } else {
-      return this.eventService.createEvent(
+      return this.eventService.createEventByVendor(
+        user.id,
+        user.role,
+        dto,
+        file?.originalname,
+        file?.buffer,
+      );
+    }
+  }
+
+  @ApiOperation({
+    summary: 'create an event by admin',
+    description: 'Create an event by the admin',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('admin')
+  @Roles(AdminRole.Admin, AdminRole.Editor)
+  @UseInterceptors(FileInterceptor('images'))
+  createEventByAdmin(
+    @GetUser() user: { id: string; role: string },
+    @Body() dto: CreateEventDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (file) {
+      try {
+        new ParseFilePipe({
+          validators: [
+            new MaxFileSizeValidator({ maxSize: 5000000 }),
+            new FileTypeValidator({ fileType: 'image/*' }),
+          ],
+        }).transform(file);
+      } catch (error) {
+        throw error;
+      }
+      return this.eventService.createEventByAdmin(
+        user.id,
+        user.role,
+        dto,
+        file.originalname,
+        file.buffer,
+      );
+    } else {
+      return this.eventService.createEventByAdmin(
         user.id,
         user.role,
         dto,
@@ -93,7 +135,7 @@ export class EventController {
     description: 'Create an event as a staff of the vendor',
   })
   @ApiCreatedResponse({ description: 'Created' })
-  @Post('vendor-staff')
+  @Post('vendor/staff')
   @Roles(OrganiserRole.Manager)
   @UseInterceptors(FileInterceptor('images'))
   createEventByStaff(
@@ -142,23 +184,33 @@ export class EventController {
   }
 
   @ApiOperation({
-    summary: 'view created events by admin or vendor',
-    description: 'View all events created by the logged in vendor or admin',
+    summary: 'view created events by vendor',
+    description: 'View all events created by the logged in vendor',
   })
   @ApiOkResponse({ description: 'Ok' })
-  @Get('me')
-  @Roles(AdminRole.Admin, OrganiserRole.Organiser)
-  viewMyEvents(@GetUser() user: { id: string }) {
-    return this.eventService.viewMyEvents(user.id);
+  @Get('vendor')
+  @Roles(OrganiserRole.Organiser)
+  viewMyEventsAsVendor(@GetUser() user: { id: string }) {
+    return this.eventService.viewMyEventsAsVendor(user.id);
   }
 
   @ApiOperation({
-    summary: 'view created events by admin or vendor staff',
-    description:
-      'View all events created by the logged in vendor or admin staff',
+    summary: 'view created events by admin',
+    description: 'View all events created by the admin',
   })
   @ApiOkResponse({ description: 'Ok' })
-  @Get('me/staff')
+  @Get('admin')
+  @Roles(AdminRole.Admin)
+  viewMyEventsAsAdmin(@GetUser() user: { id: string }) {
+    return this.eventService.viewMyEventsAsAdmin(user.id);
+  }
+
+  @ApiOperation({
+    summary: 'view created events by vendor staff',
+    description: 'View all events created by the logged in vendor staff',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('vendor/staff')
   @Roles(AdminRole.Editor, OrganiserRole.Manager)
   viewEventsByStaff(@GetUser() user: { id: string }) {
     return this.eventService.viewEventsByStaff(user.id);
@@ -213,16 +265,16 @@ export class EventController {
   }
 
   @ApiOperation({
-    summary: 'Update an event by the event id',
-    description: 'Update an event by id based on the logged in vendor or admin',
+    summary: 'Update an event as admin by the event id',
+    description: 'Update an event by id based on the logged in admin',
   })
   @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch(':id')
-  @Roles(AdminRole.Admin, OrganiserRole.Organiser)
+  @Patch('admin/:id')
+  @Roles(AdminRole.Admin, AdminRole.Editor)
   @UseInterceptors(FileInterceptor('images'))
-  updateEvent(
+  updateEventAsAdmin(
     @Param('id') id: string,
     @GetUser() user: User,
     @Body() dto: UpdateEventDto,
@@ -239,7 +291,7 @@ export class EventController {
       } catch (error) {
         throw error;
       }
-      return this.eventService.updateEvent(
+      return this.eventService.updateEventAsAdmin(
         id,
         user.id,
         dto,
@@ -247,7 +299,46 @@ export class EventController {
         file.buffer,
       );
     } else {
-      return this.eventService.updateEvent(id, user.id, dto);
+      return this.eventService.updateEventAsAdmin(id, user.id, dto);
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Update an event as vendor by the event id',
+    description: 'Update an event by id based on the logged in vendor',
+  })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiParam({ name: 'id' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('vendor/:id')
+  @Roles(OrganiserRole.Organiser)
+  @UseInterceptors(FileInterceptor('images'))
+  updateEventAsVendor(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Body() dto: UpdateEventDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    if (file) {
+      try {
+        new ParseFilePipe({
+          validators: [
+            new MaxFileSizeValidator({ maxSize: 5000000 }),
+            new FileTypeValidator({ fileType: 'image/*' }),
+          ],
+        }).transform(file);
+      } catch (error) {
+        throw error;
+      }
+      return this.eventService.updateEventAsVendor(
+        id,
+        user.id,
+        dto,
+        file.originalname,
+        file.buffer,
+      );
+    } else {
+      return this.eventService.updateEventAsVendor(id, user.id, dto);
     }
   }
 
@@ -258,8 +349,8 @@ export class EventController {
   @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('vendor-staff/:id')
-  @Roles(AdminRole.Editor, OrganiserRole.Manager)
+  @Patch('vendor/staff/:id')
+  @Roles(OrganiserRole.Manager)
   @UseInterceptors(FileInterceptor('images'))
   updateEventByStaff(
     @Param('id') id: string,
@@ -301,6 +392,6 @@ export class EventController {
   @Delete(':id')
   @Roles(AdminRole.Admin, OrganiserRole.Organiser)
   deleteEvent(@Param('id') id: string, @GetUser() user: User) {
-    return this.eventService.deleteEvent(id, user.id);
+    if (user) return this.eventService.deleteEvent(id);
   }
 }

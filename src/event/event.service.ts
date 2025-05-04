@@ -27,7 +27,7 @@ export class EventService {
     private config: ConfigService,
   ) {}
 
-  async createEvent(
+  async createEventByVendor(
     creatorId: string,
     creatorType: string,
     dto: CreateEventDto,
@@ -56,6 +56,48 @@ export class EventService {
           images: fileName || null,
           isPublished,
           creatorId,
+          creatorType,
+        },
+      });
+
+      return { message: 'Event created', event };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createEventByAdmin(
+    creatorId: string,
+    creatorType: string,
+    dto: CreateEventDto,
+    fileName?: string,
+    file?: Buffer,
+  ) {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { id: creatorId },
+      });
+      if (file) {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+            Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
+            Body: file,
+          }),
+        );
+      }
+
+      const date = new Date(dto.date);
+      const isPublished = this.stringToBoolean(dto.isPublished);
+
+      const event = await this.prisma.event.create({
+        data: {
+          ...dto,
+          date,
+          total_ticket: Number(dto.total_ticket),
+          images: fileName || null,
+          isPublished,
+          creatorId: admin.adminId,
           creatorType,
         },
       });
@@ -178,10 +220,36 @@ export class EventService {
     }
   }
 
-  async viewMyEvents(creatorId: string) {
+  async viewMyEventsAsVendor(creatorId: string) {
     try {
       const event = await this.prisma.event.findMany({
         where: { creatorId },
+      });
+
+      if (!event || event.length <= 0)
+        throw new NotFoundException('No event found');
+
+      const eventWithImage = event.map((list) => {
+        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.images}`;
+        return {
+          ...list,
+          images,
+        };
+      });
+
+      return { message: 'Events found', events: eventWithImage };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async viewMyEventsAsAdmin(creatorId: string) {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { id: creatorId },
+      });
+      const event = await this.prisma.event.findMany({
+        where: { creatorId: admin.adminId },
       });
 
       if (!event || event.length <= 0)
@@ -329,7 +397,75 @@ export class EventService {
     }
   }
 
-  async updateEvent(
+  async updateEventAsAdmin(
+    id: string,
+    creatorId: string,
+    dto: UpdateEventDto,
+    fileName?: string,
+    file?: Buffer,
+  ) {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { id: creatorId },
+      });
+      const existingEvent = await this.prisma.event.findUnique({
+        where: { id, creatorId: admin.adminId },
+      });
+
+      if (!existingEvent)
+        throw new NotFoundException(
+          'Event with the provided ID does not exist.',
+        );
+
+      if (new Date(existingEvent.date) <= new Date())
+        throw new ForbiddenException('Past event can not be updated');
+
+      let image = existingEvent?.images || undefined;
+
+      // Upload the new image
+      if (image !== fileName) {
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+            Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
+            Body: file,
+          }),
+        );
+
+        // Delete the old image from bucket
+        await this.s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+            Key:
+              `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${image}` || 'null',
+          }),
+        );
+
+        // Update the profile image filename
+        image = fileName;
+      }
+
+      const isPublished = this.stringToBoolean(dto.isPublished);
+      const event = await this.prisma.event.update({
+        where: {
+          id: existingEvent.id,
+        },
+        data: <any>{
+          ...dto,
+          date: dto.date ? new Date(dto.date) : undefined,
+          images: image || null,
+          total_ticket: Number(dto.total_ticket) || undefined,
+          isPublished,
+        },
+      });
+
+      return { message: 'Event updated', event };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateEventAsVendor(
     id: string,
     creatorId: string,
     dto: UpdateEventDto,
@@ -536,15 +672,15 @@ export class EventService {
     }
   }
 
-  async deleteEvent(id: string, creatorId: string) {
+  async deleteEvent(id: string) {
     try {
       const existingEvent = await this.prisma.event.findUnique({
-        where: { id, creatorId },
+        where: { id },
       });
 
       if (!existingEvent)
         throw new NotFoundException(
-          'Event with the provdied ID does not exist.',
+          'Event with the provided ID does not exist.',
         );
 
       if (existingEvent?.images) {
@@ -566,26 +702,6 @@ export class EventService {
       throw error;
     }
   }
-
-  // private stringToBoolean(str: any) {
-  //   if (typeof str !== 'string') {
-  //     return !!str; // handles non-string inputs
-  //   }
-
-  //   const lowerStr = str.toLowerCase();
-
-  //   if (lowerStr === 'true') {
-  //     return true;
-  //   } else if (lowerStr === 'false') {
-  //     return false;
-  //   } else {
-  //     //Handles cases of "1","0", or any other string.
-  //     if (!Number.isNaN(Number(str))) {
-  //       return !!Number(str);
-  //     }
-  //     return !!str; //Default behavior for any other string.
-  //   }
-  // }
 
   private stringToBoolean(value: string): boolean {
     if (value === 'true') {
