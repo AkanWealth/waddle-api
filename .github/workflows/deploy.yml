@@ -10,44 +10,34 @@ on:
 jobs:
   deploy:
     name: Deploy to EC2
-    runs-on: ubuntu-latest
+    runs-on: almalinux-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@master
         with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }} # Store your private key in GitHub secrets
-
-      - name: Install SSH
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openssh-client
-
-      - name: Add known host
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_HOST }} ssh-rsa AAAA${{ secrets.EC2_HOST_KEY }}" >> ~/.ssh/known_hosts # Adds host key, Remove StrictHostKeyChecking
-          chmod 644 ~/.ssh/known_hosts
-
-      - name: Deploy to EC2
-        run: |
-          # Connect using the SSH key
-          ssh -o StrictHostKeyChecking=no \ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-          echo "Changing to project directory..."
-          cd /home/ec2-user/waddle-api && \
-          echo "Updating code from repository..." && \
-          git fetch origin main && \
-          git reset --hard origin/main && \
-          echo "Installing dependencies..." && \
-          npm ci --omit=dev && \
-          echo "Building application..." && \
-          npm run build && \
-          echo "Restarting PM2 process..." && \
-          pm2 restart waddleapi --update-env && \
-          pm2 save && \
-          echo "Deployment completed successfully!"
-        env:
-          NODE_ENV: production
+          host: ${{ secrets.EC2_HOST }} # Your EC2 instance public IP or DNS
+          username: ${{ secrets.EC2_USER }} # Your EC2 instance username
+          key: ${{ secrets.EC2_SSH_KEY }} # Your private SSH key
+          script: |
+            echo "Deploying to EC2 instance..."
+            cd /home/ec2-user/waddle-api && \
+            echo "Updating code from repository..." && \
+            git fetch origin main && \
+            git reset --hard origin/main && \
+            echo "Installing dependencies..." && \
+            npm ci --omit=dev && \
+            echo "Creating .env file..." && \
+            touch .env && \
+            echo "Setting environment variables..." && \
+            echo "${{ secrets.ENV_FILE }}" >> .env && \
+            npm ci --omit=dev && \
+            echo "Building application..." && \
+            npm run build && \
+            echo "Restarting PM2 process..." && \
+            pm2 restart waddleapi --update-env && \
+            pm2 save && \
+            echo "Deployment completed successfully!"
