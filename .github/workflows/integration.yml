@@ -29,7 +29,7 @@ jobs:
           SEED_FIRST_NAME: Super
           SEED_LAST_NAME: Admin
           SEED_EMAIL: admin@waddle.uk
-          SEED_PASSWORD: 12345678
+          SEED_PASSWORD: P@$$w0rd.
           GOOGLE_CLIENT_ID: 237136003048-3mlogbmva2mmbscg5klvuv861ktvjmen.apps.googleusercontent.com
           GOOGLE_CLIENT_SECRET: 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
           GOOGLE_CALLBACK_URL: http://localhost:3030/api/v1/auth/google/callback
@@ -97,7 +97,7 @@ jobs:
           echo "SEED_FIRST_NAME=Super" >> $GITHUB_ENV
           echo "SEED_LAST_NAME=Admin" >> $GITHUB_ENV
           echo "SEED_EMAIL=admin@waddle.uk" >> $GITHUB_ENV
-          echo "SEED_PASSWORD=12345678" >> $GITHUB_ENV
+          echo "SEED_PASSWORD=P@$$w0rd." >> $GITHUB_ENV
           echo "GOOGLE_CLIENT_ID=237136003048-3mlogbmva2mmbscg5klvuv861ktvjmen.apps.googleusercontent.com" >> $GITHUB_ENV
           echo "GOOGLE_CLIENT_SECRET=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" >> $GITHUB_ENV
           echo "GOOGLE_CALLBACK_URL=http://localhost:3030/api/v1/auth/google/callback" >> $GITHUB_ENV
