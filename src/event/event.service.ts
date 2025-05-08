@@ -35,15 +35,7 @@ export class EventService {
     file?: Buffer,
   ) {
     try {
-      if (file) {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
-            Body: file,
-          }),
-        );
-      }
+      if (file) await this.uploadEventImages(fileName, file);
 
       const date = new Date(dto.date);
       const isPublished = this.stringToBoolean(dto.isPublished);
@@ -78,13 +70,7 @@ export class EventService {
         where: { id: creatorId },
       });
       if (file) {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
-            Body: file,
-          }),
-        );
+        await this.uploadEventImages(fileName, file);
       }
 
       const date = new Date(dto.date);
@@ -167,13 +153,7 @@ export class EventService {
         throw new ForbiddenException('Staff account is deleted');
 
       if (file) {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
-            Body: file,
-          }),
-        );
+        await this.uploadEventImages(fileName, file);
       }
 
       const date = new Date(dto.date);
@@ -424,22 +404,10 @@ export class EventService {
 
       // Upload the new image
       if (image !== fileName) {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
-            Body: file,
-          }),
-        );
+        await this.uploadEventImages(fileName, file);
 
         // Delete the old image from bucket
-        await this.s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key:
-              `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${image}` || 'null',
-          }),
-        );
+        await this.deleteEventImages(image);
 
         // Update the profile image filename
         image = fileName;
@@ -489,22 +457,10 @@ export class EventService {
 
       // Upload the new image
       if (image !== fileName) {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
-            Body: file,
-          }),
-        );
+        await this.uploadEventImages(fileName, file);
 
         // Delete the old image from bucket
-        await this.s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key:
-              `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${image}` || 'null',
-          }),
-        );
+        await this.deleteEventImages(image);
 
         // Update the profile image filename
         image = fileName;
@@ -631,22 +587,10 @@ export class EventService {
 
       // Upload the new image
       if (image !== fileName) {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
-            Body: file,
-          }),
-        );
+        await this.uploadEventImages(fileName, file);
 
         // Delete the old image from bucket
-        await this.s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key:
-              `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${image}` || 'null',
-          }),
-        );
+        await this.deleteEventImages(image);
 
         // Update the profile image filename
         image = fileName;
@@ -684,13 +628,7 @@ export class EventService {
         );
 
       if (existingEvent?.images) {
-        await this.s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            // Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
-            Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${existingEvent.images}`,
-          }),
-        );
+        await this.deleteEventImages(existingEvent.images);
       }
 
       await this.prisma.event.delete({
@@ -701,6 +639,27 @@ export class EventService {
     } catch (error) {
       throw error;
     }
+  }
+
+  private uploadEventImages(fileName: string, file: Buffer) {
+    return this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+        Key: `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}`,
+        Body: file,
+        ACL: 'public-read',
+      }),
+    );
+  }
+
+  private deleteEventImages(fileName: string) {
+    return this.s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+        Key:
+          `${this.config.getOrThrow('S3_EVENT_FOLDER')}/${fileName}` || 'null',
+      }),
+    );
   }
 
   private stringToBoolean(value: string): boolean {

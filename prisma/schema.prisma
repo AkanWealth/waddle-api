@@ -142,7 +142,7 @@ model Event {
   bookings         Booking[]
   favorites        Favorite?
   recommendations  Recommendation[]
-  like             Like?
+  like             Like[]
   Admin            Admin?           @relation(fields: [adminId], references: [id])
   adminId          String?
   organiser        Organiser?       @relation(fields: [organiserId], references: [id])
@@ -151,6 +151,23 @@ model Event {
   organiserStaffId String?
 
   @@map("event")
+}
+
+// CrowdSource Model
+model CrowdSource {
+  id          String   @id @default(cuid())
+  name        String
+  images      String[]
+  description String
+  address     String
+  creatorId   String
+  like        Like[]
+  isVerified  Boolean  @default(false)
+  isDeleted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("crowdsource")
 }
 
 // Bookings Model
@@ -205,14 +222,18 @@ model Favorite {
 
 // Like model
 model Like {
-  id        String   @id @default(cuid())
-  userId    String
-  eventId   String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String       @id @default(cuid())
+  userId        String
+  eventId       String?
+  crowdSourceId String?
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event         Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  crowdSource   CrowdSource? @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
+  @@unique([userId, eventId])
+  @@unique([userId, crowdSourceId])
   @@map("like")
 }
 
