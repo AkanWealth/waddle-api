@@ -5,7 +5,7 @@ on:
     types: [opened, reopened]
     branches:
       - main
-  workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -19,9 +19,9 @@ jobs:
       - name: Deploy to production server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_HOST }} # Your EC2 instance public IP or DNS
-          username: ${{ secrets.EC2_USER }} # Your EC2 instance username
-          key: ${{ secrets.EC2_SSH_KEY }} # Your private SSH key
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             echo "Deploying to EC2 instance..."
             cd /home/ec2-user/waddle-api && \
@@ -33,7 +33,7 @@ jobs:
             echo "Creating .env file..." && \
             touch .env && \
             echo "Setting environment variables..." && \
-            echo "${{ secrets.ENV_FILE }}" >> .env && \
+            echo "${{ secrets.ENV_FILE }}" > .env && \
             npm ci --omit=dev && \
             echo "Building application..." && \
             npm run build && \
