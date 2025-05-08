@@ -102,3 +102,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Resources
 
 - CodeMood: https://thecodemood.com/?s=nestjs
+- https://dev.to/emmanuelayinde/web-push-notifications-with-react-and-firebase-cloud-messaging-fcm-18kb
