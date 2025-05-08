@@ -39,10 +39,9 @@ export class NotificationService {
           },
         })
         .catch((error: any) => {
-          console.error(error);
+          throw error;
         });
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
