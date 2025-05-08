@@ -5,7 +5,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
 import { NotificationService } from '../notification/notification.service';
-import { AdminRole, OrganiserRole } from 'src/auth/enum';
 
 @Injectable()
 export class BookingService {
@@ -190,25 +189,57 @@ export class BookingService {
   }
 
   // find all my bookings as the event creator
-  async viewMyBookings(userId: string, userRole: string) {
+  async viewMyBookings(userId: string) {
     try {
-      const whereClause: any = {};
-
-      if (userRole === OrganiserRole.Organiser) {
-        whereClause.organiserId = userId;
-      } else if (userRole === AdminRole.Admin) {
-        whereClause.adminId = userId;
-      }
-
       const bookings = await this.prisma.booking.findMany({
-        where: { event: whereClause },
+        where: { event: { creatorId: userId } },
         include: { event: true, user: true },
       });
 
       if (!bookings || bookings.length <= 0)
         throw new NotFoundException('No booking found');
 
-      return bookings;
+      return { message: 'Bookings found', bookings };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // find all my bookings as the event creator staff
+  async viewBookingsAsStaff(userId: string) {
+    try {
+      const staff = await this.prisma.organiserStaff.findUnique({
+        where: { id: userId },
+      });
+      const bookings = await this.prisma.booking.findMany({
+        where: { event: { creatorId: staff.organiserId } },
+        include: { event: true, user: true },
+      });
+
+      if (!bookings || bookings.length <= 0)
+        throw new NotFoundException('No booking found');
+
+      return { message: 'Bookings found', bookings };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // find all my bookings as the admin
+  async viewBookingsAsAdmin(userId: string) {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { id: userId },
+      });
+      const bookings = await this.prisma.booking.findMany({
+        where: { event: { creatorId: admin.adminId } },
+        include: { event: true, user: true },
+      });
+
+      if (!bookings || bookings.length <= 0)
+        throw new NotFoundException('No booking found');
+
+      return { message: 'Bookings found', bookings };
     } catch (error) {
       throw error;
     }
