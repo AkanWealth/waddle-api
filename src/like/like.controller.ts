@@ -38,20 +38,41 @@ export class LikeController {
     description: 'Parents can like an event',
   })
   @ApiCreatedResponse({ description: 'Created' })
-  @Post()
-  createLike(@GetUser() user: User, @Body() dto: CreateLikeDto) {
-    return this.likeService.createLike(user.id, dto);
+  @Post('event')
+  likeEvent(@GetUser() user: User, @Body() dto: CreateLikeDto) {
+    return this.likeService.likeEvent(user.id, dto);
   }
 
   @ApiOperation({
-    summary: 'view all likes by event',
-    description: 'Parents can view all likes by event',
+    summary: 'like a crowdsourced event',
+    description: 'Parents can like a crowdsourced event',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('crowd-sourced')
+  likeCrowdSourcedEvent(@GetUser() user: User, @Body() dto: CreateLikeDto) {
+    return this.likeService.likeCrowdSourcedEvent(user.id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'view all likes for event',
+    description: 'Parents can view all likes for event',
   })
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
-  @Get(':eventId')
-  viewAllLikes(@Param('eventId') eventId: string) {
-    return this.likeService.viewAllLikes(eventId);
+  @Get('event/:id')
+  viewLikesByEvent(@Param('id') eventId: string) {
+    return this.likeService.viewLikesByEvent(eventId);
+  }
+
+  @ApiOperation({
+    summary: 'view all likes for crowd sourced event',
+    description: 'Parents can view all likes for crowd sourced event',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('crowd-sourced/:id')
+  viewLikesByCrowdSourceEvent(@Param('id') eventId: string) {
+    return this.likeService.viewLikesByCrowdSourceEvent(eventId);
   }
 
   @ApiOperation({
