@@ -64,14 +64,36 @@ export class BookingController {
   }
 
   @ApiOperation({
-    summary: 'view all bookings as a loggedin organiser or admin',
-    description: 'Admin or Organiser can view all booked events of theirs',
+    summary: 'view all bookings as a loggedin organiser',
+    description: 'Organiser can view all booked events of theirs',
   })
   @ApiOkResponse({ description: 'Ok' })
-  @Get('all')
-  @Roles(AdminRole.Admin, OrganiserRole.Organiser)
-  viewMyBookings(@GetUser() user: { id: string; role: string }) {
-    return this.bookingService.viewMyBookings(user.id, user.role);
+  @Get('organiser/all')
+  @Roles(OrganiserRole.Organiser)
+  viewMyBookings(@GetUser() user: { id: string }) {
+    return this.bookingService.viewMyBookings(user.id);
+  }
+
+  @ApiOperation({
+    summary: 'view all bookings as a loggedin organiser staff',
+    description: 'Organiser staff can view all booked events of theirs',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('organiser-staff/all')
+  @Roles(OrganiserRole.Manager)
+  viewBookingsAsStaff(@GetUser() user: { id: string }) {
+    return this.bookingService.viewBookingsAsStaff(user.id);
+  }
+
+  @ApiOperation({
+    summary: 'view all bookings as a loggedin admin',
+    description: 'Admin can view all booked events of theirs',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('host/all')
+  @Roles(AdminRole.Admin, AdminRole.Editor)
+  viewBookingsAsAdmin(@GetUser() user: { id: string }) {
+    return this.bookingService.viewBookingsAsAdmin(user.id);
   }
 
   @ApiOperation({
@@ -103,7 +125,12 @@ export class BookingController {
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
-  @Roles(AdminRole.Admin, OrganiserRole.Organiser)
+  @Roles(
+    AdminRole.Admin ||
+      AdminRole.Editor ||
+      OrganiserRole.Organiser ||
+      OrganiserRole.Manager,
+  )
   updateBooking(@Param('id') id: string, @Body() dto: UpdateBookingDto) {
     return this.bookingService.updateBooking(id, dto);
   }
