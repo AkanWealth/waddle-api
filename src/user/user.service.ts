@@ -28,6 +28,32 @@ export class UserService {
     private config: ConfigService,
   ) {}
 
+  // save fcm token to the database
+  async saveUserFcmToken(userId: string, token: string) {
+    try {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingUser) {
+        throw new NotFoundException(
+          'User with the provided ID does not exist.',
+        );
+      }
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          fcmToken: token,
+        },
+      });
+
+      return { message: 'FCM token updated successfully' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // function to find all the user
   async findAll() {
     try {

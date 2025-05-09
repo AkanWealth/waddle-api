@@ -22,6 +22,7 @@ import {
   ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -78,6 +79,34 @@ export class OrganiserStaffController {
   @Patch('reset-password')
   resetPassword(@Param('token') token: string, @Body() dto: ResetPasswordDto) {
     return this.organiserStaffService.resetPassword(token, dto.password);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiOperation({
+    summary: 'save my fcm token as a loggedin organiser-staff',
+    description: 'Save my fcm token as a loggedin organiser-staff',
+  })
+  @ApiBody({
+    description: 'Device ID',
+    type: String,
+    required: true,
+    schema: {
+      properties: {
+        token: {
+          example: 'your-device-id',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('me')
+  saveOrganiserStaffFcmToken(
+    @GetUser('id') id: string,
+    @Body('token') token: string,
+  ) {
+    return this.organiserStaffService.saveOrganiserStaffFcmToken(id, token);
   }
 
   @ApiBearerAuth()
