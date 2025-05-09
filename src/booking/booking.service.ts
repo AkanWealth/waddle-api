@@ -58,6 +58,14 @@ export class BookingService {
         data: { sessionId: session.id },
       });
 
+      const userToken = await this.notification.getUserToken(userId);
+
+      await this.notification.sendNotification(
+        userToken,
+        'Booking Initiated',
+        'Your event booking has been successfully initiated.',
+      );
+
       return { checkout_url: session.url, bookingId: booking.id };
     } catch (error) {
       throw error;
@@ -88,6 +96,16 @@ export class BookingService {
             where: { id: booking.id },
             data: { status: 'Confirmed' },
           });
+
+          const userToken = await this.notification.getUserToken(
+            booking.userId,
+          );
+
+          await this.notification.sendNotification(
+            userToken,
+            'Booking Confirmed!',
+            'Your event booking has been successfully confirmed.',
+          );
 
           await this.prisma.event.update({
             where: { id: booking.event.id },
