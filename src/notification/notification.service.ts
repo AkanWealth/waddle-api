@@ -96,41 +96,41 @@ export class NotificationService {
     }
   }
 
-  async getUserToken(id: string): Promise<string | null> {
+  async getUserToken(id: string) {
     try {
       const user = await this.prisma.user.findUnique({ where: { id } });
-      return user?.fcmToken || null;
+      return { token: user?.fcmToken || null };
     } catch (error) {
       throw error;
     }
   }
 
-  async getAdminToken(id: string): Promise<string | null> {
+  async getAdminToken(id: string) {
     try {
       const admin = await this.prisma.admin.findUnique({ where: { id } });
-      return admin?.fcmToken || null;
+      return { token: admin?.fcmToken || null };
     } catch (error) {
       throw error;
     }
   }
 
-  async getOrganiserToken(id: string): Promise<string | null> {
+  async getOrganiserToken(id: string) {
     try {
       const organiser = await this.prisma.organiser.findUnique({
         where: { id },
       });
-      return organiser?.fcmToken || null;
+      return { token: organiser?.fcmToken || null };
     } catch (error) {
       throw error;
     }
   }
 
-  async getOrganiserStaffToken(id: string): Promise<string | null> {
+  async getOrganiserStaffToken(id: string) {
     try {
       const organiserStaff = await this.prisma.organiserStaff.findUnique({
         where: { id },
       });
-      return organiserStaff?.fcmToken || null;
+      return { token: organiserStaff?.fcmToken || null };
     } catch (error) {
       throw error;
     }
