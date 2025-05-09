@@ -33,6 +33,31 @@ export class OrganiserService {
   ) {}
 
   // Start Organiser
+  async saveOrganiserFcmToken(userId: string, token: string) {
+    try {
+      const existingOrganiser = await this.prisma.organiser.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingOrganiser) {
+        throw new NotFoundException(
+          'Organiser with the provided ID does not exist.',
+        );
+      }
+
+      await this.prisma.organiser.update({
+        where: { id: userId },
+        data: {
+          fcmToken: token,
+        },
+      });
+
+      return { message: 'FCM token updated successfully' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async viewAllOrganiser() {
     try {
       const organiser = await this.prisma.organiser.findMany();

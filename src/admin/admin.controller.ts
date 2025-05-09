@@ -15,6 +15,7 @@ import {
   ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
@@ -71,6 +72,29 @@ export class AdminController {
   @Roles(AdminRole.Admin || AdminRole.Editor)
   viewMe(@GetUser() admin: User) {
     return this.adminService.viewMe(admin.id);
+  }
+
+  @ApiOperation({
+    summary: 'save my fcm token as a loggedin admin',
+    description: 'Save my fcm token as a loggedin admin',
+  })
+  @ApiBody({
+    description: 'Device ID',
+    type: String,
+    required: true,
+    schema: {
+      properties: {
+        token: {
+          example: 'your-device-id',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('me')
+  saveAdminFcmToken(@GetUser('id') id: string, @Body('token') token: string) {
+    return this.adminService.saveAdminFcmToken(id, token);
   }
 
   @ApiOperation({
