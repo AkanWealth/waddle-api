@@ -21,6 +21,7 @@ import {
   ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
@@ -47,6 +48,31 @@ export class OrganiserController {
   constructor(private organiserService: OrganiserService) {}
 
   // Start Organiser
+  @ApiOperation({
+    summary: 'save my fcm token as a loggedin organiser',
+    description: 'Save my fcm token as a loggedin organiser',
+  })
+  @ApiBody({
+    description: 'Device ID',
+    type: String,
+    required: true,
+    schema: {
+      properties: {
+        token: {
+          example: 'your-device-id',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('me')
+  saveOrganiserFcmToken(
+    @GetUser('id') id: string,
+    @Body('token') token: string,
+  ) {
+    return this.organiserService.saveOrganiserFcmToken(id, token);
+  }
   @ApiOperation({
     summary: 'view all organisers as an admin',
     description: 'Admin can view all organisers',
