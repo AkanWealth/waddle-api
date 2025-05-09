@@ -127,6 +127,31 @@ export class AdminService {
     }
   }
 
+  async saveAdminFcmToken(userId: string, token: string) {
+    try {
+      const existingAdmin = await this.prisma.admin.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingAdmin) {
+        throw new NotFoundException(
+          'Admin with the provided ID does not exist.',
+        );
+      }
+
+      await this.prisma.admin.update({
+        where: { id: userId },
+        data: {
+          fcmToken: token,
+        },
+      });
+
+      return { message: 'FCM token updated successfully' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async updateProfile(id: string, dto: UpdateAdminDto) {
     try {
       const existingAdmin = await this.prisma.admin.findUnique({
