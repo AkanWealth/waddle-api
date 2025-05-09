@@ -157,6 +157,32 @@ export class OrganiserStaffService {
     }
   }
 
+  async saveOrganiserStaffFcmToken(userId: string, token: string) {
+    try {
+      const existingOrganiserStaff =
+        await this.prisma.organiserStaff.findUnique({
+          where: { id: userId },
+        });
+
+      if (!existingOrganiserStaff) {
+        throw new NotFoundException(
+          'Organiser staff with the provided ID does not exist.',
+        );
+      }
+
+      await this.prisma.organiserStaff.update({
+        where: { id: userId },
+        data: {
+          fcmToken: token,
+        },
+      });
+
+      return { message: 'FCM token updated successfully' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async viewMe(userId: string) {
     try {
       const staff = await this.prisma.organiserStaff.findUnique({

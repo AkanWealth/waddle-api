@@ -13,12 +13,14 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  Post,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdatePasswordDto, UpdateUserDto } from './dto';
 import {
   ApiAcceptedResponse,
   ApiBearerAuth,
+  ApiBody,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -34,6 +36,7 @@ import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { AdminRole } from 'src/auth/enum';
 
+@ApiBearerAuth()
 @ApiUnauthorizedResponse({
   description: 'Unauthorized',
 })
@@ -42,6 +45,30 @@ import { AdminRole } from 'src/auth/enum';
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
+
+  // save the user fcm token
+  @ApiOperation({
+    summary: 'save my fcm token as a loggedin user',
+    description: 'Save my fcm token as a loggedin user',
+  })
+  @ApiBody({
+    description: 'Device ID',
+    type: String,
+    required: true,
+    schema: {
+      properties: {
+        token: {
+          example: 'your-device-id',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('me')
+  saveUserFcmToken(@GetUser('id') id: string, @Body('token') token: string) {
+    return this.userService.saveUserFcmToken(id, token);
+  }
 
   // get all user
   @ApiOperation({
@@ -62,7 +89,6 @@ export class UserController {
     description: 'User can view their details',
   })
   @ApiOkResponse({ description: 'Ok' })
-  @ApiBearerAuth()
   @Get('me')
   findOne(@GetUser() user: User) {
     return this.userService.findMe(user.id);
@@ -74,7 +100,6 @@ export class UserController {
     description: 'User can update their details',
   })
   @ApiAcceptedResponse({ description: 'Accepted' })
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
   @UseInterceptors(FileInterceptor('profile_picture'))
@@ -106,7 +131,6 @@ export class UserController {
     description: 'User can update their password',
   })
   @ApiAcceptedResponse({ description: 'Accepted' })
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me/password')
   updatePassword(@GetUser('id') id: string, @Body() dto: UpdatePasswordDto) {
@@ -120,7 +144,6 @@ export class UserController {
   })
   @ApiNoContentResponse({ description: 'No content' })
   @ApiNotFoundResponse({ description: 'Not found' })
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('temp/:id')
   @Roles(AdminRole.Admin || AdminRole.Editor)
@@ -135,7 +158,6 @@ export class UserController {
   })
   @ApiNoContentResponse({ description: 'No content' })
   @ApiNotFoundResponse({ description: 'Not found' })
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   @Roles(AdminRole.Admin)
