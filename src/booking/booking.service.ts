@@ -61,7 +61,7 @@ export class BookingService {
       const userToken = await this.notification.getUserToken(userId);
 
       await this.notification.sendNotification(
-        userToken,
+        userToken.token,
         'Booking Initiated',
         'Your event booking has been successfully initiated.',
       );
@@ -102,7 +102,7 @@ export class BookingService {
           );
 
           await this.notification.sendNotification(
-            userToken,
+            userToken.token,
             'Booking Confirmed!',
             'Your event booking has been successfully confirmed.',
           );
