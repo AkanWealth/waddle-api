@@ -45,6 +45,7 @@ export class AuthService {
             Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
             Key: `${this.config.getOrThrow('S3_USER_FOLDER')}/${fileName}`,
             Body: file,
+            ACL: 'public-read',
           }),
         );
       }
@@ -320,6 +321,7 @@ export class AuthService {
             Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
             Key: `${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${fileName}`,
             Body: file,
+            ACL: 'public-read',
           }),
         );
       }
