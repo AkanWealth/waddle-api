@@ -23,11 +23,11 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # git reset --hard origin/main && \
             echo "Deploying to EC2 instance..."
             cd /home/ec2-user/waddle-api && \
             echo "Updating code from repository..." && \
-            git pull origin main && \
-            git reset --hard origin/main && \
+            git pull && \
             echo "Installing dependencies..." && \
             npm ci --omit=dev && \
             echo "Creating .env file..." && \
