@@ -10,6 +10,8 @@ This application provides a multi-role system with distinct functionalities for 
 
 - Event Management: Orgarnisers, orgarniser staffs, and admins can create and update events, with guardians able to view published events. Event creation includes the ability to save drafts.
 
+- Booking Management: Organisers, organiser staffs, and admin can view bookings, with guardians able to book for a published event.
+
 ## Technologies Used
 
 - **Backend:** NestJS, TypeScript, Node.js

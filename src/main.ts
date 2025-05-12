@@ -35,7 +35,9 @@ async function bootstrap() {
 
       - Orgarniser Management: Orgarnisers can create accounts, sign in, manage their profiles, create and manage events, and invite staff.
 
-      - Event Management: Orgarnisers, orgarniser staffs, and admins can create and update events, with guardians able to view published events.  Event creation includes the ability to save drafts.`,
+      - Event Management: Orgarnisers, orgarniser staffs, and admins can create and update events, with guardians able to view published events.  Event creation includes the ability to save drafts.
+      
+      - Booking Management: Organisers, organiser staffs, and admin can view bookings, with guardians able to book for a published event.`,
     )
     .setExternalDoc('Redoc Documenation', '/docs')
     .setVersion('1.0')
