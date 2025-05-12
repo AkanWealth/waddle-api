@@ -14,11 +14,16 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CrowdSourcingService } from './crowd-sourcing.service';
-import { CreateCrowdSourcingDto, UpdateCrowdSourcingDto } from './dto';
+import {
+  CommentCrowdSourcingDto,
+  CreateCrowdSourcingDto,
+  UpdateCrowdSourcingDto,
+} from './dto';
 import { GetUser } from 'src/auth/decorator';
 import { User } from '@prisma/client';
 import {
   ApiAcceptedResponse,
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
@@ -40,6 +45,7 @@ import { AdminRole } from 'src/auth/enum';
 export class CrowdSourcingController {
   constructor(private readonly crowdSourcingService: CrowdSourcingService) {}
 
+  // Start Crowd Sourcing
   @ApiOperation({
     summary: 'create a new crowd sourcing event',
     description: 'Create a new crowd sourcing event by parent',
@@ -155,4 +161,57 @@ export class CrowdSourcingController {
   removeSourcedEvent(@GetUser() user: { id: string }, @Param('id') id: string) {
     if (user) return this.crowdSourcingService.removeSourcedEvent(id);
   }
+  // End Crowd Sourcing
+
+  // Start Commenting and Replying
+  @ApiOperation({
+    summary: 'create a new comment for crowd sourcing event',
+    description: 'Create a new comment for crowd sourcing event by parent',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @Post('comment')
+  async commentOnSourcedEvent(
+    @GetUser('di') id: string,
+    @Body() dto: CommentCrowdSourcingDto,
+  ) {
+    return this.crowdSourcingService.commentOnSourcedEvent(id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'reply to comment for crowd sourcing event',
+    description: 'Reply to a comment for crowd sourcing event by parent',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @Post('reply')
+  async respondToComment(
+    @GetUser('di') id: string,
+    @Body() dto: CommentCrowdSourcingDto,
+  ) {
+    return this.crowdSourcingService.respondToComment(id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'view all comment by crowd sourced ID',
+    description: 'View all comment by crowd sourced ID',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('comment/:id')
+  async viewCommentsForSourcedEvent(@Param('id') id: string) {
+    return this.crowdSourcingService.viewCommentsForSourcedEvent(id);
+  }
+
+  @ApiOperation({
+    summary: 'view all response by comment ID',
+    description: 'View all response by comment ID',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('reply/:id')
+  async viewRepliesForComment(@Param('id') id: string) {
+    return this.crowdSourcingService.viewRepliesForComment(id);
+  }
+  // End Commenting and Replying
 }
