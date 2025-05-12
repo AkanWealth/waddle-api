@@ -1,5 +1,0 @@
-[Stripe]
-name=stripe
-baseurl=https://packages.stripe.dev/stripe-cli-rpm-local/
-enabled=1
-gpgcheck=0 /etc/yum.repos.d/stripe.repo

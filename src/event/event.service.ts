@@ -181,6 +181,15 @@ export class EventService {
     try {
       const events = await this.prisma.event.findMany({
         where: { isPublished: true },
+        include: {
+          admin: true,
+          organiser: true,
+          reviews: true,
+          bookings: true,
+          favorites: true,
+          like: true,
+          recommendations: true,
+        },
       });
 
       if (!events || events.length <= 0)
@@ -204,6 +213,14 @@ export class EventService {
     try {
       const event = await this.prisma.event.findMany({
         where: { creatorId },
+        include: {
+          organiser: true,
+          reviews: true,
+          bookings: true,
+          favorites: true,
+          like: true,
+          recommendations: true,
+        },
       });
 
       if (!event || event.length <= 0)
@@ -230,6 +247,14 @@ export class EventService {
       });
       const event = await this.prisma.event.findMany({
         where: { creatorId: admin.adminId },
+        include: {
+          admin: true,
+          reviews: true,
+          bookings: true,
+          favorites: true,
+          like: true,
+          recommendations: true,
+        },
       });
 
       if (!event || event.length <= 0)
@@ -256,6 +281,14 @@ export class EventService {
       });
       const event = await this.prisma.event.findMany({
         where: { creatorId: staff.organiserId },
+        include: {
+          organiser: true,
+          reviews: true,
+          bookings: true,
+          favorites: true,
+          like: true,
+          recommendations: true,
+        },
       });
 
       if (!event || event.length <= 0)
