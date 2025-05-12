@@ -93,7 +93,7 @@ export class EventController {
     description: 'Create an event by the admin',
   })
   @ApiCreatedResponse({ description: 'Created' })
-  @Post('admin')
+  @Post('host')
   @Roles(AdminRole.Admin, AdminRole.Editor)
   @UseInterceptors(FileInterceptor('images'))
   createEventByAdmin(
@@ -199,7 +199,7 @@ export class EventController {
     description: 'View all events created by the admin',
   })
   @ApiOkResponse({ description: 'Ok' })
-  @Get('admin')
+  @Get('host')
   @Roles(AdminRole.Admin)
   viewMyEventsAsAdmin(@GetUser() user: { id: string }) {
     return this.eventService.viewMyEventsAsAdmin(user.id);
@@ -271,7 +271,7 @@ export class EventController {
   @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('admin/:id')
+  @Patch('host/:id')
   @Roles(AdminRole.Admin, AdminRole.Editor)
   @UseInterceptors(FileInterceptor('images'))
   updateEventAsAdmin(
