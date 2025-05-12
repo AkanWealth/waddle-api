@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   DeleteObjectCommand,
   PutObjectCommand,
@@ -6,7 +10,11 @@ import {
 } from '@aws-sdk/client-s3';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { CreateCrowdSourcingDto, UpdateCrowdSourcingDto } from './dto';
+import {
+  CommentCrowdSourcingDto,
+  CreateCrowdSourcingDto,
+  UpdateCrowdSourcingDto,
+} from './dto';
 
 @Injectable()
 export class CrowdSourcingService {
@@ -200,6 +208,83 @@ export class CrowdSourcingService {
     });
 
     return { message: `Event with id ${id} deleted successfully` };
+  }
+
+  async commentOnSourcedEvent(userId: string, dto: CommentCrowdSourcingDto) {
+    try {
+      if (!dto.crowdSourceId)
+        throw new BadRequestException('Crowd Sourced Event ID is required');
+
+      const event = await this.prisma.crowdSource.findUnique({
+        where: { id: dto.crowdSourceId },
+      });
+      if (!event) {
+        throw new NotFoundException('Event not found');
+      }
+
+      const comment = await this.prisma.comment.create({
+        data: {
+          ...dto,
+          userId,
+        },
+      });
+      return {
+        message: 'Comment added successfully',
+        comment,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async viewCommentsForSourcedEvent(eventId: string) {
+    try {
+      const comment = await this.prisma.comment.findMany({
+        where: { crowdSourceId: eventId },
+        include: { replies: true },
+      });
+      if (!comment || comment.length === 0) {
+        throw new NotFoundException('No comments found for this event');
+      }
+
+      return { message: 'Comments found', comment };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async respondToComment(userId: string, dto: CommentCrowdSourcingDto) {
+    try {
+      if (!dto.parentId) throw new BadRequestException('Parent ID is required');
+
+      const response = await this.prisma.comment.create({
+        data: {
+          ...dto,
+          userId,
+        },
+      });
+      return {
+        message: 'Response added successfully',
+        response,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async viewRepliesForComment(commentId: string) {
+    try {
+      const response = await this.prisma.comment.findMany({
+        where: { parentId: commentId },
+      });
+      if (!response || response.length === 0) {
+        throw new NotFoundException('No responses found for this comment');
+      }
+
+      return { message: 'Responses found', response };
+    } catch (error) {
+      throw error;
+    }
   }
 
   private async uploadEventImagesMultiple(
