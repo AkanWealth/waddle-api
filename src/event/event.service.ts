@@ -27,9 +27,8 @@ export class EventService {
     private config: ConfigService,
   ) {}
 
-  async createEventByVendor(
+  async createEventByOrganiser(
     creatorId: string,
-    creatorType: string,
     dto: CreateEventDto,
     fileName?: string,
     file?: Buffer,
@@ -47,8 +46,7 @@ export class EventService {
           total_ticket: Number(dto.total_ticket),
           images: fileName || null,
           isPublished,
-          creatorId,
-          creatorType,
+          organiserId: creatorId,
         },
       });
 
@@ -60,15 +58,11 @@ export class EventService {
 
   async createEventByAdmin(
     creatorId: string,
-    creatorType: string,
     dto: CreateEventDto,
     fileName?: string,
     file?: Buffer,
   ) {
     try {
-      const admin = await this.prisma.admin.findUnique({
-        where: { id: creatorId },
-      });
       if (file) {
         await this.uploadEventImages(fileName, file);
       }
@@ -83,8 +77,7 @@ export class EventService {
           total_ticket: Number(dto.total_ticket),
           images: fileName || null,
           isPublished,
-          creatorId: admin.adminId,
-          creatorType,
+          adminId: creatorId,
         },
       });
 
@@ -138,45 +131,6 @@ export class EventService {
   //   }
   // }
 
-  async createEventByStaff(
-    creatorId: string,
-    creatorType: string,
-    dto: CreateEventDto,
-    fileName?: string,
-    file?: Buffer,
-  ) {
-    try {
-      const staff = await this.prisma.organiserStaff.findUnique({
-        where: { id: creatorId },
-      });
-      if (staff.isDeleted)
-        throw new ForbiddenException('Staff account is deleted');
-
-      if (file) {
-        await this.uploadEventImages(fileName, file);
-      }
-
-      const date = new Date(dto.date);
-      const isPublished = this.stringToBoolean(dto.isPublished);
-
-      const event = await this.prisma.event.create({
-        data: {
-          ...dto,
-          date,
-          total_ticket: Number(dto.total_ticket),
-          images: fileName || null,
-          isPublished,
-          creatorId: staff.organiserId,
-          creatorType,
-        },
-      });
-
-      return { message: 'Event created', event };
-    } catch (error) {
-      throw error;
-    }
-  }
-
   async viewAllEvent() {
     try {
       const events = await this.prisma.event.findMany({
@@ -209,10 +163,10 @@ export class EventService {
     }
   }
 
-  async viewMyEventsAsVendor(creatorId: string) {
+  async viewMyEventsAsOrganiser(creatorId: string) {
     try {
       const event = await this.prisma.event.findMany({
-        where: { creatorId },
+        where: { organiserId: creatorId },
         include: {
           organiser: true,
           reviews: true,
@@ -242,47 +196,10 @@ export class EventService {
 
   async viewMyEventsAsAdmin(creatorId: string) {
     try {
-      const admin = await this.prisma.admin.findUnique({
-        where: { id: creatorId },
-      });
       const event = await this.prisma.event.findMany({
-        where: { creatorId: admin.adminId },
+        where: { adminId: creatorId },
         include: {
           admin: true,
-          reviews: true,
-          bookings: true,
-          favorites: true,
-          like: true,
-          recommendations: true,
-        },
-      });
-
-      if (!event || event.length <= 0)
-        throw new NotFoundException('No event found');
-
-      const eventWithImage = event.map((list) => {
-        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.images}`;
-        return {
-          ...list,
-          images,
-        };
-      });
-
-      return { message: 'Events found', events: eventWithImage };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async viewEventsByStaff(staffId: string) {
-    try {
-      const staff = await this.prisma.organiserStaff.findUnique({
-        where: { id: staffId },
-      });
-      const event = await this.prisma.event.findMany({
-        where: { creatorId: staff.organiserId },
-        include: {
-          organiser: true,
           reviews: true,
           bookings: true,
           favorites: true,
@@ -418,11 +335,8 @@ export class EventService {
     file?: Buffer,
   ) {
     try {
-      const admin = await this.prisma.admin.findUnique({
-        where: { id: creatorId },
-      });
       const existingEvent = await this.prisma.event.findUnique({
-        where: { id, creatorId: admin.adminId },
+        where: { id, adminId: creatorId },
       });
 
       if (!existingEvent)
@@ -466,7 +380,7 @@ export class EventService {
     }
   }
 
-  async updateEventAsVendor(
+  async updateEventAsOrganiser(
     id: string,
     creatorId: string,
     dto: UpdateEventDto,
@@ -475,7 +389,7 @@ export class EventService {
   ) {
     try {
       const existingEvent = await this.prisma.event.findUnique({
-        where: { id, creatorId },
+        where: { id, organiserId: creatorId },
       });
 
       if (!existingEvent)
@@ -589,65 +503,6 @@ export class EventService {
   //     throw error;
   //   }
   // }
-
-  async updateEventByStaff(
-    id: string,
-    staffId: string,
-    dto: UpdateEventDto,
-    fileName?: string,
-    file?: Buffer,
-  ) {
-    try {
-      const staff = await this.prisma.organiserStaff.findUnique({
-        where: { id: staffId },
-      });
-      if (staff.isDeleted)
-        throw new ForbiddenException('Staff account is deleted');
-
-      const existingEvent = await this.prisma.event.findUnique({
-        where: { id, creatorId: staff.organiserId },
-      });
-
-      if (!existingEvent)
-        throw new NotFoundException(
-          'Event with the provided ID does not exist.',
-        );
-
-      if (new Date(existingEvent.date) <= new Date())
-        throw new ForbiddenException('Past event can not be updated');
-
-      let image = existingEvent?.images || undefined;
-
-      // Upload the new image
-      if (image !== fileName) {
-        await this.uploadEventImages(fileName, file);
-
-        // Delete the old image from bucket
-        await this.deleteEventImages(image);
-
-        // Update the profile image filename
-        image = fileName;
-      }
-
-      const isPublished = this.stringToBoolean(dto.isPublished);
-      const event = await this.prisma.event.update({
-        where: {
-          id: existingEvent.id,
-        },
-        data: <any>{
-          ...dto,
-          date: dto.date ? new Date(dto.date) : undefined,
-          images: image || null,
-          total_ticket: Number(dto.total_ticket) || undefined,
-          isPublished,
-        },
-      });
-
-      return { message: 'Event updated', event };
-    } catch (error) {
-      throw error;
-    }
-  }
 
   async deleteEvent(id: string) {
     try {

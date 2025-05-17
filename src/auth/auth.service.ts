@@ -17,7 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { NotificationService } from '../notification/notification.service';
+import { Mailer, Otp } from 'src/helper';
 
 @Injectable()
 export class AuthService {
@@ -33,7 +33,8 @@ export class AuthService {
     private config: ConfigService,
     private prisma: PrismaService,
     private jwt: JwtService,
-    private notification: NotificationService,
+    private otp: Otp,
+    private mailer: Mailer,
   ) {}
 
   // Start Customer
@@ -53,16 +54,15 @@ export class AuthService {
       const hash = await argon.hash(dto.password);
 
       // generate token and expiration time
-      const verificatonToken = Math.random().toString(36).substr(2);
-      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+      const verificatonToken = this.otp.generateBasicOTP();
 
       const customer = await this.prisma.user.create({
         data: {
           ...dto,
           profile_picture: fileName || null,
           password: hash,
-          verification_token: verificatonToken,
-          verification_token_expiration: verificationTokenExpiration.toString(),
+          verification_token: verificatonToken.token,
+          verification_token_expiration: verificatonToken.expiration.toString(),
         },
       });
 
@@ -72,18 +72,14 @@ export class AuthService {
       const subject = 'Email Verification';
       const message = `<p>Hello ${customer.name},</p>
 
-      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken.token}</b> to complete our signup process</p>
 
       <p>Warm regards,</p>
 
       <p>Waddle Team</p>
       `;
 
-      const mail = await this.notification.sendMail(
-        customer.email,
-        subject,
-        message,
-      );
+      const mail = await this.mailer.sendMail(customer.email, subject, message);
 
       const token = await this.signToken(customer.id, customer.email, '');
 
@@ -233,15 +229,14 @@ export class AuthService {
       }
 
       // generate token and expiration time
-      const resetToken = Math.random().toString(36).substr(2);
-      const resetTokenExpiration = Date.now() + 3600000; // 1 hour
+      const resetToken = this.otp.generateBasicOTP();
 
       // save token and expiration time to database
       await this.prisma.user.update({
         where: { id: user.id },
         data: {
-          reset_token: resetToken,
-          reset_expiration: resetTokenExpiration.toString(),
+          reset_token: resetToken.token,
+          reset_expiration: resetToken.expiration.toString(),
         },
       });
 
@@ -250,7 +245,7 @@ export class AuthService {
       const message = `
       <p>Hi,</p>
 
-      <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
+      <p>You requested a password reset. Here is your reset token: <b>${resetToken.token}</b> to reset your password.</p>
 
       <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
 
@@ -259,7 +254,7 @@ export class AuthService {
       <p><b>Waddle Team</b></p>
       `;
 
-      await this.notification.sendMail(user.email, subject, message);
+      await this.mailer.sendMail(user.email, subject, message);
 
       return { resetToken };
     } catch (error) {
@@ -327,30 +322,30 @@ export class AuthService {
       }
 
       const hash = await argon.hash(dto.password);
-      const verificatonToken = Math.random().toString(36).substr(2);
-      const verificationTokenExpiration = Date.now() + 3600000; // 1 hour
+      const verificationToken = this.otp.generateBasicOTP();
 
       const organiser = await this.prisma.organiser.create({
         data: {
           ...dto,
           business_logo: fileName || null,
           password: hash,
-          verification_token: verificatonToken,
-          verification_token_expiration: verificationTokenExpiration.toString(),
+          verification_token: verificationToken.token,
+          verification_token_expiration:
+            verificationToken.expiration.toString(),
         },
       });
 
       const subject = 'Email Verification';
       const message = `<p>Hello ${organiser.name},</p>
 
-      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificatonToken}</b> to complete our signup process</p>
+      <p>Thank you for signing up on Waddle, you only have one step left, kindly verify using the token: <b>${verificationToken.token}</b> to complete our signup process</p>
 
       <p>Warm regards,</p>
 
       <p>Waddle Team</p>
       `;
 
-      const mail = await this.notification.sendMail(
+      const mail = await this.mailer.sendMail(
         organiser.email,
         subject,
         message,
@@ -481,15 +476,14 @@ export class AuthService {
       }
 
       // generate token and expiration time
-      const resetToken = Math.random().toString(36).substr(2);
-      const resetTokenExpiration = Date.now() + 3600000; // 1 hour
+      const resetToken = this.otp.generateBasicOTP();
 
       // save token and expiration time to database
       await this.prisma.organiser.update({
         where: { id: organiser.id },
         data: {
-          reset_token: resetToken,
-          reset_expiration: resetTokenExpiration.toString(),
+          reset_token: resetToken.token,
+          reset_expiration: resetToken.expiration.toString(),
         },
       });
 
@@ -498,7 +492,7 @@ export class AuthService {
       const message = `
       <p>Hi,</p>
 
-      <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
+      <p>You requested a password reset. Here is your reset token: <b>${resetToken.token}</b> to reset your password.</p>
 
       <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
 
@@ -507,7 +501,7 @@ export class AuthService {
       <p><b>Waddle Team</b></p>
       `;
 
-      await this.notification.sendMail(organiser.email, subject, message);
+      await this.mailer.sendMail(organiser.email, subject, message);
 
       return { resetToken };
     } catch (error) {
@@ -611,15 +605,14 @@ export class AuthService {
       }
 
       // generate token and expiration time
-      const resetToken = Math.random().toString(36).substr(2);
-      const resetTokenExpiration = Date.now() + 3600000; // 1 hour
+      const resetToken = this.otp.generateBasicOTP();
 
       // save token and expiration time to database
       await this.prisma.admin.update({
         where: { id: admin.id },
         data: {
-          reset_token: resetToken,
-          reset_expiration: resetTokenExpiration.toString(),
+          reset_token: resetToken.token,
+          reset_expiration: resetToken.expiration.toString(),
         },
       });
 
@@ -628,7 +621,7 @@ export class AuthService {
       const message = `
       <p>Hi ${admin.first_name},</p>
 
-      <p>You requested a password reset. Here is your reset token: <b>${resetToken}</b> to reset your password.</p>
+      <p>You requested a password reset. Here is your reset token: <b>${resetToken.token}</b> to reset your password.</p>
 
       <p>It will expire within an hour. If you did not request this, please ignore this email.</p>
 
@@ -637,11 +630,7 @@ export class AuthService {
       <p><b>Waddle Team</b></p>
       `;
 
-      const mail = await this.notification.sendMail(
-        admin.email,
-        subject,
-        message,
-      );
+      const mail = await this.mailer.sendMail(admin.email, subject, message);
 
       return { message: mail.message, resetToken };
     } catch (error) {
