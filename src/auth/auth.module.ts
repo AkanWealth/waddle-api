@@ -11,7 +11,7 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import googleOauthConfig from './config/google-oauth.config';
 import facebookOauthConfig from './config/facebook-oauth.config';
-import { NotificationService } from '../notification/notification.service';
+import { Mailer, Otp } from 'src/helper';
 
 @Module({
   imports: [
@@ -22,11 +22,12 @@ import { NotificationService } from '../notification/notification.service';
   controllers: [AuthController],
   providers: [
     AuthService,
-    NotificationService,
     JwtStrategy,
     RefreshJwtStrategy,
     GoogleStrategy,
     FacebookStrategy,
+    Otp,
+    Mailer,
   ],
 })
 export class AuthModule {}

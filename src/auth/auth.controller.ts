@@ -40,8 +40,8 @@ import { FacebookAuthGuard, GoogleAuthGuard } from './guard';
 import { GetUser } from './decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { NotificationService } from '../notification/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Mailer } from 'src/helper';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @Controller('auth')
@@ -49,7 +49,7 @@ export class AuthController {
   constructor(
     private prisma: PrismaService,
     private readonly authService: AuthService,
-    private notification: NotificationService,
+    private mailer: Mailer,
   ) {}
 
   // --------------- customer routes ----------------------
@@ -123,7 +123,7 @@ export class AuthController {
       <p>Waddle Team</p>
       `;
 
-      return await this.notification.sendMail(dto.email, subject, message);
+      return await this.mailer.sendMail(dto.email, subject, message);
     } catch (error) {
       throw error;
     }
@@ -236,7 +236,7 @@ export class AuthController {
       <p>Waddle Team</p>
       `;
 
-      return await this.notification.sendMail(dto.email, subject, message);
+      return await this.mailer.sendMail(dto.email, subject, message);
     } catch (error) {
       throw error;
     }
@@ -311,7 +311,7 @@ export class AuthController {
       <p>Waddle Team</p>
       `;
 
-      return await this.notification.sendMail(dto.email, subject, message);
+      return await this.mailer.sendMail(dto.email, subject, message);
     } catch (error) {
       throw error;
     }

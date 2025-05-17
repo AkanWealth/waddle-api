@@ -35,7 +35,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from 'src/auth/decorator/role-decorator';
-import { AdminRole } from 'src/auth/enum';
+import { Role } from 'src/auth/enum';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -76,7 +76,7 @@ export class CrowdSourcingController {
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Post('verify')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   async verifyCrowdSourcedEvent(
     @GetUser() user: User,
     @Param('id') id: string,
@@ -141,7 +141,7 @@ export class CrowdSourcingController {
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('temp/:id')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   removeSourcedEventTemp(
     @GetUser() user: { id: string },
     @Param('id') id: string,
@@ -157,7 +157,7 @@ export class CrowdSourcingController {
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   removeSourcedEvent(@GetUser() user: { id: string }, @Param('id') id: string) {
     if (user) return this.crowdSourcingService.removeSourcedEvent(id);
   }
