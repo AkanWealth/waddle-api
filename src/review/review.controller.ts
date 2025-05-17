@@ -27,7 +27,7 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { AdminRole } from 'src/auth/enum';
+import { Role } from 'src/auth/enum';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -77,7 +77,7 @@ export class ReviewController {
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   updateReview(@Param('id') id: string, @Body() dto: UpdateReviewDto) {
     return this.reviewService.updateReview(id, dto);
   }
@@ -90,7 +90,7 @@ export class ReviewController {
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  @Roles(AdminRole.Admin)
+  @Roles(Role.Admin)
   deleteReview(@Param('id') id: string) {
     return this.reviewService.deleteReview(id);
   }
