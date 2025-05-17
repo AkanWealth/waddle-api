@@ -34,7 +34,7 @@ import { GetUser } from '../auth/decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
-import { AdminRole } from 'src/auth/enum';
+import { Role } from 'src/auth/enum';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({
@@ -78,7 +78,7 @@ export class UserController {
   @ApiOkResponse({ description: 'Ok' })
   @ApiBearerAuth()
   @Get('all')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   findAll() {
     return this.userService.findAll();
   }
@@ -146,7 +146,7 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('temp/:id')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   deleteUserTemp(@Param('id') id: string) {
     return this.userService.deleteUserTemp(id);
   }
@@ -160,7 +160,7 @@ export class UserController {
   @ApiNotFoundResponse({ description: 'Not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  @Roles(AdminRole.Admin)
+  @Roles(Role.Admin)
   deleteUser(@Param('id') id: string) {
     return this.userService.deleteUser(id);
   }

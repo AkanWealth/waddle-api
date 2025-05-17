@@ -5,24 +5,19 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as argon from 'argon2';
-import { AdminRole } from 'src/auth/enum';
-import { NotificationService } from 'src/notification/notification.service';
-import { AuthService } from 'src/auth/auth.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateAdminDto, UpdateAdminDto } from './dto';
-import { ConfigService } from '@nestjs/config';
 import { UpdatePasswordDto } from 'src/user/dto';
+import { Mailer } from 'src/helper';
 
 @Injectable()
 export class AdminService {
   constructor(
     private prisma: PrismaService,
-    private notification: NotificationService,
-    private auth: AuthService,
-    private config: ConfigService,
+    private mailer: Mailer,
   ) {}
 
-  async createAdmin(adminId: string, dto: CreateAdminDto) {
+  async createAdmin(dto: CreateAdminDto) {
     try {
       const existingEmail = await this.prisma.admin.findUnique({
         where: { email: dto.email },
@@ -39,8 +34,6 @@ export class AdminService {
           password: hash,
           reset_token: resetToken,
           reset_expiration: resetTokenExpiration.toString(),
-          adminId,
-          role: dto.role as AdminRole,
         },
       });
 
@@ -95,7 +88,7 @@ export class AdminService {
           <p><b>Waddle Team</b></p>
         `;
 
-      await this.notification.sendMail(subAdmin.email, subject, message);
+      await this.mailer.sendMail(subAdmin.email, subject, message);
       return { message: 'Invite sent' };
     } catch (error) {
       throw error;
@@ -172,7 +165,6 @@ export class AdminService {
           data: {
             ...dto,
             password: hashed,
-            role: dto.role as AdminRole,
           },
         });
 
@@ -183,7 +175,7 @@ export class AdminService {
       // if no password is provided, update the admin without changing the password
       const admin = await this.prisma.admin.update({
         where: { id },
-        data: { ...dto, role: dto.role as AdminRole },
+        data: { ...dto },
       });
 
       delete admin.password;

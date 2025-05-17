@@ -1,11 +1,10 @@
 import { Controller } from '@nestjs/common';
-import { NotificationService } from './notification.service';
 import { ApiInternalServerErrorResponse } from '@nestjs/swagger';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
 @Controller('notification')
 export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) {}
+  constructor() {}
 
   // @ApiOperation({
   //   summary: 'send push notification',
