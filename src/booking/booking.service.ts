@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
 import { NotificationService } from '../notification/notification.service';
+import { Mailer } from 'src/helper';
 
 @Injectable()
 export class BookingService {
@@ -14,6 +15,7 @@ export class BookingService {
     private prisma: PrismaService,
     private config: ConfigService,
     private notification: NotificationService,
+    private mailer: Mailer,
   ) {
     const stripeSecretKey = this.config.getOrThrow('STRIPE_SECRET_KEY');
 
@@ -25,12 +27,12 @@ export class BookingService {
   // create a new booking for an event
   async createBookingAndCheckoutSession(userId: string, dto: CreateBookingDto) {
     try {
-      const creatBooking = await this.prisma.booking.create({
+      const createBooking = await this.prisma.booking.create({
         data: { ...dto, userId },
       });
 
       const booking = await this.prisma.booking.findUnique({
-        where: { id: creatBooking.id },
+        where: { id: createBooking.id },
         include: { user: true, event: true },
       });
 
@@ -57,14 +59,6 @@ export class BookingService {
         where: { id: booking.id },
         data: { sessionId: session.id },
       });
-
-      const userToken = await this.notification.getUserToken(userId);
-
-      await this.notification.sendNotification(
-        userToken?.token || '-v[SYpXdZ4gYVFDU',
-        'Booking Initiated',
-        'Your event booking has been successfully initiated.',
-      );
 
       return { checkout_url: session.url, bookingId: booking.id };
     } catch (error) {
@@ -124,11 +118,7 @@ export class BookingService {
           <p>Waddle Team</p>
           `;
 
-          await this.notification.sendMail(
-            booking.user.email,
-            subject,
-            message,
-          );
+          await this.mailer.sendMail(booking.user.email, subject, message);
 
           return { message: `Booking ${checkoutSession.id} confirmed` };
         } else {
@@ -207,30 +197,10 @@ export class BookingService {
   }
 
   // find all my bookings as the event creator
-  async viewMyBookings(userId: string) {
+  async viewMyBookingsAsOrganiser(userId: string) {
     try {
       const bookings = await this.prisma.booking.findMany({
-        where: { event: { creatorId: userId } },
-        include: { event: true, user: true },
-      });
-
-      if (!bookings || bookings.length <= 0)
-        throw new NotFoundException('No booking found');
-
-      return { message: 'Bookings found', bookings };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // find all my bookings as the event creator staff
-  async viewBookingsAsStaff(userId: string) {
-    try {
-      const staff = await this.prisma.organiserStaff.findUnique({
-        where: { id: userId },
-      });
-      const bookings = await this.prisma.booking.findMany({
-        where: { event: { creatorId: staff.organiserId } },
+        where: { event: { organiserId: userId } },
         include: { event: true, user: true },
       });
 
@@ -246,11 +216,8 @@ export class BookingService {
   // find all my bookings as the admin
   async viewBookingsAsAdmin(userId: string) {
     try {
-      const admin = await this.prisma.admin.findUnique({
-        where: { id: userId },
-      });
       const bookings = await this.prisma.booking.findMany({
-        where: { event: { creatorId: admin.adminId } },
+        where: { event: { adminId: userId } },
         include: { event: true, user: true },
       });
 
@@ -348,7 +315,7 @@ export class BookingService {
           <p>Waddle Team</p>
           `;
 
-      await this.notification.sendMail(booking.user.email, subject, message);
+      await this.mailer.sendMail(booking.user.email, subject, message);
     } catch (error) {
       throw error;
     }

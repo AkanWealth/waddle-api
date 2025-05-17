@@ -15,21 +15,20 @@ datasource db {
 
 // Admin Model
 model Admin {
-  id                            String    @id @default(cuid())
+  id                            String   @id @default(cuid())
   first_name                    String
   last_name                     String
-  email                         String    @unique
-  adminId                       String?
-  role                          AdminRole @default(ADMIN)
+  email                         String   @unique
+  role                          Role     @default(ADMIN)
   password                      String
-  email_verify                  Boolean   @default(false)
+  email_verify                  Boolean  @default(false)
   fcmToken                      String?
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime  @default(now())
-  updatedAt                     DateTime  @updatedAt
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
   events                        Event[]
 
   @@index([email])
@@ -38,22 +37,22 @@ model Admin {
 
 // Organiser Model
 model Organiser {
-  id                            String           @id @default(cuid())
+  id                            String   @id @default(cuid())
   name                          String
-  email                         String           @unique
+  email                         String   @unique
   password                      String
   phone_number                  String
-  role                          OrganiserRole    @default(ORGANISER)
+  role                          Role     @default(ORGANISER)
   business_logo                 String?
   address                       String
-  business_name                 String           @unique
+  business_name                 String   @unique
   business_category             String
   registration_number           String
-  email_verify                  Boolean          @default(true)
-  isLocked                      Boolean          @default(false)
-  isDeleted                     Boolean          @default(false)
-  isVerified                    Boolean          @default(true)
-  failedLoginAttempts           Int              @default(0)
+  email_verify                  Boolean  @default(true)
+  isLocked                      Boolean  @default(false)
+  isDeleted                     Boolean  @default(false)
+  isVerified                    Boolean  @default(true)
+  failedLoginAttempts           Int      @default(0)
   fcmToken                      String?
   website_url                   String?
   facebook_url                  String?
@@ -61,9 +60,8 @@ model Organiser {
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime         @default(now())
-  updatedAt                     DateTime         @updatedAt
-  staffs                        OrganiserStaff[]
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
   events                        Event[]
 
   @@index([email])
@@ -71,28 +69,28 @@ model Organiser {
 }
 
 // OrganiserStaff Model
-model OrganiserStaff {
-  id                  String        @id @default(cuid())
-  name                String
-  email               String        @unique
-  password            String
-  phone_number        String
-  role                OrganiserRole @default(MANAGER)
-  isLocked            Boolean       @default(false)
-  isDeleted           Boolean       @default(false)
-  failedLoginAttempts Int           @default(0)
-  fcmToken            String?
-  reset_token         String?
-  reset_expiration    String?
-  organiserId         String
-  organiser           Organiser     @relation(fields: [organiserId], references: [id], onDelete: Cascade)
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  events              Event[]
+// model OrganiserStaff {
+//   id                  String        @id @default(cuid())
+//   name                String
+//   email               String        @unique
+//   password            String
+//   phone_number        String
+//   role                OrganiserRole @default(MANAGER)
+//   isLocked            Boolean       @default(false)
+//   isDeleted           Boolean       @default(false)
+//   failedLoginAttempts Int           @default(0)
+//   fcmToken            String?
+//   reset_token         String?
+//   reset_expiration    String?
+//   organiserId         String
+//   organiser           Organiser     @relation(fields: [organiserId], references: [id], onDelete: Cascade)
+//   createdAt           DateTime      @default(now())
+//   updatedAt           DateTime      @updatedAt
+//   events              Event[]
 
-  @@index([email])
-  @@map("organiser_staff")
-}
+//   @@index([email])
+//   @@map("organiser_staff")
+// }
 
 // User Model
 model User {
@@ -103,6 +101,7 @@ model User {
   phone_number                  String?
   address                       String?
   password                      String
+  role                          Role             @default(GUARDIAN)
   guardian_type                 String?
   email_verify                  Boolean          @default(false)
   isLocked                      Boolean          @default(false)
@@ -128,36 +127,32 @@ model User {
 
 // Event Model
 model Event {
-  id               String           @id @default(cuid())
-  name             String
-  description      String
-  address          String
-  images           String?
-  price            Decimal
-  total_ticket     Int
-  ticket_booked    Int              @default(0)
-  date             DateTime
-  time             String
-  age_range        String
-  instruction      String?
-  category         String
-  isPublished      Boolean?         @default(false)
-  isDeleted        Boolean?         @default(false)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  creatorId        String
-  creatorType      String
-  reviews          Review[]
-  bookings         Booking[]
-  favorites        Favorite?
-  recommendations  Recommendation[]
-  like             Like[]
-  admin            Admin?           @relation(fields: [adminId], references: [id])
-  adminId          String?
-  organiser        Organiser?       @relation(fields: [organiserId], references: [id])
-  organiserId      String?
-  organiserStaff   OrganiserStaff?  @relation(fields: [organiserStaffId], references: [id])
-  organiserStaffId String?
+  id              String           @id @default(cuid())
+  name            String
+  description     String
+  address         String
+  images          String?
+  price           Decimal
+  total_ticket    Int
+  ticket_booked   Int              @default(0)
+  date            DateTime
+  time            String
+  age_range       String
+  instruction     String?
+  category        String
+  isPublished     Boolean?         @default(false)
+  isDeleted       Boolean?         @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  reviews         Review[]
+  bookings        Booking[]
+  favorites       Favorite?
+  recommendations Recommendation[]
+  like            Like[]
+  adminId         String?
+  admin           Admin?           @relation(fields: [adminId], references: [id])
+  organiserId     String?
+  organiser       Organiser?       @relation(fields: [organiserId], references: [id])
 
   @@index([category, isPublished, age_range])
   @@map("event")
@@ -310,15 +305,10 @@ model BlacklistedToken {
 }
 
 // AdminRole Enumerator
-enum AdminRole {
+enum Role {
   ADMIN
-  EDITOR
-}
-
-// OrganiserRole Enumerator
-enum OrganiserRole {
   ORGANISER
-  MANAGER
+  GUARDIAN
 }
 
 // Booking Status Enumerator
