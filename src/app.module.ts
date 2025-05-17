@@ -17,7 +17,6 @@ import { WebhookModule } from './webhook/webhook.module';
 import { NotificationModule } from './notification/notification.module';
 import { LikeModule } from './like/like.module';
 import { TicketModule } from './ticket/ticket.module';
-import { OrganiserStaffModule } from './organiser-staff/organiser-staff.module';
 import { AdminModule } from './admin/admin.module';
 import { CrowdSourcingModule } from './crowd-sourcing/crowd-sourcing.module';
 
@@ -46,7 +45,6 @@ import { CrowdSourcingModule } from './crowd-sourcing/crowd-sourcing.module';
     NotificationModule,
     LikeModule,
     TicketModule,
-    OrganiserStaffModule,
     AdminModule,
     CrowdSourcingModule,
   ],

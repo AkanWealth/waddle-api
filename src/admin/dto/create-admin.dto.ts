@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 import { SignInDto } from 'src/auth/dto';
 
 export class CreateAdminDto extends SignInDto {
@@ -20,14 +20,4 @@ export class CreateAdminDto extends SignInDto {
   @IsString({ message: 'Last name must be a string' })
   @IsOptional()
   last_name: string;
-
-  @ApiProperty({
-    description: 'Admin role',
-    type: String,
-    example: 'EDITOR',
-    required: true,
-  })
-  @IsNotEmpty()
-  @IsString({ message: 'Admin role must be a string' })
-  role: string;
 }

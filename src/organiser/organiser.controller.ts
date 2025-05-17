@@ -16,16 +16,13 @@ import {
   Post,
 } from '@nestjs/common';
 import { OrganiserService } from './organiser.service';
-import { CreateOrganiserStaffDto, UpdateOrganiserDto } from './dto';
+import { UpdateOrganiserDto } from './dto';
 import {
   ApiAcceptedResponse,
-  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
-  ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
-  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiUnauthorizedResponse,
@@ -37,7 +34,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { UpdatePasswordDto } from '../user/dto/update-password.dto';
-import { AdminRole, OrganiserRole } from 'src/auth/enum';
+import { Role } from 'src/auth/enum';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unathorized' })
@@ -79,7 +76,7 @@ export class OrganiserController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @Get('all')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   viewAllOrganiser(@GetUser() admin: User) {
     if (admin) return this.organiserService.viewAllOrganiser();
   }
@@ -90,7 +87,7 @@ export class OrganiserController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @Get('me')
-  @Roles(OrganiserRole.Organiser)
+  @Roles(Role.Organiser)
   viewMe(@GetUser() organiser: User) {
     return this.organiserService.viewMe(organiser.id);
   }
@@ -102,7 +99,7 @@ export class OrganiserController {
   @ApiAcceptedResponse({ description: 'Accepted' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
-  @Roles(OrganiserRole.Organiser || OrganiserRole.Manager)
+  @Roles(Role.Organiser)
   @UseInterceptors(FileInterceptor('business_logo'))
   updateProfile(
     @GetUser('id') id: string,
@@ -139,7 +136,7 @@ export class OrganiserController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me/password')
-  @Roles(OrganiserRole.Organiser || OrganiserRole.Manager)
+  @Roles(Role.Organiser)
   updatePassword(@GetUser('id') id: string, @Body() dto: UpdatePasswordDto) {
     return this.organiserService.updatePassword(id, dto);
   }
@@ -151,7 +148,7 @@ export class OrganiserController {
   @ApiNoContentResponse({ description: 'No content' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('temp/:id')
-  @Roles(AdminRole.Admin)
+  @Roles(Role.Admin)
   deleteOrganiserTemp(@GetUser() admin: User, @Param('id') id: string) {
     if (admin) return this.organiserService.deleteOrganiserTemp(id);
   }
@@ -163,86 +160,86 @@ export class OrganiserController {
   @ApiNoContentResponse({ description: 'No content' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  @Roles(AdminRole.Admin)
+  @Roles(Role.Admin)
   deleteOrganiser(@GetUser() admin: User, @Param('id') id: string) {
     if (admin) return this.organiserService.deleteOrganiser(id);
   }
   // End Organiser
 
   // Start Staff
-  @ApiOperation({
-    summary: 'create a staff',
-    description: 'Create a staff as a loggedin organiser',
-  })
-  @ApiCreatedResponse({ description: 'Created' })
-  @ApiBadRequestResponse({ description: 'Bad request' })
-  @Post('staffs')
-  @Roles(OrganiserRole.Organiser)
-  createStaff(@GetUser() user: User, @Body() dto: CreateOrganiserStaffDto) {
-    return this.organiserService.createStaff(user.id, dto);
-  }
+  // @ApiOperation({
+  //   summary: 'create a staff',
+  //   description: 'Create a staff as a loggedin organiser',
+  // })
+  // @ApiCreatedResponse({ description: 'Created' })
+  // @ApiBadRequestResponse({ description: 'Bad request' })
+  // @Post('staffs')
+  // @Roles(Role.Organiser)
+  // createStaff(@GetUser() user: User, @Body() dto: CreateOrganiserStaffDto) {
+  //   return this.organiserService.createStaff(user.id, dto);
+  // }
 
-  @ApiOperation({
-    summary: 'send staff invite',
-    description: 'Send staff invite as a loggedin organiser',
-  })
-  @ApiOkResponse({ description: 'Ok' })
-  @ApiBadRequestResponse({ description: 'Bad request' })
-  @HttpCode(HttpStatus.OK)
-  @Post('staffs/:id')
-  @Roles(OrganiserRole.Organiser)
-  sendInvite(@GetUser() user: User, @Param('id') id: string) {
-    if (user) return this.organiserService.sendInvite(id);
-  }
+  // @ApiOperation({
+  //   summary: 'send staff invite',
+  //   description: 'Send staff invite as a loggedin organiser',
+  // })
+  // @ApiOkResponse({ description: 'Ok' })
+  // @ApiBadRequestResponse({ description: 'Bad request' })
+  // @HttpCode(HttpStatus.OK)
+  // @Post('staffs/:id')
+  // @Roles(Role.Organiser)
+  // sendInvite(@GetUser() user: User, @Param('id') id: string) {
+  //   if (user) return this.organiserService.sendInvite(id);
+  // }
 
-  @ApiOperation({
-    summary: 'view all staff',
-    description: 'View all staff as a loggedin organiser',
-  })
-  @ApiOkResponse({ description: 'Ok' })
-  @ApiNotFoundResponse({ description: 'Not found' })
-  @Get('staffs')
-  @Roles(OrganiserRole.Organiser)
-  viewAllStaff(@GetUser() user: User) {
-    return this.organiserService.viewAllStaff(user.id);
-  }
+  // @ApiOperation({
+  //   summary: 'view all staff',
+  //   description: 'View all staff as a loggedin organiser',
+  // })
+  // @ApiOkResponse({ description: 'Ok' })
+  // @ApiNotFoundResponse({ description: 'Not found' })
+  // @Get('staffs')
+  // @Roles(Role.Organiser)
+  // viewAllStaff(@GetUser() user: User) {
+  //   return this.organiserService.viewAllStaff(user.id);
+  // }
 
-  @ApiOperation({
-    summary: 'view a staff',
-    description: 'View a staff by ID as a loggedin organiser',
-  })
-  @ApiOkResponse({ description: 'Ok' })
-  @ApiNotFoundResponse({ description: 'Not found' })
-  @Get('staffs/:id')
-  @Roles(OrganiserRole.Organiser || OrganiserRole.Manager)
-  viewStaff(@GetUser() user: User, @Param('id') id: string) {
-    return this.organiserService.viewStaff(user.id, id);
-  }
+  // @ApiOperation({
+  //   summary: 'view a staff',
+  //   description: 'View a staff by ID as a loggedin organiser',
+  // })
+  // @ApiOkResponse({ description: 'Ok' })
+  // @ApiNotFoundResponse({ description: 'Not found' })
+  // @Get('staffs/:id')
+  // @Roles(Role.Organiser || Role.Manager)
+  // viewStaff(@GetUser() user: User, @Param('id') id: string) {
+  //   return this.organiserService.viewStaff(user.id, id);
+  // }
 
-  @ApiOperation({
-    summary: 'delete a staff temporarily',
-    description: 'Delete a staff by ID temporarily as a loggedin organiser',
-  })
-  @ApiNoContentResponse({ description: 'No content' })
-  @ApiNotFoundResponse({ description: 'Not found' })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete('staffs/temp/:id')
-  @Roles(OrganiserRole.Organiser)
-  deleteStaffTemp(@GetUser() user: User, @Param('id') id: string) {
-    return this.organiserService.deleteStaffTemp(user.id, id);
-  }
+  // @ApiOperation({
+  //   summary: 'delete a staff temporarily',
+  //   description: 'Delete a staff by ID temporarily as a loggedin organiser',
+  // })
+  // @ApiNoContentResponse({ description: 'No content' })
+  // @ApiNotFoundResponse({ description: 'Not found' })
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  // @Delete('staffs/temp/:id')
+  // @Roles(Role.Organiser)
+  // deleteStaffTemp(@GetUser() user: User, @Param('id') id: string) {
+  //   return this.organiserService.deleteStaffTemp(user.id, id);
+  // }
 
-  @ApiOperation({
-    summary: 'delete a staff permanently',
-    description: 'Delete a staff by ID permanently as a loggedin organiser',
-  })
-  @ApiNoContentResponse({ description: 'No content' })
-  @ApiNotFoundResponse({ description: 'Not found' })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete('staffs/:id')
-  @Roles(OrganiserRole.Organiser)
-  deleteStaff(@GetUser() user: User, @Param('id') id: string) {
-    return this.organiserService.deleteStaff(user.id, id);
-  }
+  // @ApiOperation({
+  //   summary: 'delete a staff permanently',
+  //   description: 'Delete a staff by ID permanently as a loggedin organiser',
+  // })
+  // @ApiNoContentResponse({ description: 'No content' })
+  // @ApiNotFoundResponse({ description: 'Not found' })
+  // @HttpCode(HttpStatus.NO_CONTENT)
+  // @Delete('staffs/:id')
+  // @Roles(Role.Organiser)
+  // deleteStaff(@GetUser() user: User, @Param('id') id: string) {
+  //   return this.organiserService.deleteStaff(user.id, id);
+  // }
   // End Staff
 }
