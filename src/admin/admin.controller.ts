@@ -25,7 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateAdminDto, UpdateAdminDto } from './dto';
 import { GetUser } from 'src/auth/decorator';
-import { AdminRole } from 'src/auth/enum';
+import { Role } from 'src/auth/enum';
 import { Roles } from 'src/auth/decorator/role-decorator';
 import { User } from '@prisma/client';
 import { UpdatePasswordDto } from 'src/user/dto';
@@ -47,9 +47,9 @@ export class AdminController {
   @ApiBadRequestResponse({ description: 'Bad request' })
   @ApiCreatedResponse({ description: 'Created' })
   @Post('create')
-  @Roles(AdminRole.Admin)
+  @Roles(Role.Admin)
   createAdmin(@GetUser() admin: { id: string }, @Body() dto: CreateAdminDto) {
-    return this.adminService.createAdmin(admin.id, dto);
+    if (admin) return this.adminService.createAdmin(dto);
   }
 
   @ApiOperation({
@@ -58,7 +58,7 @@ export class AdminController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @Get('all')
-  @Roles(AdminRole.Admin)
+  @Roles(Role.Admin)
   viewAllAdmin(@GetUser() admin: User) {
     if (admin) return this.adminService.viewAllAdmin();
   }
@@ -69,7 +69,7 @@ export class AdminController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @Get('me')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   viewMe(@GetUser() admin: User) {
     return this.adminService.viewMe(admin.id);
   }
@@ -104,7 +104,7 @@ export class AdminController {
   @ApiAcceptedResponse({ description: 'Accepted' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   updateProfile(@GetUser('id') id: string, @Body() dto: UpdateAdminDto) {
     return this.adminService.updateProfile(id, dto);
   }
@@ -117,7 +117,7 @@ export class AdminController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me/password')
-  @Roles(AdminRole.Admin || AdminRole.Editor)
+  @Roles(Role.Admin)
   updatePassword(@GetUser('id') id: string, @Body() dto: UpdatePasswordDto) {
     return this.adminService.updatePassword(id, dto);
   }
@@ -129,7 +129,7 @@ export class AdminController {
   @ApiNoContentResponse({ description: 'No content' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  @Roles(AdminRole.Admin)
+  @Roles(Role.Admin)
   deleteAdmin(@GetUser() admin: User, @Param('id') id: string) {
     if (admin) return this.adminService.deleteAdmin(id);
   }

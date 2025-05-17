@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateOrganiserStaffDto, UpdateOrganiserDto } from './dto';
+import { UpdateOrganiserDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import { ConfigService } from '@nestjs/config';
@@ -13,7 +13,6 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { UpdatePasswordDto } from 'src/user/dto';
-import { OrganiserRole } from 'src/auth/enum';
 import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
@@ -80,7 +79,6 @@ export class OrganiserService {
     try {
       const organiser = await this.prisma.organiser.findUnique({
         where: { id: authOrganiser },
-        include: { staffs: true },
       });
 
       const business_logo = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${organiser.business_logo}`;
@@ -252,119 +250,119 @@ export class OrganiserService {
   // End Organiser
 
   // Start staff
-  async createStaff(organiserId: string, dto: CreateOrganiserStaffDto) {
-    try {
-      const existingOrganiserEmail = await this.prisma.organiser.findUnique({
-        where: { email: dto.email },
-      });
-      const existingStaffEmail = await this.prisma.organiserStaff.findUnique({
-        where: { email: dto.email },
-      });
-      if (existingOrganiserEmail || existingStaffEmail)
-        throw new BadRequestException('Email has been used.');
+  // async createStaff(organiserId: string, dto: CreateOrganiserStaffDto) {
+  //   try {
+  //     const existingOrganiserEmail = await this.prisma.organiser.findUnique({
+  //       where: { email: dto.email },
+  //     });
+  //     const existingStaffEmail = await this.prisma.organiserStaff.findUnique({
+  //       where: { email: dto.email },
+  //     });
+  //     if (existingOrganiserEmail || existingStaffEmail)
+  //       throw new BadRequestException('Email has been used.');
 
-      const hashedPassword = await argon.hash(dto.password);
-      const staff = await this.prisma.organiserStaff.create({
-        data: {
-          ...dto,
-          role: dto.role as OrganiserRole,
-          password: hashedPassword,
-          organiser: { connect: { id: organiserId } },
-        },
-      });
+  //     const hashedPassword = await argon.hash(dto.password);
+  //     const staff = await this.prisma.organiserStaff.create({
+  //       data: {
+  //         ...dto,
+  //         role: dto.role as OrganiserRole,
+  //         password: hashedPassword,
+  //         organiser: { connect: { id: organiserId } },
+  //       },
+  //     });
 
-      await this.sendInvite(staff.id);
+  //     await this.sendInvite(staff.id);
 
-      return { message: 'Staff created and invite sent' };
-    } catch (error) {
-      throw error;
-    }
-  }
+  //     return { message: 'Staff created and invite sent' };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
 
-  async sendInvite(id: string) {
-    try {
-      if (!id) throw new BadRequestException('Id is required');
+  // async sendInvite(id: string) {
+  //   try {
+  //     if (!id) throw new BadRequestException('Id is required');
 
-      const staff = await this.prisma.organiserStaff.findUnique({
-        where: { id },
-      });
-      if (!staff) throw new NotFoundException('Not found');
+  //     const staff = await this.prisma.organiserStaff.findUnique({
+  //       where: { id },
+  //     });
+  //     if (!staff) throw new NotFoundException('Not found');
 
-      // generate token and expiration time
-      const resetToken = Math.random().toString(36).substr(2);
-      const resetTokenExpiration = Date.now() + 3600000; // 1 hour
+  //     // generate token and expiration time
+  //     const resetToken = Math.random().toString(36).substr(2);
+  //     const resetTokenExpiration = Date.now() + 3600000; // 1 hour
 
-      await this.prisma.organiserStaff.update({
-        where: { id: staff.id },
-        data: {
-          reset_token: resetToken,
-          reset_expiration: resetTokenExpiration.toString(),
-        },
-      });
+  //     await this.prisma.organiserStaff.update({
+  //       where: { id: staff.id },
+  //       data: {
+  //         reset_token: resetToken,
+  //         reset_expiration: resetTokenExpiration.toString(),
+  //       },
+  //     });
 
-      const subject = 'Vendor Invite';
-      const message = `<p>Hello ${staff.name},</p>
-  
-        <p>I hope this mail finds you well. Pleae note that you have been invited to manage events for your company.</p>
+  //     const subject = 'Vendor Invite';
+  //     const message = `<p>Hello ${staff.name},</p>
 
-        <p>Kindly follow the steps below to reset your passowrd.</p>
+  //       <p>I hope this mail finds you well. Pleae note that you have been invited to manage events for your company.</p>
 
-        <ul>
-          <li>Click the link to reset the password: https://waddleapp.io/organiser/staff/reset-password</li>
-          <li>Use the token <b>${resetToken}</b> to reset your password.</li>
-        </ul>
-  
-        <p>Warm regards,</p>
-  
-        <p><b>Waddle Team</b></p>
-      `;
+  //       <p>Kindly follow the steps below to reset your passowrd.</p>
 
-      await this.notificationService.sendMail(staff.email, subject, message);
-      return { message: 'Invite sent' };
-    } catch (error) {
-      throw error;
-    }
-  }
+  //       <ul>
+  //         <li>Click the link to reset the password: https://waddleapp.io/organiser/staff/reset-password</li>
+  //         <li>Use the token <b>${resetToken}</b> to reset your password.</li>
+  //       </ul>
 
-  async viewAllStaff(organiserId: string) {
-    const staffs = await this.prisma.organiserStaff.findMany({
-      where: { organiserId },
-    });
-    if (!staffs || staffs.length <= 0) throw new NotFoundException('Not found');
+  //       <p>Warm regards,</p>
 
-    return { message: 'All staff found', staffs };
-  }
+  //       <p><b>Waddle Team</b></p>
+  //     `;
 
-  async viewStaff(organiserId: string, id: string) {
-    const staff = await this.prisma.organiserStaff.findUnique({
-      where: { id, organiserId },
-    });
-    if (!staff) throw new NotFoundException('Not found');
+  //     await this.notificationService.sendMail(staff.email, subject, message);
+  //     return { message: 'Invite sent' };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
 
-    return { message: 'Staff found', staff };
-  }
+  // async viewAllStaff(organiserId: string) {
+  //   const staffs = await this.prisma.organiserStaff.findMany({
+  //     where: { organiserId },
+  //   });
+  //   if (!staffs || staffs.length <= 0) throw new NotFoundException('Not found');
 
-  async deleteStaffTemp(organiserId: string, id: string) {
-    const findStaff = await this.prisma.organiserStaff.findUnique({
-      where: { id, organiserId },
-    });
-    if (!findStaff) throw new NotFoundException('Not found');
+  //   return { message: 'All staff found', staffs };
+  // }
 
-    await this.prisma.organiserStaff.update({
-      where: { id: findStaff.id },
-      data: { isDeleted: true },
-    });
-    return { message: 'Staff deleted' };
-  }
+  // async viewStaff(organiserId: string, id: string) {
+  //   const staff = await this.prisma.organiserStaff.findUnique({
+  //     where: { id, organiserId },
+  //   });
+  //   if (!staff) throw new NotFoundException('Not found');
 
-  async deleteStaff(organiserId: string, id: string) {
-    const findStaff = await this.prisma.organiserStaff.findUnique({
-      where: { id, organiserId },
-    });
-    if (!findStaff) throw new NotFoundException('Not found');
+  //   return { message: 'Staff found', staff };
+  // }
 
-    await this.prisma.organiserStaff.delete({ where: { id: findStaff.id } });
-    return { message: 'Staff deleted' };
-  }
+  // async deleteStaffTemp(organiserId: string, id: string) {
+  //   const findStaff = await this.prisma.organiserStaff.findUnique({
+  //     where: { id, organiserId },
+  //   });
+  //   if (!findStaff) throw new NotFoundException('Not found');
+
+  //   await this.prisma.organiserStaff.update({
+  //     where: { id: findStaff.id },
+  //     data: { isDeleted: true },
+  //   });
+  //   return { message: 'Staff deleted' };
+  // }
+
+  // async deleteStaff(organiserId: string, id: string) {
+  //   const findStaff = await this.prisma.organiserStaff.findUnique({
+  //     where: { id, organiserId },
+  //   });
+  //   if (!findStaff) throw new NotFoundException('Not found');
+
+  //   await this.prisma.organiserStaff.delete({ where: { id: findStaff.id } });
+  //   return { message: 'Staff deleted' };
+  // }
   // End Staff
 }

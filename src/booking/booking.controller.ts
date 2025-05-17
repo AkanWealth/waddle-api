@@ -29,7 +29,7 @@ import {
   ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { AdminRole, OrganiserRole } from 'src/auth/enum';
+import { Role } from 'src/auth/enum';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -58,7 +58,7 @@ export class BookingController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @Get()
-  @Roles(AdminRole.Admin)
+  @Roles(Role.Admin)
   viewAllBookings() {
     return this.bookingService.viewAllBookings();
   }
@@ -69,20 +69,9 @@ export class BookingController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @Get('organiser/all')
-  @Roles(OrganiserRole.Organiser)
-  viewMyBookings(@GetUser() user: { id: string }) {
-    return this.bookingService.viewMyBookings(user.id);
-  }
-
-  @ApiOperation({
-    summary: 'view all bookings as a loggedin organiser staff',
-    description: 'Organiser staff can view all booked events of theirs',
-  })
-  @ApiOkResponse({ description: 'Ok' })
-  @Get('organiser-staff/all')
-  @Roles(OrganiserRole.Manager)
-  viewBookingsAsStaff(@GetUser() user: { id: string }) {
-    return this.bookingService.viewBookingsAsStaff(user.id);
+  @Roles(Role.Organiser)
+  viewMyBookingsAsOrganiser(@GetUser() user: { id: string }) {
+    return this.bookingService.viewMyBookingsAsOrganiser(user.id);
   }
 
   @ApiOperation({
@@ -91,7 +80,7 @@ export class BookingController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @Get('host/all')
-  @Roles(AdminRole.Admin, AdminRole.Editor)
+  @Roles(Role.Admin)
   viewBookingsAsAdmin(@GetUser() user: { id: string }) {
     return this.bookingService.viewBookingsAsAdmin(user.id);
   }
@@ -125,12 +114,7 @@ export class BookingController {
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch(':id')
-  @Roles(
-    AdminRole.Admin ||
-      AdminRole.Editor ||
-      OrganiserRole.Organiser ||
-      OrganiserRole.Manager,
-  )
+  @Roles(Role.Admin || Role.Organiser)
   updateBooking(@Param('id') id: string, @Body() dto: UpdateBookingDto) {
     return this.bookingService.updateBooking(id, dto);
   }
@@ -143,7 +127,7 @@ export class BookingController {
   @ApiParam({ name: 'id' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
-  @Roles(AdminRole.Admin)
+  @Roles(Role.Admin)
   deleteBooking(@Param('id') id: string) {
     return this.bookingService.deleteBooking(id);
   }
