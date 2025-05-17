@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { NotificationService } from 'src/notification/notification.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthService } from 'src/auth/auth.service';
+import { Otp } from 'src/helper';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AuthService } from 'src/auth/auth.service';
     NotificationService,
     PrismaService,
     AuthService,
+    Otp,
   ],
 })
 export class OrganiserStaffModule {}

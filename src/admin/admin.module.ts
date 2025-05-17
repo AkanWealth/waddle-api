@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AdminController } from './admin.controller';
-import { NotificationService } from 'src/notification/notification.service';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtModule } from '@nestjs/jwt';
+import { Mailer, Otp } from 'src/helper';
 
 @Module({
   imports: [
@@ -13,6 +13,6 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   ],
   controllers: [AdminController],
-  providers: [AdminService, NotificationService, AuthService],
+  providers: [AdminService, Mailer, AuthService, Otp],
 })
 export class AdminModule {}
