@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
-import { SignInDto } from 'src/auth/dto';
+import { SignInDto } from '../../auth/dto';
 
 export class CreateAdminDto extends SignInDto {
   @ApiPropertyOptional({
