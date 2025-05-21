@@ -24,13 +24,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CreateAdminDto, UpdateAdminDto } from './dto';
-import { GetUser } from 'src/auth/decorator';
-import { Role } from 'src/auth/enum';
-import { Roles } from 'src/auth/decorator/role-decorator';
+import { GetUser } from '../auth/decorator';
+import { Role } from '../auth/enum';
+import { Roles } from '../auth/decorator/role-decorator';
 import { User } from '@prisma/client';
-import { UpdatePasswordDto } from 'src/user/dto';
-import { JwtGuard } from 'src/auth/guard';
-import { RolesGuard } from 'src/auth/guard/role.guard';
+import { UpdatePasswordDto } from '../user/dto';
+import { JwtGuard } from '../auth/guard';
+import { RolesGuard } from '../auth/guard/role.guard';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unathorized' })

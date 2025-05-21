@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { BookingController } from './booking.controller';
 import { NotificationService } from '../notification/notification.service';
-import { Mailer } from 'src/helper';
+import { Mailer } from '../helper';
 
 @Module({
   controllers: [BookingController],
