@@ -17,7 +17,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { Mailer, Otp } from 'src/helper';
+import { Mailer, Otp } from '../helper';
 
 @Injectable()
 export class AuthService {

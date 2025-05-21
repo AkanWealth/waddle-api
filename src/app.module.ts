@@ -28,7 +28,7 @@ import { CrowdSourcingModule } from './crowd-sourcing/crowd-sourcing.module';
       useFactory: () =>
         ({
           ttl: 60,
-          limit: 3,
+          limit: 5,
           throttlers: [], // Add the throttlers property here
         }) as ThrottlerModuleOptions,
     }),
