@@ -41,7 +41,7 @@ import { GetUser } from './decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
-import { Mailer } from 'src/helper';
+import { Mailer } from '../helper';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @Controller('auth')

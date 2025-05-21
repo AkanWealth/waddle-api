@@ -36,7 +36,7 @@ import { JwtGuard } from '../auth/guard/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
-import { Role } from 'src/auth/enum';
+import { Role } from '../auth/enum';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
