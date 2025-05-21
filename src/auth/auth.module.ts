@@ -11,7 +11,7 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import googleOauthConfig from './config/google-oauth.config';
 import facebookOauthConfig from './config/facebook-oauth.config';
-import { Mailer, Otp } from 'src/helper';
+import { Mailer, Otp } from '../helper';
 
 @Module({
   imports: [
