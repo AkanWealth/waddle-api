@@ -3,7 +3,7 @@ import { WebhookController } from './webhook.controller';
 import { BookingModule } from '../booking/booking.module';
 import { BookingService } from '../booking/booking.service';
 import { NotificationService } from '../notification/notification.service';
-import { Mailer } from 'src/helper';
+import { Mailer } from '../helper';
 
 @Module({
   imports: [BookingModule],

@@ -12,8 +12,8 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { UpdatePasswordDto } from 'src/user/dto';
-import { NotificationService } from 'src/notification/notification.service';
+import { UpdatePasswordDto } from '../user/dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class OrganiserService {

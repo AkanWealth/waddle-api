@@ -3,12 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateAdminDto, UpdateAdminDto } from './dto';
-import { UpdatePasswordDto } from 'src/user/dto';
-import { Mailer } from 'src/helper';
+import { UpdatePasswordDto } from '../user/dto';
+import { Mailer } from '../helper';
 
 @Injectable()
 export class AdminService {

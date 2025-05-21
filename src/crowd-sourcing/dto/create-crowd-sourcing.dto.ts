@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateCrowdSourcingDto {
   @ApiPropertyOptional({
@@ -40,4 +46,61 @@ export class CreateCrowdSourcingDto {
   @IsString()
   @IsNotEmpty()
   address: string;
+
+  @ApiProperty({
+    description: 'Category',
+    type: String,
+    example: 'Workshop',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  category: string;
+
+  @ApiProperty({
+    description: 'Tag',
+    type: String,
+    example: 'Event',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  tag: string;
+
+  @ApiProperty({
+    description: 'Entry Fee',
+    type: String,
+    example: '200',
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  fee: number;
+
+  @ApiPropertyOptional({
+    description: 'Tips',
+    type: String,
+    example: 'Weekdays morning are quiet',
+  })
+  @IsString()
+  @IsOptional()
+  tips?: string;
+
+  @ApiPropertyOptional({
+    description: 'Date',
+    type: String,
+    example: '2026-07-26',
+  })
+  @IsDateString()
+  @IsOptional()
+  date?: string;
+
+  @ApiPropertyOptional({
+    description: 'Time',
+    type: String,
+    example: '12:30:00',
+  })
+  @IsString()
+  @IsOptional()
+  time?: string;
 }

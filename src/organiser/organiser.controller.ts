@@ -34,7 +34,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { UpdatePasswordDto } from '../user/dto/update-password.dto';
-import { Role } from 'src/auth/enum';
+import { Role } from '../auth/enum';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unathorized' })
