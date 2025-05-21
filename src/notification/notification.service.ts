@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as firebase from 'firebase-admin';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class NotificationService {

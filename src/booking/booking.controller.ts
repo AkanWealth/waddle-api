@@ -29,7 +29,8 @@ import {
   ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Role } from 'src/auth/enum';
+import { Role } from '../auth/enum';
+import { BookingConsentDto } from './dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -50,6 +51,19 @@ export class BookingController {
     @Body() dto: CreateBookingDto,
   ) {
     return this.bookingService.createBookingAndCheckoutSession(user.id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'consent to book an event as a loggedin parent',
+    description: 'Parents can consent to book an event',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('consent')
+  bookingConsent(
+    @GetUser() user: { id: string },
+    @Body() dto: BookingConsentDto,
+  ) {
+    if (user) return this.bookingService.bookingConsent(dto);
   }
 
   @ApiOperation({
