@@ -8,7 +8,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import {
   CommentCrowdSourcingDto,
@@ -43,14 +43,14 @@ export class CrowdSourcingService {
       }
 
       const event = await this.prisma.crowdSource.create({
-        data: {
+        data: <any>{
           ..._dto,
           images: fileNames || [],
           creatorId,
         },
       });
 
-      return { message: 'Event created', event };
+      return { message: 'CrowdSource created', event };
     } catch (error) {
       throw error;
     }
@@ -58,7 +58,7 @@ export class CrowdSourcingService {
 
   async findAllSourcedEvent() {
     const events = await this.prisma.crowdSource.findMany({
-      where: { isDeleted: false, isVerified: true },
+      where: { isDeleted: false, isVerified: true, tag: 'Event' },
       include: { like: true },
     });
     if (!events || events.length === 0) {
@@ -78,6 +78,30 @@ export class CrowdSourcingService {
     });
 
     return { message: 'Events found', events: eventsWithFullImageUrls };
+  }
+
+  async findAllSourcedPlace() {
+    const places = await this.prisma.crowdSource.findMany({
+      where: { isDeleted: false, isVerified: true, tag: 'Place' },
+      include: { like: true },
+    });
+    if (!places || places.length === 0) {
+      throw new NotFoundException('No places found');
+    }
+
+    const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+    const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+    const url = `${baseUrl}/${folder}`;
+
+    const placesWithFullImageUrls = places.map((place) => {
+      const fullImageUrls = place.images.map((image) => `${url}/${image}`);
+      return {
+        ...place,
+        images: fullImageUrls,
+      };
+    });
+
+    return { message: 'Places found', places: placesWithFullImageUrls };
   }
 
   async findOneSourcedEvent(id: string) {
@@ -107,7 +131,7 @@ export class CrowdSourcingService {
       where: { id },
     });
     if (!event) {
-      throw new NotFoundException('Event not found');
+      throw new NotFoundException('Not found');
     }
     const updatedEvent = await this.prisma.crowdSource.update({
       where: { id },
@@ -115,7 +139,7 @@ export class CrowdSourcingService {
     });
 
     return {
-      message: 'Event verified',
+      message: 'Verified',
       event: updatedEvent,
     };
   }
@@ -133,7 +157,7 @@ export class CrowdSourcingService {
     });
 
     if (!existingEvent) {
-      throw new Error(`CrowdSource event with id ${id} not found`);
+      throw new Error(`CrowdSource with id ${id} not found`);
     }
 
     // Handle image updates
@@ -161,13 +185,13 @@ export class CrowdSourcingService {
     // Update event in database
     const updatedEvent = await this.prisma.crowdSource.update({
       where: { id, creatorId },
-      data: {
+      data: <any>{
         ...dto,
         images: updatedImages,
       },
     });
 
-    return { message: 'Event updated', event: updatedEvent };
+    return { message: 'Updated', event: updatedEvent };
   }
 
   async removeSourcedEventTemp(id: string) {
@@ -176,7 +200,7 @@ export class CrowdSourcingService {
     });
 
     if (!event) {
-      throw new NotFoundException(`CrowdSource event with id ${id} not found`);
+      throw new NotFoundException(`CrowdSource with id ${id} not found`);
     }
 
     await this.prisma.crowdSource.update({
@@ -184,7 +208,7 @@ export class CrowdSourcingService {
       data: { isDeleted: true },
     });
 
-    return { message: `Event with id ${id} removed successfully` };
+    return { message: `CrowdSource with id ${id} removed successfully` };
   }
 
   async removeSourcedEvent(id: string) {
@@ -193,7 +217,7 @@ export class CrowdSourcingService {
     });
 
     if (!event) {
-      throw new NotFoundException(`CrowdSource event with id ${id} not found`);
+      throw new NotFoundException(`CrowdSource with id ${id} not found`);
     }
 
     // Delete images from S3
@@ -207,19 +231,19 @@ export class CrowdSourcingService {
       where: { id },
     });
 
-    return { message: `Event with id ${id} deleted successfully` };
+    return { message: `CrowdSource with id ${id} deleted successfully` };
   }
 
   async commentOnSourcedEvent(userId: string, dto: CommentCrowdSourcingDto) {
     try {
       if (!dto.crowdSourceId)
-        throw new BadRequestException('Crowd Sourced Event ID is required');
+        throw new BadRequestException('Crowd Sourced ID is required');
 
       const event = await this.prisma.crowdSource.findUnique({
         where: { id: dto.crowdSourceId },
       });
       if (!event) {
-        throw new NotFoundException('Event not found');
+        throw new NotFoundException('CrowdSource not found');
       }
 
       const comment = await this.prisma.comment.create({
@@ -244,7 +268,7 @@ export class CrowdSourcingService {
         include: { replies: true },
       });
       if (!comment || comment.length === 0) {
-        throw new NotFoundException('No comments found for this event');
+        throw new NotFoundException('No comments found');
       }
 
       return { message: 'Comments found', comment };
