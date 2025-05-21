@@ -5,7 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
 import { NotificationService } from '../notification/notification.service';
-import { Mailer } from 'src/helper';
+import { Mailer } from '../helper';
+import { BookingConsentDto } from './dto';
 
 @Injectable()
 export class BookingService {
@@ -61,6 +62,21 @@ export class BookingService {
       });
 
       return { checkout_url: session.url, bookingId: booking.id };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async bookingConsent(dto: BookingConsentDto) {
+    try {
+      const consent = await this.prisma.consent.create({
+        data: <any>{ ...dto },
+      });
+
+      return {
+        message: 'Booking consent added',
+        consent,
+      };
     } catch (error) {
       throw error;
     }

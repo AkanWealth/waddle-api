@@ -165,6 +165,12 @@ model CrowdSource {
   images      String[]
   description String
   address     String
+  categrory   String
+  tag         Tag       @default(Place)
+  fee         Float
+  tips        String?
+  date        DateTime?
+  time        String?
   creatorId   String
   like        Like[]
   comment     Comment[]
@@ -188,12 +194,28 @@ model Booking {
   isDeleted       Boolean?      @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  consent         Consent[]
   payment         Payment[]
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([userId, eventId, sessionId, status])
   @@map("booking")
+}
+
+// Consent Model
+model Consent {
+  id        String   @id @default(cuid())
+  name      String
+  age       Int
+  notes     String
+  consent   Boolean
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("consent")
 }
 
 // Payment Model
@@ -325,4 +347,9 @@ enum PaymentStatus {
   Pending
   Completed
   Failed
+}
+
+enum Tag {
+  Event
+  Place
 }
