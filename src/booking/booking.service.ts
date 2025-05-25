@@ -107,15 +107,17 @@ export class BookingService {
             data: { status: 'Confirmed' },
           });
 
-          const userToken = await this.notification.getUserToken(
-            booking.userId,
-          );
+          if (booking.user.fcmIsOn) {
+            const userToken = await this.notification.getUserToken(
+              booking.userId,
+            );
 
-          await this.notification.sendNotification(
-            userToken?.token || '-v[SYpXdZ4gYVFDU',
-            'Booking Confirmed!',
-            'Your event booking has been successfully confirmed.',
-          );
+            await this.notification.sendNotification(
+              userToken?.token || '-v[SYpXdZ4gYVFDU',
+              'Booking Confirmed!',
+              'Your event booking has been successfully confirmed.',
+            );
+          }
 
           await this.prisma.event.update({
             where: { id: booking.event.id },
