@@ -75,7 +75,7 @@ export class CrowdSourcingController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
-  @Post('verify')
+  @Post('verify/:id')
   @Roles(Role.Admin)
   async verifyCrowdSourcedEvent(
     @GetUser() user: User,
