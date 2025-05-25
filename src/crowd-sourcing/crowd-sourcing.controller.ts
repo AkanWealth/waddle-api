@@ -90,9 +90,15 @@ export class CrowdSourcingController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
-  @Get('events')
-  findAllSourcedEvent() {
-    return this.crowdSourcingService.findAllSourcedEvent();
+  @Get('events/:page/:pageSize')
+  findAllSourcedEvent(
+    @Param('page') page: string,
+    @Param('pageSize') pageSize: string,
+  ) {
+    return this.crowdSourcingService.findAllSourcedEvent(
+      parseInt(page),
+      parseInt(pageSize),
+    );
   }
 
   @ApiOperation({
@@ -101,9 +107,37 @@ export class CrowdSourcingController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
-  @Get('places')
-  findAllSourcedPlace() {
-    return this.crowdSourcingService.findAllSourcedPlace();
+  @Get('places/:page/:pageSize')
+  findAllSourcedPlace(
+    @Param('page') page: string,
+    @Param('pageSize') pageSize: string,
+  ) {
+    return this.crowdSourcingService.findAllSourcedPlace(
+      parseInt(page),
+      parseInt(pageSize),
+    );
+  }
+
+  @ApiOperation({
+    summary: 'view loggedin user crowdsourced event',
+    description: 'View loggedin user crowdsourced event',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('me/events')
+  findMySourcedEvent(@GetUser('id') id: string) {
+    return this.crowdSourcingService.findMySourcedEvent(id);
+  }
+
+  @ApiOperation({
+    summary: 'view loggedin user crowdsourced place',
+    description: 'View loggedin user crowdsourced place',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('me/places')
+  findMySourcedPlace(@GetUser('id') id: string) {
+    return this.crowdSourcingService.findMySourcedPlace(id);
   }
 
   @ApiOperation({

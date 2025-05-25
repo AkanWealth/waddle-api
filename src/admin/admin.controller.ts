@@ -92,9 +92,20 @@ export class AdminController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
-  @Post('me')
+  @Post('device-token')
   saveAdminFcmToken(@GetUser('id') id: string, @Body('token') token: string) {
     return this.adminService.saveAdminFcmToken(id, token);
+  }
+
+  @ApiOperation({
+    summary: 'toogle push notification for loggedin admin',
+    description: 'Toogle push notification for loggedin admin',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('push-notification')
+  tooglePushNotification(@GetUser('id') id: string) {
+    return this.adminService.togglePushNotififcation(id);
   }
 
   @ApiOperation({

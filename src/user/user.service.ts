@@ -54,6 +54,41 @@ export class UserService {
     }
   }
 
+  // toogle the status of push notification
+  async togglePushNotififcation(userId: string) {
+    try {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingUser) {
+        throw new NotFoundException(
+          'User with the provided ID does not exist.',
+        );
+      }
+
+      if (existingUser.fcmIsOn) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            fcmIsOn: false,
+          },
+        });
+      } else {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            fcmIsOn: true,
+          },
+        });
+      }
+
+      return { message: 'Notification status updated' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // function to find all the user
   async findAll() {
     try {

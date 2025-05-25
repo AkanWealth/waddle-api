@@ -65,9 +65,21 @@ export class UserController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
-  @Post('me')
+  @Post('device-token')
   saveUserFcmToken(@GetUser('id') id: string, @Body('token') token: string) {
     return this.userService.saveUserFcmToken(id, token);
+  }
+
+  // toogle the status of push notififcation
+  @ApiOperation({
+    summary: 'toogle push notification for loggedin user',
+    description: 'Toogle push notification for loggedin user',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('push-notification')
+  tooglePushNotification(@GetUser('id') id: string) {
+    return this.userService.togglePushNotififcation(id);
   }
 
   // get all user
