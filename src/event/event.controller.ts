@@ -127,14 +127,14 @@ export class EventController {
   }
 
   @ApiOperation({
-    summary: 'view all published events',
+    summary: 'view all published paginated events',
     description:
-      'Parents, Admin and Organisers are able to view all published events',
+      'Parents, Admin and Organisers are able to view all published paginated events',
   })
   @ApiOkResponse({ description: 'Ok' })
-  @Get()
-  findAll() {
-    return this.eventService.viewAllEvent();
+  @Get('/:page/:pageSize')
+  findAll(@Param('page') page: string, @Param('pageSize') pageSize: string) {
+    return this.eventService.viewAllEvent(parseInt(page), parseInt(pageSize));
   }
 
   @ApiOperation({

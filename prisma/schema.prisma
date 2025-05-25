@@ -22,6 +22,7 @@ model Admin {
   role                          Role     @default(ADMIN)
   password                      String
   email_verify                  Boolean  @default(false)
+  fcmIsOn                       Boolean  @default(false)
   fcmToken                      String?
   verification_token            String?
   verification_token_expiration String?
@@ -53,6 +54,7 @@ model Organiser {
   isDeleted                     Boolean  @default(false)
   isVerified                    Boolean  @default(true)
   failedLoginAttempts           Int      @default(0)
+  fcmIsOn                       Boolean  @default(false)
   fcmToken                      String?
   website_url                   String?
   facebook_url                  String?
@@ -67,30 +69,6 @@ model Organiser {
   @@index([email])
   @@map("organiser")
 }
-
-// OrganiserStaff Model
-// model OrganiserStaff {
-//   id                  String        @id @default(cuid())
-//   name                String
-//   email               String        @unique
-//   password            String
-//   phone_number        String
-//   role                OrganiserRole @default(MANAGER)
-//   isLocked            Boolean       @default(false)
-//   isDeleted           Boolean       @default(false)
-//   failedLoginAttempts Int           @default(0)
-//   fcmToken            String?
-//   reset_token         String?
-//   reset_expiration    String?
-//   organiserId         String
-//   organiser           Organiser     @relation(fields: [organiserId], references: [id], onDelete: Cascade)
-//   createdAt           DateTime      @default(now())
-//   updatedAt           DateTime      @updatedAt
-//   events              Event[]
-
-//   @@index([email])
-//   @@map("organiser_staff")
-// }
 
 // User Model
 model User {
@@ -107,6 +85,7 @@ model User {
   isLocked                      Boolean          @default(false)
   isDeleted                     Boolean          @default(false)
   failedLoginAttempts           Int              @default(0)
+  fcmIsOn                       Boolean          @default(false)
   fcmToken                      String?
   verification_token            String?
   verification_token_expiration String?
@@ -116,7 +95,6 @@ model User {
   updatedAt                     DateTime         @updatedAt
   favorites                     Favorite[]
   bookings                      Booking[]
-  payments                      Payment[]
   recommendation                Recommendation[]
   like                          Like[]
   comment                       Comment[]
@@ -165,9 +143,9 @@ model CrowdSource {
   images      String[]
   description String
   address     String
-  categrory   String
+  category    String
   tag         Tag       @default(Place)
-  fee         Float
+  fee         Decimal
   tips        String?
   date        DateTime?
   time        String?
@@ -175,6 +153,7 @@ model CrowdSource {
   like        Like[]
   comment     Comment[]
   isVerified  Boolean   @default(false)
+  isPublished Boolean   @default(false)
   isDeleted   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -195,7 +174,6 @@ model Booking {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   consent         Consent[]
-  payment         Payment[]
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -216,26 +194,6 @@ model Consent {
   updatedAt DateTime @updatedAt
 
   @@map("consent")
-}
-
-// Payment Model
-model Payment {
-  id            String        @id @default(cuid())
-  amount        Decimal
-  paymentMethod String
-  transactionId String?
-  invoiceUrl    String?
-  status        PaymentStatus @default(Pending)
-  isDeleted     Boolean?      @default(false)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  userId        String
-  bookingId     String
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-
-  @@index([status, transactionId])
-  @@map("payment")
 }
 
 // Favourite Model
@@ -303,6 +261,7 @@ model Comment {
 // Review Model
 model Review {
   id        String   @id @default(cuid())
+  name      String
   rating    Int
   comment   String?
   verified  Boolean  @default(false)
@@ -340,13 +299,6 @@ enum BookingStatus {
   Failed
   Cancelled
   Refunded
-}
-
-// Payment Status Enumerator
-enum PaymentStatus {
-  Pending
-  Completed
-  Failed
 }
 
 enum Tag {

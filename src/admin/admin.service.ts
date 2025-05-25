@@ -145,6 +145,40 @@ export class AdminService {
     }
   }
 
+  async togglePushNotififcation(userId: string) {
+    try {
+      const existingAdmin = await this.prisma.admin.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingAdmin) {
+        throw new NotFoundException(
+          'Admin with the provided ID does not exist.',
+        );
+      }
+
+      if (existingAdmin.fcmIsOn) {
+        await this.prisma.admin.update({
+          where: { id: userId },
+          data: {
+            fcmIsOn: false,
+          },
+        });
+      } else {
+        await this.prisma.admin.update({
+          where: { id: userId },
+          data: {
+            fcmIsOn: true,
+          },
+        });
+      }
+
+      return { message: 'Notification status updated' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async updateProfile(id: string, dto: UpdateAdminDto) {
     try {
       const existingAdmin = await this.prisma.admin.findUnique({

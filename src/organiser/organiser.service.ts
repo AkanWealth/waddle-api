@@ -57,6 +57,40 @@ export class OrganiserService {
     }
   }
 
+  async togglePushNotififcation(userId: string) {
+    try {
+      const existingOrganiser = await this.prisma.organiser.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingOrganiser) {
+        throw new NotFoundException(
+          'Organiser with the provided ID does not exist.',
+        );
+      }
+
+      if (existingOrganiser.fcmIsOn) {
+        await this.prisma.organiser.update({
+          where: { id: userId },
+          data: {
+            fcmIsOn: false,
+          },
+        });
+      } else {
+        await this.prisma.organiser.update({
+          where: { id: userId },
+          data: {
+            fcmIsOn: true,
+          },
+        });
+      }
+
+      return { message: 'Notification status updated' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async viewAllOrganiser() {
     try {
       const organiser = await this.prisma.organiser.findMany();
