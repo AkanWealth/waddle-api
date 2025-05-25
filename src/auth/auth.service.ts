@@ -196,7 +196,7 @@ export class AuthService {
     if (user) return user;
 
     return await this.prisma.user.create({
-      data: googleUser,
+      data: { ...googleUser, email_verify: true },
     });
   }
 
@@ -208,7 +208,7 @@ export class AuthService {
     if (user) return user;
 
     return await this.prisma.user.create({
-      data: facebookUser,
+      data: { ...facebookUser, email_verify: true },
     });
   }
 
