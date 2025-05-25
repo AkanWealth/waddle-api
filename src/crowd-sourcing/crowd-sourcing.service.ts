@@ -42,11 +42,14 @@ export class CrowdSourcingService {
         await this.uploadEventImagesMultiple(fileNames, files);
       }
 
+      const date = new Date(_dto.date);
       const event = await this.prisma.crowdSource.create({
         data: <any>{
           ..._dto,
           images: fileNames || [],
+          date,
           creatorId,
+          isPublished: this.stringToBoolean(_dto.isPublished),
         },
       });
 
@@ -56,9 +59,123 @@ export class CrowdSourcingService {
     }
   }
 
-  async findAllSourcedEvent() {
+  async findAllSourcedEvent(page: number, pageSize: number) {
+    try {
+      const calSkip = (page - 1) * pageSize;
+      const events = await this.prisma.crowdSource.findMany({
+        where: {
+          isDeleted: false,
+          isVerified: true,
+          isPublished: true,
+          tag: 'Event',
+        },
+        skip: calSkip,
+        take: pageSize,
+        include: { like: true },
+      });
+
+      const totalEvents = await this.prisma.crowdSource.count({
+        where: {
+          isDeleted: false,
+          isVerified: true,
+          isPublished: true,
+          tag: 'Event',
+        },
+      });
+      if (!events || events.length === 0) {
+        return {
+          message: 'No events found for the given page.',
+          events: [],
+          totalEvents: totalEvents,
+          currentPage: page,
+          pageSize: pageSize,
+          totalPages: Math.ceil(totalEvents / pageSize),
+        };
+      }
+
+      const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+      const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+      const url = `${baseUrl}/${folder}`;
+
+      const eventsWithImage = events.map((event) => {
+        const imageUrls = event.images.map((image) => `${url}/${image}`);
+        return {
+          ...event,
+          images: imageUrls,
+        };
+      });
+
+      return {
+        message: 'Events found',
+        events: eventsWithImage,
+        totalEvents: totalEvents,
+        currentPage: page,
+        pageSize: pageSize,
+        totalPages: Math.ceil(totalEvents / pageSize),
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllSourcedPlace(page: number, pageSize: number) {
+    const calSkip = (page - 1) * pageSize;
+    const places = await this.prisma.crowdSource.findMany({
+      where: {
+        isDeleted: false,
+        isVerified: true,
+        isPublished: true,
+        tag: 'Place',
+      },
+      skip: calSkip,
+      take: pageSize,
+      include: { like: true },
+    });
+
+    const totalPlaces = await this.prisma.crowdSource.count({
+      where: {
+        isDeleted: false,
+        isVerified: true,
+        isPublished: true,
+        tag: 'Place',
+      },
+    });
+    if (!places || places.length === 0) {
+      return {
+        message: 'No events found for the given page.',
+        events: [],
+        totalPlaces: totalPlaces,
+        currentPage: page,
+        pageSize: pageSize,
+        totalPages: Math.ceil(totalPlaces / pageSize),
+      };
+    }
+
+    const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+    const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+    const url = `${baseUrl}/${folder}`;
+
+    const placesWithImage = places.map((place) => {
+      const imageUrls = place.images.map((image) => `${url}/${image}`);
+      return {
+        ...place,
+        images: imageUrls,
+      };
+    });
+
+    return {
+      message: 'Places found',
+      places: placesWithImage,
+      totalPlaces: totalPlaces,
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(totalPlaces / pageSize),
+    };
+  }
+
+  async findMySourcedEvent(id: string) {
     const events = await this.prisma.crowdSource.findMany({
-      where: { isDeleted: false, isVerified: true, tag: 'Event' },
+      where: { creatorId: id, isDeleted: false, tag: 'Event' },
       include: { like: true },
     });
     if (!events || events.length === 0) {
@@ -80,9 +197,9 @@ export class CrowdSourcingService {
     return { message: 'Events found', events: eventsWithFullImageUrls };
   }
 
-  async findAllSourcedPlace() {
+  async findMySourcedPlace(id: string) {
     const places = await this.prisma.crowdSource.findMany({
-      where: { isDeleted: false, isVerified: true, tag: 'Place' },
+      where: { creatorId: id, isDeleted: false, tag: 'Place' },
       include: { like: true },
     });
     if (!places || places.length === 0) {
@@ -187,7 +304,9 @@ export class CrowdSourcingService {
       where: { id, creatorId },
       data: <any>{
         ...dto,
+        date: dto.date ? new Date(dto.date) : undefined,
         images: updatedImages,
+        isPublished: this.stringToBoolean(dto.isPublished),
       },
     });
 

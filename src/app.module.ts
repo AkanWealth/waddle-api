@@ -19,6 +19,7 @@ import { LikeModule } from './like/like.module';
 import { TicketModule } from './ticket/ticket.module';
 import { AdminModule } from './admin/admin.module';
 import { CrowdSourcingModule } from './crowd-sourcing/crowd-sourcing.module';
+import { Cleaner } from './helper';
 
 @Module({
   imports: [
@@ -48,7 +49,7 @@ import { CrowdSourcingModule } from './crowd-sourcing/crowd-sourcing.module';
     AdminModule,
     CrowdSourcingModule,
   ],
-  providers: [AppService],
+  providers: [AppService, Cleaner],
   controllers: [AppController],
 })
 export class AppModule {}
