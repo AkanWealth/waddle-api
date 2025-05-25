@@ -103,4 +103,13 @@ export class CreateCrowdSourcingDto {
   @IsString()
   @IsOptional()
   time?: string;
+
+  @ApiPropertyOptional({
+    description: 'Published',
+    type: String,
+    example: 'true',
+  })
+  @IsString()
+  @IsOptional()
+  isPublished?: string;
 }

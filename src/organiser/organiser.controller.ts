@@ -63,13 +63,25 @@ export class OrganiserController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
-  @Post('me')
+  @Post('device-token')
   saveOrganiserFcmToken(
     @GetUser('id') id: string,
     @Body('token') token: string,
   ) {
     return this.organiserService.saveOrganiserFcmToken(id, token);
   }
+
+  @ApiOperation({
+    summary: 'toogle push notification for loggedin organiser',
+    description: 'Toogle push notification for loggedin organiser',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('push-notification')
+  tooglePushNotification(@GetUser('id') id: string) {
+    return this.organiserService.togglePushNotififcation(id);
+  }
+
   @ApiOperation({
     summary: 'view all organisers as an admin',
     description: 'Admin can view all organisers',
