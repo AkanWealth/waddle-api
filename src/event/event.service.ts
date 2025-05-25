@@ -131,10 +131,15 @@ export class EventService {
   //   }
   // }
 
-  async viewAllEvent() {
+  async viewAllEvent(page: number, pageSize: number) {
     try {
+      // Calculate skip based on page and pageSize for pagination
+      const calSkip = (page - 1) * pageSize;
+
       const events = await this.prisma.event.findMany({
         where: { isPublished: true },
+        skip: calSkip,
+        take: pageSize,
         include: {
           admin: true,
           organiser: true,
@@ -144,24 +149,79 @@ export class EventService {
           like: true,
           recommendations: true,
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
 
-      if (!events || events.length <= 0)
-        throw new NotFoundException('No event found');
+      // Get the total count of published events for pagination metadata
+      const totalEvents = await this.prisma.event.count({
+        where: { isPublished: true },
+      });
 
-      const eventWithImage = events.map((event) => {
-        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.images}`;
+      if (!events || events.length === 0) {
+        return {
+          message: 'No events found for the given page.',
+          events: [],
+          totalEvents: totalEvents,
+          currentPage: page,
+          pageSize: pageSize,
+          totalPages: Math.ceil(totalEvents / pageSize),
+        };
+      }
+
+      const eventsWithImages = events.map((event) => {
+        const imageUrl = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.images}`;
         return {
           ...event,
-          images,
+          images: imageUrl,
         };
       });
 
-      return { message: 'All events found', events: eventWithImage };
+      return {
+        message: 'Events found',
+        events: eventsWithImages,
+        totalEvents: totalEvents,
+        currentPage: page,
+        pageSize: pageSize,
+        totalPages: Math.ceil(totalEvents / pageSize),
+      };
     } catch (error) {
       throw error;
     }
   }
+
+  // async viewAllEvent() {
+  //   try {
+  //     const events = await this.prisma.event.findMany({
+  //       where: { isPublished: true },
+  //       include: {
+  //         admin: true,
+  //         organiser: true,
+  //         reviews: true,
+  //         bookings: true,
+  //         favorites: true,
+  //         like: true,
+  //         recommendations: true,
+  //       },
+  //     });
+
+  //     if (!events || events.length <= 0)
+  //       throw new NotFoundException('No event found');
+
+  //     const eventWithImage = events.map((event) => {
+  //       const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.images}`;
+  //       return {
+  //         ...event,
+  //         images,
+  //       };
+  //     });
+
+  //     return { message: 'All events found', events: eventWithImage };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
 
   async viewMyEventsAsOrganiser(creatorId: string) {
     try {
@@ -229,6 +289,7 @@ export class EventService {
     try {
       const event = await this.prisma.event.findUnique({
         where: { id },
+        include: { admin: true, organiser: true },
       });
       if (!event)
         throw new NotFoundException(
@@ -264,6 +325,7 @@ export class EventService {
 
       const event = await this.prisma.event.findMany({
         where: whereClause,
+        include: { admin: true, organiser: true },
       });
       if (!event || event.length === 0)
         throw new NotFoundException(
@@ -305,6 +367,7 @@ export class EventService {
 
       const event = await this.prisma.event.findMany({
         where: whereClause,
+        include: { admin: true, organiser: true },
       });
 
       if (!event || event.length === 0) {
