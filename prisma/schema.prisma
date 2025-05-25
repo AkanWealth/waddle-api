@@ -149,6 +149,7 @@ model CrowdSource {
   tips        String?
   date        DateTime?
   time        String?
+  facilities  String?
   creatorId   String
   like        Like[]
   comment     Comment[]
