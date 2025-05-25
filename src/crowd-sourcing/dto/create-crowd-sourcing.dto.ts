@@ -105,6 +105,15 @@ export class CreateCrowdSourcingDto {
   time?: string;
 
   @ApiPropertyOptional({
+    description: 'Facilities',
+    type: String,
+    example: 'HVAC, Security Systems, Parking',
+  })
+  @IsString()
+  @IsOptional()
+  facilities?: string;
+
+  @ApiPropertyOptional({
     description: 'Published',
     type: String,
     example: 'true',

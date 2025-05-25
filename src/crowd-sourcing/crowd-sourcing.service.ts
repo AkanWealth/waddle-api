@@ -142,7 +142,7 @@ export class CrowdSourcingService {
     });
     if (!places || places.length === 0) {
       return {
-        message: 'No events found for the given page.',
+        message: 'No place found for the given page.',
         events: [],
         totalPlaces: totalPlaces,
         currentPage: page,
