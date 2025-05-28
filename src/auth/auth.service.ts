@@ -637,6 +637,49 @@ export class AuthService {
       throw error;
     }
   }
+  async generateResetTokenForAdminWeb(userEmail: string) {
+    try {
+      const admin = await this.prisma.admin.findUnique({
+        where: { email: userEmail },
+      });
+      if (!admin) {
+        throw new NotFoundException('Admin not found');
+      }
+
+      // generate token and expiration time
+      const resetToken = this.otp.generateBasicOTP();
+
+      // save token and expiration time to database
+      await this.prisma.admin.update({
+        where: { id: admin.id },
+        data: {
+          reset_token: resetToken.token,
+          reset_expiration: resetToken.expiration.toString(),
+        },
+      });
+      const resetUrl = `http://localhost:3000/reset-password?token=${resetToken.token}`;
+
+      // send reset token to the user
+      const subject = `Password Reset Request`;
+      const message = `
+      <p>Hi ${admin.first_name},</p>
+
+      <p>You requested a password reset. Click the link below to reset your password:</p>
+      <p><a href="${resetUrl}" target="_blank">${resetUrl}</a></p>
+      <p>This link will expire within an hour. If you did not request this, please ignore this email.</p>
+
+      <p>Warm regards,</p>      
+      
+      <p><b>Waddle Team</b></p>
+      `;
+
+      const mail = await this.mailer.sendMail(admin.email, subject, message);
+
+      return { message: mail.message, resetToken };
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async resetAdminPassword(resetToken: string, password: string) {
     try {
