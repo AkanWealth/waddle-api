@@ -454,6 +454,19 @@ export class AuthController {
     return this.authService.generateResetTokenForAdmin(dto.email);
   }
 
+  @ApiOperation({
+    summary: 'Request password reset link for admin',
+    description:
+      'Sends a password reset link with a token to the admin’s email address.',
+  })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('forgot-password/host/web')
+  generateResetTokenForAdminWeb(@Body() dto: ForgotPasswordDto) {
+    return this.authService.generateResetTokenForAdminWeb(dto.email);
+  }
+
   // reset password
   @ApiOperation({
     summary: 'reset parent password',
