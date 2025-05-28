@@ -53,6 +53,19 @@ export class AdminController {
   }
 
   @ApiOperation({
+    summary: 'send invite to created admin',
+    description: 'Send an invite to the created admin account',
+  })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('invite/:id')
+  @Roles(Role.Admin)
+  sendInvite(@GetUser() admin: { id: string }, @Param('id') id: string) {
+    if (admin) return this.adminService.sendInvite(id);
+  }
+
+  @ApiOperation({
     summary: 'view all admins as an admin',
     description: 'Admin with admin role can view all admins',
   })
