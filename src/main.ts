@@ -76,6 +76,7 @@ async function bootstrap() {
   // Set up ReDoc at `/docs`
   setupRedoc(app as any);
 
+  console.log(process.env.PORT ?? 3000);
   await app.listen(process.env.PORT ?? 3000);
   console.log(`Application is running...`);
 }
