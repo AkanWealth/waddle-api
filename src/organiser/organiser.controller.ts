@@ -35,6 +35,7 @@ import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { UpdatePasswordDto } from '../user/dto/update-password.dto';
 import { Role } from '../auth/enum';
+import { ApproveOrganiserDto } from './dto/approve-organiser.dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unathorized' })
@@ -176,6 +177,27 @@ export class OrganiserController {
   deleteOrganiser(@GetUser() admin: User, @Param('id') id: string) {
     if (admin) return this.organiserService.deleteOrganiser(id);
   }
+
+  @Patch(':id/approve')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.Admin)
+  @ApiOperation({
+    summary: 'Approve or reject an organiser',
+    description:
+      'Admin can approve (or reject) an organiser by setting isApproved to true or false.',
+  })
+  @ApiOkResponse({ description: 'Organiser approval status updated' })
+  @ApiBody({ type: ApproveOrganiserDto })
+  approveOrganiser(
+    @GetUser() admin: User,
+    @Param('id') id: string,
+    @Body() body: ApproveOrganiserDto,
+  ) {
+    if (admin) {
+      return this.organiserService.setApprovalStatus(id, body.isApproved);
+    }
+  }
+
   // End Organiser
 
   // Start Staff
