@@ -178,9 +178,42 @@ export class AdminController {
   })
   @ApiNoContentResponse({ description: 'No content' })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete('/web/:id')
+  @Delete('web/:id')
   @Roles(Role.Admin)
   deleteAdminWeb(@GetUser() admin: User, @Param('id') id: string) {
     if (admin) return this.adminService.deleteAdminWeb(id);
+  }
+
+  @ApiOperation({
+    summary: 'Deactivate an admin (web)',
+    description: 'Admin with admin role can deactivate another admin by ID',
+  })
+  @ApiNoContentResponse({ description: 'Admin successfully deactivated' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('activate/:id')
+  @Roles(Role.Admin)
+  async deactivateAdminWeb(
+    @GetUser() admin: User,
+    @Param('id') id: string,
+  ): Promise<{ message: string }> {
+    if (admin) {
+      return this.adminService.deactivateAdmin(id);
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Reactivate an admin (web)',
+    description: 'Admin with admin role can reactivate an admin by ID',
+  })
+  @ApiOkResponse({ description: 'Admin successfully reactivated' })
+  @Patch('web/:id/reactivate')
+  @Roles(Role.Admin)
+  async reactivateAdminWeb(
+    @GetUser() admin: User,
+    @Param('id') id: string,
+  ): Promise<{ message: string }> {
+    if (admin) {
+      return this.adminService.reactivateAdmin(id);
+    }
   }
 }
