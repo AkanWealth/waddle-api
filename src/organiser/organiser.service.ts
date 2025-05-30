@@ -281,6 +281,26 @@ export class OrganiserService {
       throw error;
     }
   }
+
+  async setApprovalStatus(id: string, isApproved: boolean) {
+    try {
+      const updated = await this.prisma.organiser.update({
+        where: { id },
+        data: { isApproved },
+      });
+
+      return {
+        message: `Organiser ${isApproved ? 'approved' : 'rejected'}`,
+        organiser: updated,
+      };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Organiser not found');
+      }
+      throw error;
+    }
+  }
+
   // End Organiser
 
   // Start staff
