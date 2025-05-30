@@ -66,6 +66,20 @@ export class AdminController {
   }
 
   @ApiOperation({
+    summary: 'Invite admin to complete account setup',
+    description:
+      'Sends an email invitation to the specified admin with a time-limited setup link. A unique token is generated and stored for secure password creation.',
+  })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('invite/:id')
+  @Roles(Role.Admin)
+  sendInviteWeb(@GetUser() admin: { id: string }, @Param('id') id: string) {
+    if (admin) return this.adminService.sendInviteWeb(id);
+  }
+
+  @ApiOperation({
     summary: 'view all admins as an admin',
     description: 'Admin with admin role can view all admins',
   })
@@ -156,5 +170,17 @@ export class AdminController {
   @Roles(Role.Admin)
   deleteAdmin(@GetUser() admin: User, @Param('id') id: string) {
     if (admin) return this.adminService.deleteAdmin(id);
+  }
+
+  @ApiOperation({
+    summary: 'delete an admin web',
+    description: 'Admin with admin role can delete an admin by id on web',
+  })
+  @ApiNoContentResponse({ description: 'No content' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('/web/:id')
+  @Roles(Role.Admin)
+  deleteAdminWeb(@GetUser() admin: User, @Param('id') id: string) {
+    if (admin) return this.adminService.deleteAdminWeb(id);
   }
 }
