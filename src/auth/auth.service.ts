@@ -284,7 +284,7 @@ export class AuthService {
         where: { id: user.id },
         data: {
           password: hashed,
-          isLocked: true,
+          isLocked: false,
           failedLoginAttempts: 0,
           reset_token: null,
           reset_expiration: null,
@@ -531,7 +531,7 @@ export class AuthService {
         where: { id: organiser.id },
         data: {
           password: hashed,
-          isLocked: true,
+          isLocked: false,
           failedLoginAttempts: 0,
           reset_token: null,
           reset_expiration: null,
