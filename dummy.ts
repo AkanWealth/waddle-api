@@ -1,0 +1,345 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+    provider = "prisma-client-js"
+  }
+  
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+  }
+  
+  // Admin Model
+  model Admin {
+    id                            String   @id @default(cuid())
+    first_name                    String
+    last_name                     String
+    email                         String   @unique
+    role                          Role     @default(ADMIN)
+    password                      String
+    email_verify                  Boolean  @default(false)
+    fcmIsOn                       Boolean  @default(false)
+    fcmToken                      String?
+    verification_token            String?
+    verification_token_expiration String?
+    reset_token                   String?
+    reset_expiration              String?
+    createdAt                     DateTime @default(now())
+    updatedAt                     DateTime @updatedAt
+    isActivated                   Boolean  @default(false)
+    isDeleted                     Boolean  @default(false)
+    events                        Event[]
+  
+    @@index([email])
+    @@map("admin")
+  }
+  
+  // Organiser Model
+  model Organiser {
+    id                            String   @id @default(cuid())
+    name                          String
+    email                         String   @unique
+    password                      String
+    phone_number                  String
+    role                          Role     @default(ORGANISER)
+    business_logo                 String?
+    address                       String
+    business_name                 String   @unique
+    business_category             String
+    registration_number           String
+    email_verify                  Boolean  @default(true)
+    isLocked                      Boolean  @default(false)
+    isDeleted                     Boolean  @default(false)
+    isVerified                    Boolean  @default(true)
+    failedLoginAttempts           Int      @default(0)
+    fcmIsOn                       Boolean  @default(false)
+    fcmToken                      String?
+    website_url                   String?
+    facebook_url                  String?
+    verification_token            String?
+    verification_token_expiration String?
+    reset_token                   String?
+    reset_expiration              String?
+    createdAt                     DateTime @default(now())
+    updatedAt                     DateTime @updatedAt
+    events                        Event[]
+    isApproved                    Boolean  @default(false)
+  
+    @@index([email])
+    @@map("organiser")
+  }
+  
+  // User Model
+  model User {
+    id                            String           @id @default(cuid())
+    profile_picture               String?
+    name                          String
+    email                         String           @unique
+    phone_number                  String?
+    address                       String?
+    password                      String
+    role                          Role             @default(GUARDIAN)
+    guardian_type                 String?
+    email_verify                  Boolean          @default(false)
+    isLocked                      Boolean          @default(false)
+    isDeleted                     Boolean          @default(false)
+    failedLoginAttempts           Int              @default(0)
+    fcmIsOn                       Boolean          @default(false)
+    fcmToken                      String?
+    verification_token            String?
+    verification_token_expiration String?
+    reset_token                   String?
+    reset_expiration              String?
+    createdAt                     DateTime         @default(now())
+    updatedAt                     DateTime         @updatedAt
+    favorites                     Favorite[]
+    bookings                      Booking[]
+    recommendation                Recommendation[]
+    like                          Like[]
+    comment                       Comment[]
+    crowdSourceReviews            CrowdSourceReview[] // ← New relation
+    crowdSources                  CrowdSource[]       // ← New relation for creator
+  
+    @@index([email])
+    @@map("user")
+  }
+  
+  // Event Model
+  model Event {
+    id              String           @id @default(cuid())
+    name            String
+    description     String
+    address         String
+    images          String?
+    price           Decimal
+    total_ticket    Int
+    ticket_booked   Int              @default(0)
+    date            DateTime
+    time            String
+    age_range       String
+    instruction     String?
+    category        String
+    isPublished     Boolean?         @default(false)
+    isDeleted       Boolean?         @default(false)
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    reviews         Review[]
+    bookings        Booking[]
+    favorites       Favorite?
+    recommendations Recommendation[]
+    like            Like[]
+    comments        Comment[]        // ← New relation for event comments
+    adminId         String?
+    admin           Admin?           @relation(fields: [adminId], references: [id])
+    organiserId     String?
+    organiser       Organiser?       @relation(fields: [organiserId], references: [id])
+  
+    @@index([category, isPublished, age_range])
+    @@map("event")
+  }
+  
+  // CrowdSource Model
+  model CrowdSource {
+    id          String              @id @default(cuid())
+    name        String
+    images      String[]
+    description String
+    address     String
+    category    String
+    tag         Tag                 @default(Place)
+    fee         Decimal
+    tips        String?
+    date        DateTime?
+    time        String?
+    facilities  String?
+    creatorId   String
+    creator     User                @relation(fields: [creatorId], references: [id]) // ← Enhanced relation
+    like        Like[]
+    comment     Comment[]
+    reviews     CrowdSourceReview[] // ← New relation for reviews
+    isVerified  Boolean             @default(false)
+    isPublished Boolean             @default(false)
+    isDeleted   Boolean             @default(false)
+    createdAt   DateTime            @default(now())
+    updatedAt   DateTime            @updatedAt
+  
+    @@index([address, isVerified])
+    @@map("crowdsource")
+  }
+  
+  // Bookings Model
+  model Booking {
+    id              String        @id @default(cuid())
+    userId          String
+    eventId         String
+    ticket_quantity Int
+    sessionId       String?
+    status          BookingStatus @default(Pending)
+    isDeleted       Boolean?      @default(false)
+    createdAt       DateTime      @default(now())
+    updatedAt       DateTime      @updatedAt
+    consent         Consent[]
+    user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+    event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+    @@index([userId, eventId, sessionId, status])
+    @@map("booking")
+  }
+  
+  // Consent Model
+  model Consent {
+    id        String   @id @default(cuid())
+    name      String
+    age       Int
+    notes     String
+    consent   Boolean
+    bookingId String
+    booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+  
+    @@map("consent")
+  }
+  
+  // Favourite Model
+  model Favorite {
+    id        String   @id @default(cuid())
+    userId    String
+    eventId   String   @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+    @@map("favorite")
+  }
+  
+  // Like model - Enhanced to support comment likes
+  model Like {
+    id                  String             @id @default(cuid())
+    userId              String
+    eventId             String?
+    crowdSourceId       String?
+    commentId           String?            // ← New field for comment likes
+    crowdSourceReviewId String?            // ← New field for review likes
+    user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+    event               Event?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    crowdSource         CrowdSource?       @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+    comment             Comment?           @relation(fields: [commentId], references: [id], onDelete: Cascade) // ← New relation
+    crowdSourceReview   CrowdSourceReview? @relation(fields: [crowdSourceReviewId], references: [id], onDelete: Cascade) // ← New relation
+    createdAt           DateTime           @default(now())
+    updatedAt           DateTime           @updatedAt
+  
+    @@unique([userId, eventId])
+    @@unique([userId, crowdSourceId])
+    @@unique([userId, commentId])           // ← New unique constraint
+    @@unique([userId, crowdSourceReviewId]) // ← New unique constraint
+    @@map("like")
+  }
+  
+  // Recommendation Model
+  model Recommendation {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    eventId   String
+    event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    reason    String // e.g., "similar to favorites", "nearby"
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+  
+    @@map("recommendation")
+  }
+  
+  // Comment model - Enhanced to support both events and crowdsource
+  model Comment {
+    id            String       @id @default(cuid())
+    content       String
+    userId        String
+    eventId       String?      // ← New field for event comments
+    crowdSourceId String?
+    parentId      String?
+    user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    event         Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade) // ← New relation
+    crowdSource   CrowdSource? @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+    parent        Comment?     @relation("CommentReplies", fields: [parentId], references: [id])
+    replies       Comment[]    @relation("CommentReplies")
+    likes         Like[]       // ← New relation for comment likes
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime     @updatedAt
+  
+    @@index([crowdSourceId])
+    @@index([eventId])        // ← New index
+    @@map("comment")
+  }
+  
+  // Review Model for Events
+  model Review {
+    id        String   @id @default(cuid())
+    name      String
+    rating    Int
+    comment   String?
+    verified  Boolean  @default(false)
+    eventId   String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+    @@index([rating])
+    @@map("review")
+  }
+  
+  // New Review Model for CrowdSource places
+  model CrowdSourceReview {
+    id            String      @id @default(cuid())
+    rating        Int         @db.SmallInt // Rating from 1-5
+    comment       String?
+    userId        String
+    crowdSourceId String
+    user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    crowdSource   CrowdSource @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+    likes         Like[]      // ← Reviews can be liked
+    isVerified    Boolean     @default(false)
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+  
+    @@unique([userId, crowdSourceId]) // One review per user per place
+    @@index([rating, crowdSourceId])
+    @@map("crowdsource_review")
+  }
+  
+  // BlacklistedToken Model
+  model BlacklistedToken {
+    id            String   @id @default(cuid())
+    access_token  String
+    refresh_token String
+    createdAt     DateTime @default(now())
+    updatedAt     DateTime @updatedAt
+  
+    @@map("blacklisted_token")
+  }
+  
+  // AdminRole Enumerator
+  enum Role {
+    ADMIN
+    ORGANISER
+    GUARDIAN
+  }
+  
+  // Booking Status Enumerator
+  enum BookingStatus {
+    Pending
+    Confirmed
+    Failed
+    Cancelled
+    Refunded
+  }
+  
+  enum Tag {
+    Event
+    Place
+  }
