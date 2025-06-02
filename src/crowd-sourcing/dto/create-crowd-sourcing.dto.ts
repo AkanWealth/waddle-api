@@ -11,7 +11,7 @@ export class CreateCrowdSourcingDto {
   @ApiPropertyOptional({
     description: 'Images',
     type: 'array',
-    example: 'xample.png, example.png, ample.png',
+    example: ['xample.png', 'example.png', 'ample.png'],
   })
   @IsArray()
   @IsOptional()
@@ -106,12 +106,15 @@ export class CreateCrowdSourcingDto {
 
   @ApiPropertyOptional({
     description: 'Facilities',
-    type: String,
-    example: 'HVAC, Security Systems, Parking',
+    type: [String],
+    example: ['HVAC', 'Security Systems', 'Parking'],
   })
-  @IsString()
+  @IsArray({
+    message: 'The input must be an array.',
+  })
+  @IsString({ each: true, message: 'Each item in the array must be a string.' })
   @IsOptional()
-  facilities?: string;
+  facilities?: [string];
 
   @ApiPropertyOptional({
     description: 'Published',
