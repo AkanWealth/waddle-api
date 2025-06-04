@@ -71,7 +71,7 @@ export class CrowdSourcingService {
         },
         skip: calSkip,
         take: pageSize,
-        include: { like: true },
+        include: { like: true, creator: true },
       });
 
       const totalEvents = await this.prisma.crowdSource.count({
@@ -129,7 +129,7 @@ export class CrowdSourcingService {
       },
       skip: calSkip,
       take: pageSize,
-      include: { like: true },
+      include: { like: true, creator: true },
     });
 
     const totalPlaces = await this.prisma.crowdSource.count({
@@ -224,7 +224,7 @@ export class CrowdSourcingService {
   async findOneSourcedEvent(id: string) {
     const event = await this.prisma.crowdSource.findUnique({
       where: { id },
-      include: { like: true },
+      include: { like: true, creator: true },
     });
 
     if (!event) {
@@ -384,7 +384,7 @@ export class CrowdSourcingService {
     try {
       const comment = await this.prisma.comment.findMany({
         where: { crowdSourceId: eventId },
-        include: { replies: true },
+        include: { replies: true, user: true },
       });
       if (!comment || comment.length === 0) {
         throw new NotFoundException('No comments found');
@@ -419,6 +419,7 @@ export class CrowdSourcingService {
     try {
       const response = await this.prisma.comment.findMany({
         where: { parentId: commentId },
+        include: { user: true },
       });
       if (!response || response.length === 0) {
         throw new NotFoundException('No responses found for this comment');
