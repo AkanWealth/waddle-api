@@ -1,0 +1,42 @@
+name: Deploy to AWS EC2
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Deploying to EC2 instance..."
+            cd /home/ec2-user/waddle-api && \
+            echo "Updating code from repository..." && \
+            git pull && \
+            echo "Installing dependencies..." && \
+            npm ci --omit=dev && \
+            echo "Creating .env file..." && \
+            touch .env && \
+            echo "Setting environment variables..." && \
+            echo "${{ secrets.ENV_FILE }}" > .env && \
+            npm ci --omit=dev && \
+            echo "Building application..." && \
+            npm run build && \
+            echo "Restarting PM2 process..." && \
+            pm2 restart waddleapi --update-env && \
+            pm2 save && \
+            echo "Deployment completed successfully!"
