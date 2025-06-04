@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,40 +7,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Admin Model
 model Admin {
   id                            String   @id @default(cuid())
   first_name                    String
   last_name                     String
   email                         String   @unique
-  role                          Role     @default(ADMIN)
   password                      String
   email_verify                  Boolean  @default(false)
-  fcmIsOn                       Boolean  @default(false)
-  fcmToken                      String?
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
   createdAt                     DateTime @default(now())
   updatedAt                     DateTime @updatedAt
-  isActivated                   Boolean  @default(false)  // ← new field
-  isDeleted                     Boolean  @default(false)  // ← new field
+  fcmToken                      String?
+  role                          Role     @default(ADMIN)
+  fcmIsOn                       Boolean  @default(false)
+  isActivated                   Boolean  @default(false)
+  isDeleted                     Boolean  @default(false)
   events                        Event[]
 
   @@index([email])
   @@map("admin")
 }
 
-
-// Organiser Model
 model Organiser {
   id                            String   @id @default(cuid())
   name                          String
   email                         String   @unique
   password                      String
   phone_number                  String
-  role                          Role     @default(ORGANISER)
   business_logo                 String?
   address                       String
   business_name                 String   @unique
@@ -57,8 +47,6 @@ model Organiser {
   isDeleted                     Boolean  @default(false)
   isVerified                    Boolean  @default(true)
   failedLoginAttempts           Int      @default(0)
-  fcmIsOn                       Boolean  @default(false)
-  fcmToken                      String?
   website_url                   String?
   facebook_url                  String?
   verification_token            String?
@@ -67,14 +55,16 @@ model Organiser {
   reset_expiration              String?
   createdAt                     DateTime @default(now())
   updatedAt                     DateTime @updatedAt
-  events                        Event[]
+  fcmToken                      String?
+  role                          Role     @default(ORGANISER)
+  fcmIsOn                       Boolean  @default(false)
   isApproved                    Boolean  @default(false)
+  events                        Event[]
 
   @@index([email])
   @@map("organiser")
 }
 
-// User Model
 model User {
   id                            String           @id @default(cuid())
   profile_picture               String?
@@ -83,31 +73,31 @@ model User {
   phone_number                  String?
   address                       String?
   password                      String
-  role                          Role             @default(GUARDIAN)
   guardian_type                 String?
   email_verify                  Boolean          @default(false)
   isLocked                      Boolean          @default(false)
   isDeleted                     Boolean          @default(false)
   failedLoginAttempts           Int              @default(0)
-  fcmIsOn                       Boolean          @default(false)
-  fcmToken                      String?
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
   createdAt                     DateTime         @default(now())
   updatedAt                     DateTime         @updatedAt
-  favorites                     Favorite[]
+  fcmToken                      String?
+  role                          Role             @default(GUARDIAN)
+  fcmIsOn                       Boolean          @default(false)
   bookings                      Booking[]
-  recommendation                Recommendation[]
-  like                          Like[]
   comment                       Comment[]
+  favorites                     Favorite[]
+  like                          Like[]
+  recommendation                Recommendation[]
+  crowdSource                   CrowdSource[]
 
   @@index([email])
   @@map("user")
 }
 
-// Event Model
 model Event {
   id              String           @id @default(cuid())
   name            String
@@ -126,48 +116,47 @@ model Event {
   isDeleted       Boolean?         @default(false)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  reviews         Review[]
-  bookings        Booking[]
-  favorites       Favorite?
-  recommendations Recommendation[]
-  like            Like[]
   adminId         String?
-  admin           Admin?           @relation(fields: [adminId], references: [id])
   organiserId     String?
+  bookings        Booking[]
+  admin           Admin?           @relation(fields: [adminId], references: [id])
   organiser       Organiser?       @relation(fields: [organiserId], references: [id])
+  favorites       Favorite?
+  like            Like[]
+  recommendations Recommendation[]
+  reviews         Review[]
 
   @@index([category, isPublished, age_range])
   @@map("event")
 }
 
-// CrowdSource Model
 model CrowdSource {
   id          String    @id @default(cuid())
   name        String
   images      String[]
   description String
   address     String
-  category    String
-  tag         Tag       @default(Place)
-  fee         Decimal
-  tips        String?
-  date        DateTime?
-  time        String?
-  facilities  String?
   creatorId   String
-  like        Like[]
-  comment     Comment[]
+  creator     User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   isVerified  Boolean   @default(false)
-  isPublished Boolean   @default(false)
   isDeleted   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  date        DateTime?
+  fee         Decimal
+  tag         Tag       @default(Place)
+  time        String?
+  tips        String?
+  isPublished Boolean   @default(false)
+  category    String
+  facilities  String[]
+  comment     Comment[]
+  like        Like[]
 
   @@index([address, isVerified])
   @@map("crowdsource")
 }
 
-// Bookings Model
 model Booking {
   id              String        @id @default(cuid())
   userId          String
@@ -178,15 +167,14 @@ model Booking {
   isDeleted       Boolean?      @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  consent         Consent[]
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consent         Consent[]
 
   @@index([userId, eventId, sessionId, status])
   @@map("booking")
 }
 
-// Consent Model
 model Consent {
   id        String   @id @default(cuid())
   name      String
@@ -194,92 +182,86 @@ model Consent {
   notes     String
   consent   Boolean
   bookingId String
-  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@map("consent")
 }
 
-// Favourite Model
 model Favorite {
   id        String   @id @default(cuid())
   userId    String
   eventId   String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("favorite")
 }
 
-// Like model
 model Like {
   id            String       @id @default(cuid())
   userId        String
   eventId       String?
-  crowdSourceId String?
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event         Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  crowdSource   CrowdSource? @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
+  crowdSourceId String?
+  crowdSource   CrowdSource? @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+  event         Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@unique([userId, crowdSourceId])
   @@map("like")
 }
 
-// Recommendation Model
 model Recommendation {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   eventId   String
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  reason    String // e.g., "similar to favorites", "nearby"
+  reason    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("recommendation")
 }
 
-// Comment model for crowdsource
 model Comment {
   id            String       @id @default(cuid())
   content       String
   userId        String
   crowdSourceId String?
   parentId      String?
-  user          User         @relation(fields: [userId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   crowdSource   CrowdSource? @relation(fields: [crowdSourceId], references: [id])
   parent        Comment?     @relation("CommentReplies", fields: [parentId], references: [id])
   replies       Comment[]    @relation("CommentReplies")
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  user          User         @relation(fields: [userId], references: [id])
 
   @@index([crowdSourceId])
   @@map("comment")
 }
 
-// Review Model
 model Review {
   id        String   @id @default(cuid())
-  name      String
   rating    Int
   comment   String?
   verified  Boolean  @default(false)
   eventId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  name      String
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([rating])
   @@map("review")
 }
 
-// BlacklistedToken Model
 model BlacklistedToken {
   id            String   @id @default(cuid())
   access_token  String
@@ -290,14 +272,12 @@ model BlacklistedToken {
   @@map("blacklisted_token")
 }
 
-// AdminRole Enumerator
 enum Role {
   ADMIN
   ORGANISER
   GUARDIAN
 }
 
-// Booking Status Enumerator
 enum BookingStatus {
   Pending
   Confirmed

@@ -9,6 +9,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import {
@@ -215,5 +216,27 @@ export class AdminController {
     if (admin) {
       return this.adminService.reactivateAdmin(id);
     }
+  }
+
+  @ApiOperation({
+    summary: 'Get user activity statistics',
+    description:
+      'Retrieves user statistics including total users, parents, organizers, inactive users, and monthly growth data',
+  })
+  @ApiOkResponse({ description: 'ser activity data retrieved successfully' })
+  @Get('analytics')
+  @Roles(Role.Admin)
+  async getUserActivity(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const now = new Date();
+    const defaultEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1); // start of next month
+    const defaultStartDate = new Date(now.getFullYear(), now.getMonth() - 2, 1); // start of month, 2 months ago
+
+    const parsedStart = startDate ? new Date(startDate) : defaultStartDate;
+    const parsedEnd = endDate ? new Date(endDate) : defaultEndDate;
+
+    return await this.adminService.getUserActivity(parsedStart, parsedEnd);
   }
 }
