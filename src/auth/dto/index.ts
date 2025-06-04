@@ -1,6 +1,7 @@
 export * from './user-signup.dto';
 export * from './organiser-signup.dto';
 export * from './signin.dto';
+export * from './sso-signin.dto';
 export * from './forgotpassword.dto';
 export * from './resetpassword.dto';
 export * from './verify.dto';
