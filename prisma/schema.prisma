@@ -92,6 +92,7 @@ model User {
   favorites                     Favorite[]
   like                          Like[]
   recommendation                Recommendation[]
+  crowdSource                   CrowdSource[]
 
   @@index([email])
   @@map("user")
@@ -136,6 +137,7 @@ model CrowdSource {
   description String
   address     String
   creatorId   String
+  creator     User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   isVerified  Boolean   @default(false)
   isDeleted   Boolean   @default(false)
   createdAt   DateTime  @default(now())
