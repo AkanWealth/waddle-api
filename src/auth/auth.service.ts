@@ -10,6 +10,7 @@ import {
   SignInDto,
   UserSignUpDto,
   OrganiserSignUpDto,
+  SsoSignInDto,
 } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
@@ -188,7 +189,22 @@ export class AuthService {
     }
   }
 
-  async validateGoogleUser(googleUser: UserSignUpDto) {
+  async validateSsoSignin(dto: SsoSignInDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto?.email },
+    });
+
+    if (user) {
+      return await this.signToken(user.id, user.email, user.role);
+    } else {
+      const newUser = await this.prisma.user.create({
+        data: <any>{ ...dto, email_verify: true },
+      });
+      return await this.signToken(newUser.id, newUser.email, newUser.role);
+    }
+  }
+
+  async validateGoogleUser(googleUser: SsoSignInDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: googleUser?.email },
     });
@@ -196,11 +212,11 @@ export class AuthService {
     if (user) return user;
 
     return await this.prisma.user.create({
-      data: { ...googleUser, email_verify: true },
+      data: <any>{ ...googleUser, email_verify: true },
     });
   }
 
-  async validateFacebookUser(facebookUser: UserSignUpDto) {
+  async validateFacebookUser(facebookUser: SsoSignInDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: facebookUser?.email },
     });
@@ -208,7 +224,7 @@ export class AuthService {
     if (user) return user;
 
     return await this.prisma.user.create({
-      data: { ...facebookUser, email_verify: true },
+      data: <any>{ ...facebookUser, email_verify: true },
     });
   }
 
