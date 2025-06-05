@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateLikeDto } from './dto';
+import { CreateCommentLikeDto, CreateEventLikeDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -7,7 +7,7 @@ export class LikeService {
   constructor(private prisma: PrismaService) {}
 
   // like the event
-  async likeEvent(userId: string, dto: CreateLikeDto) {
+  async likeEvent(userId: string, dto: CreateEventLikeDto) {
     try {
       const like = await this.prisma.like.create({ data: { ...dto, userId } });
       return like;
@@ -17,10 +17,22 @@ export class LikeService {
   }
 
   // like the crowd sourced event
-  async likeCrowdSourcedEvent(userId: string, dto: CreateLikeDto) {
+  async likeCrowdSourcedEvent(userId: string, dto: CreateEventLikeDto) {
     try {
       const like = await this.prisma.like.create({
         data: { crowdSourceId: dto.eventId, userId },
+      });
+      return like;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // like the comment
+  async likeComment(userId: string, dto: CreateCommentLikeDto) {
+    try {
+      const like = await this.prisma.like.create({
+        data: { commentId: dto.commentId, userId },
       });
       return like;
     } catch (error) {
@@ -32,29 +44,45 @@ export class LikeService {
   async viewLikesByEvent(eventId: string) {
     try {
       const likes = await this.prisma.like.findMany({
-        where: { eventId: eventId },
+        where: { eventId },
       });
 
       if (!likes || likes.length <= 0)
         throw new NotFoundException('Likes not found');
 
-      return { message: 'Likes found', likes };
+      return { message: 'Likes found', likes, count: likes?.length };
     } catch (error) {
       throw error;
     }
   }
 
   // view all likes based on crowd sourced events
-  async viewLikesByCrowdSourceEvent(eventId: string) {
+  async viewLikesByCrowdSourceEvent(crowdSourceId: string) {
     try {
       const likes = await this.prisma.like.findMany({
-        where: { crowdSourceId: eventId },
+        where: { crowdSourceId },
       });
 
       if (!likes || likes.length <= 0)
         throw new NotFoundException('Likes not found');
 
-      return { message: 'Likes found', likes };
+      return { message: 'Likes found', likes, count: likes?.length };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // view all likes based on comments
+  async viewLikesByComment(commentId: string) {
+    try {
+      const likes = await this.prisma.like.findMany({
+        where: { commentId },
+      });
+
+      if (!likes || likes.length <= 0)
+        throw new NotFoundException('Likes not found');
+
+      return { message: 'Likes found', likes, count: likes?.length };
     } catch (error) {
       throw error;
     }
