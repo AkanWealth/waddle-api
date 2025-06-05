@@ -24,6 +24,7 @@ import {
   SignInDto,
   UserSignUpDto,
   OrganiserSignUpDto,
+  SsoSignInDto,
 } from './dto';
 import {
   ApiAcceptedResponse,
@@ -360,6 +361,17 @@ export class AuthController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
+  @Post('sso/signin')
+  googleSignin(@Body() dto: SsoSignInDto) {
+    return this.authService.validateSsoSignin(dto);
+  }
+
+  @ApiOperation({
+    summary: 'login using google as a parent',
+    description: 'Parents can login using google',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
   @UseGuards(GoogleAuthGuard)
   @Get('google/signin')
   googleLogin() {}
@@ -370,10 +382,13 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
   async googleCallback(
-    @GetUser('id') id: string,
-    @GetUser('email') email: string,
+    @GetUser() user: { id: string; email: string; role: string },
   ) {
-    const response = await this.authService.signToken(id, email, '');
+    const response = await this.authService.signToken(
+      user.id,
+      user.email,
+      user.role,
+    );
 
     return response;
   }
@@ -394,10 +409,13 @@ export class AuthController {
   @UseGuards(FacebookAuthGuard)
   @Get('facebook/redirect')
   async facebookCallback(
-    @GetUser('id') id: string,
-    @GetUser('email') email: string,
+    @GetUser() user: { id: string; email: string; role: string },
   ) {
-    const response = await this.authService.signToken(id, email, '');
+    const response = await this.authService.signToken(
+      user.id,
+      user.email,
+      user.role,
+    );
 
     return response;
   }
