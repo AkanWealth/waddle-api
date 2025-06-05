@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class CreateLikeDto {
+export class CreateEventLikeDto {
   @ApiProperty({
     description: 'Event ID to like',
     example: 'hdiyir6ehef8y3883y',
