@@ -4,7 +4,7 @@ import * as request from 'supertest';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { SignInDto } from '../src/auth/dto/signin.dto';
 import { CreateEventDto } from '../src/event/dto/create-event.dto';
-import { CreateLikeDto } from '../src/like/dto/create-like.dto';
+import { CreateLikeDto } from '../src/like/dto/create-event-like.dto';
 
 /**
  * @group like
