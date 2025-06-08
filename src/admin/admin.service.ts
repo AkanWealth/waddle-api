@@ -812,4 +812,239 @@ export class AdminService {
       };
     });
   }
+
+  async getEventActivity(startDate: Date, endDate: Date) {
+    const rangeInMs = endDate.getTime() - startDate.getTime();
+    const previousStartDate = new Date(startDate.getTime() - rangeInMs);
+
+    // Single optimized query to get all data at once
+    const allData = await this.prisma.$queryRaw<
+      Array<{
+        // Event data
+        event_id: string | null;
+        event_name: string | null;
+        event_created_at: Date | null;
+        event_is_published: boolean | null;
+        event_is_deleted: boolean | null;
+
+        // Vendor data
+        vendor_name: string | null;
+
+        // Booking data
+        booking_id: string | null;
+        booking_created_at: Date | null;
+        booking_status: string | null;
+        booking_quantity: number | null;
+      }>
+    >`
+      SELECT 
+        e.id as event_id,
+        e.name as event_name,
+        e."createdAt" as event_created_at,
+        e."isPublished" as event_is_published,
+        e."isDeleted" as event_is_deleted,
+        COALESCE(o.name, a.first_name || ' ' || a.last_name) as vendor_name,
+        b.id as booking_id,
+        b."createdAt" as booking_created_at,
+        b.status as booking_status,
+        b.ticket_quantity as booking_quantity
+      FROM "event" e
+      LEFT JOIN "organiser" o ON e."organiserId" = o.id
+      LEFT JOIN "admin" a ON e."adminId" = a.id
+      LEFT JOIN "booking" b ON e.id = b."eventId" 
+        AND b."isDeleted" = false 
+        AND b.status = 'Confirmed'
+        AND b."createdAt" >= ${previousStartDate}
+        AND b."createdAt" < ${endDate}
+      WHERE e."createdAt" >= ${previousStartDate}
+        AND e."createdAt" < ${endDate}
+      ORDER BY e."createdAt" DESC
+    `;
+
+    // Process all data in memory to avoid multiple database calls
+    const eventStatsMap = new Map<
+      string,
+      { current: number; previous: number }
+    >();
+    const eventBookingCounts = new Map<string, number>();
+    const bookingsByDay = new Map<string, number>();
+    let totalBookingsCurrent = 0;
+    let totalBookingsPrevious = 0;
+
+    // Process the single result set
+    allData.forEach((row) => {
+      if (row.event_id) {
+        // Process event stats
+        const eventCreatedAt = new Date(row.event_created_at!);
+        const isCurrentPeriod =
+          eventCreatedAt >= startDate && eventCreatedAt < endDate;
+        const isPreviousPeriod =
+          eventCreatedAt >= previousStartDate && eventCreatedAt < startDate;
+
+        // Determine event status
+        const status = row.event_is_deleted
+          ? 'CANCELLED'
+          : row.event_is_published
+            ? 'ACTIVE'
+            : 'DRAFT';
+
+        const existing = eventStatsMap.get(status) || {
+          current: 0,
+          previous: 0,
+        };
+
+        if (isCurrentPeriod) {
+          existing.current += 1;
+        } else if (isPreviousPeriod) {
+          existing.previous += 1;
+        }
+
+        eventStatsMap.set(status, existing);
+
+        // Process booking data for top events and daily stats
+        if (row.booking_id) {
+          const bookingCreatedAt = new Date(row.booking_created_at!);
+          const bookingQuantity = row.booking_quantity || 1;
+
+          // Count bookings for top events (current period only)
+          if (bookingCreatedAt >= startDate && bookingCreatedAt < endDate) {
+            const currentCount = eventBookingCounts.get(row.event_id) || 0;
+            eventBookingCounts.set(
+              row.event_id,
+              currentCount + bookingQuantity,
+            );
+
+            // Daily booking stats
+            const dayKey = bookingCreatedAt.toISOString().split('T')[0];
+            const currentDayCount = bookingsByDay.get(dayKey) || 0;
+            bookingsByDay.set(dayKey, currentDayCount + bookingQuantity);
+
+            totalBookingsCurrent += bookingQuantity;
+          } else if (
+            bookingCreatedAt >= previousStartDate &&
+            bookingCreatedAt < startDate
+          ) {
+            totalBookingsPrevious += bookingQuantity;
+          }
+        }
+      }
+    });
+
+    // Get top 5 events
+    const topEvents = Array.from(eventBookingCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([eventId, attendeeCount], index) => {
+        const eventData = allData.find((row) => row.event_id === eventId);
+        return {
+          id: index + 1,
+          event: eventData?.event_name || 'Unknown Event',
+          vendor: eventData?.vendor_name || 'Unknown Vendor',
+          attendees: attendeeCount,
+        };
+      });
+
+    // Helper function for calculating changes
+    const calculateChange = (current: number, previous: number) => {
+      if (previous === 0) {
+        return {
+          change: current > 0 ? '+100%' : '0%',
+          isPositive: current >= 0,
+        };
+      }
+      const delta = ((current - previous) / previous) * 100;
+      return {
+        change: `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`,
+        isPositive: delta >= 0,
+      };
+    };
+
+    // Calculate totals
+    const totalEventsCurrent = Array.from(eventStatsMap.values()).reduce(
+      (sum, stat) => sum + stat.current,
+      0,
+    );
+    const totalEventsPrevious = Array.from(eventStatsMap.values()).reduce(
+      (sum, stat) => sum + stat.previous,
+      0,
+    );
+
+    const activeEventsCurrent = eventStatsMap.get('ACTIVE')?.current || 0;
+    const activeEventsPrevious = eventStatsMap.get('ACTIVE')?.previous || 0;
+
+    const cancelledEventsCurrent = eventStatsMap.get('CANCELLED')?.current || 0;
+    const cancelledEventsPrevious =
+      eventStatsMap.get('CANCELLED')?.previous || 0;
+
+    const eventStatsResponse = [
+      {
+        type: 'total_events',
+        title: 'Total Events',
+        count: totalEventsCurrent,
+        ...calculateChange(totalEventsCurrent, totalEventsPrevious),
+      },
+      {
+        type: 'active_events',
+        title: 'Active Events',
+        count: activeEventsCurrent,
+        ...calculateChange(activeEventsCurrent, activeEventsPrevious),
+      },
+      {
+        type: 'cancelled_events',
+        title: 'Cancelled Events',
+        count: cancelledEventsCurrent,
+        ...calculateChange(cancelledEventsCurrent, cancelledEventsPrevious),
+      },
+      {
+        type: 'total_attendees',
+        title: 'Total Attendees',
+        count: totalBookingsCurrent,
+        ...calculateChange(totalBookingsCurrent, totalBookingsPrevious),
+      },
+    ];
+
+    return {
+      eventStats: eventStatsResponse,
+      topEvents,
+      bookingData: this.processBookingDataFromMap(
+        bookingsByDay,
+        startDate,
+        endDate,
+      ),
+      hasData: totalEventsCurrent > 0 || totalBookingsCurrent > 0,
+    };
+  }
+
+  private processBookingDataFromMap(
+    bookingsByDay: Map<string, number>,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const result = [];
+
+    // Generate data for the last 7 days within the date range
+    const currentDate = new Date(
+      Math.max(startDate.getTime(), Date.now() - 7 * 24 * 60 * 60 * 1000),
+    );
+    const maxDate = new Date(Math.min(endDate.getTime(), Date.now()));
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(currentDate);
+      date.setDate(currentDate.getDate() + i);
+
+      if (date > maxDate) break;
+
+      const dateKey = date.toISOString().split('T')[0];
+      const dayName = days[date.getDay()];
+      const bookings = bookingsByDay.get(dateKey) || 0;
+
+      result.push({
+        day: dayName,
+        bookings,
+      });
+    }
+
+    return result;
+  }
 }

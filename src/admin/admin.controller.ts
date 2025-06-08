@@ -239,4 +239,26 @@ export class AdminController {
 
     return await this.adminService.getUserActivity(parsedStart, parsedEnd);
   }
+
+  @ApiOperation({
+    summary: 'Get event activity statistics',
+    description:
+      'Retrieves event statistics including total events, active events, cancelled events, total attendees, top performing events, and booking rate data',
+  })
+  @ApiOkResponse({ description: 'Event activity data retrieved successfully' })
+  @Get('analytics/event')
+  @Roles(Role.Admin)
+  async getEventActivity(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const now = new Date();
+    const defaultEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1); // start of next month
+    const defaultStartDate = new Date(now.getFullYear(), now.getMonth() - 2, 1); // start of month, 2 months ago
+
+    const parsedStart = startDate ? new Date(startDate) : defaultStartDate;
+    const parsedEnd = endDate ? new Date(endDate) : defaultEndDate;
+
+    return await this.adminService.getEventActivity(parsedStart, parsedEnd);
+  }
 }
