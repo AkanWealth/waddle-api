@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "AdminPermission" (
+CREATE TABLE IF NOT EXISTS "AdminPermission" (
     "id" TEXT NOT NULL,
     "adminId" TEXT NOT NULL,
     "module" TEXT NOT NULL,
