@@ -1,5 +1,12 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('ADMIN', 'ORGANISER', 'GUARDIAN');
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'Role') THEN
+    CREATE TYPE "Role" AS ENUM ('ADMIN', 'ORGANISER', 'GUARDIAN');
+  END IF;
+END$$;
+
 
 -- CreateEnum
 CREATE TYPE "BookingStatus" AS ENUM ('Pending', 'Confirmed', 'Failed', 'Cancelled', 'Refunded');
