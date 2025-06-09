@@ -8,14 +8,30 @@ BEGIN
 END$$;
 
 
--- CreateEnum
-CREATE TYPE "BookingStatus" AS ENUM ('Pending', 'Confirmed', 'Failed', 'Cancelled', 'Refunded');
+-- CreateEnum BookingStatus
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'BookingStatus') THEN
+    CREATE TYPE "BookingStatus" AS ENUM ('Pending', 'Confirmed', 'Failed', 'Cancelled', 'Refunded');
+  END IF;
+END$$;
 
--- CreateEnum
-CREATE TYPE "Tag" AS ENUM ('Event', 'Place');
+-- CreateEnum Tag
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'Tag') THEN
+    CREATE TYPE "Tag" AS ENUM ('Event', 'Place');
+  END IF;
+END$$;
 
--- CreateEnum
-CREATE TYPE "ActivationStatus" AS ENUM ('PENDING', 'ACTIVE', 'INACTIVE');
+-- CreateEnum ActivationStatus
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ActivationStatus') THEN
+    CREATE TYPE "ActivationStatus" AS ENUM ('PENDING', 'ACTIVE', 'INACTIVE');
+  END IF;
+END$$;
+
 
 -- CreateTable
 CREATE TABLE "admin" (
