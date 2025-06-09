@@ -10,7 +10,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { LikeService } from './like.service';
-import { CreateEventLikeDto, CreateCommentLikeDto } from './dto';
+import {
+  CreateEventLikeDto,
+  CreateCommentLikeDto,
+  CreateReviewLikeDto,
+} from './dto';
 import { User } from '@prisma/client';
 import { JwtGuard } from '../auth/guard/auth.guard';
 import { GetUser } from '../auth/decorator/get-user.decorator';
@@ -67,6 +71,16 @@ export class LikeController {
   }
 
   @ApiOperation({
+    summary: 'like a review',
+    description: 'Parents can like a review',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('review')
+  likeReview(@GetUser() user: User, @Body() dto: CreateReviewLikeDto) {
+    return this.likeService.likeReview(user.id, dto);
+  }
+
+  @ApiOperation({
     summary: 'view all likes for event',
     description: 'Parents can view all likes for event',
   })
@@ -97,6 +111,17 @@ export class LikeController {
   @Get('comment/:id')
   viewLikesByComment(@Param('id') commentId: string) {
     return this.likeService.viewLikesByComment(commentId);
+  }
+
+  @ApiOperation({
+    summary: 'view all likes for review',
+    description: 'Parents can view all likes for review',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('review/:id')
+  viewLikesByReview(@Param('id') reviewId: string) {
+    return this.likeService.viewLikesByReview(reviewId);
   }
 
   @ApiOperation({
