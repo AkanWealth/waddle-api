@@ -110,7 +110,7 @@ model Event {
   date            DateTime
   time            String
   age_range       String
-  instruction     String?
+  instructions    String[]
   category        String
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)
