@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateCommentLikeDto, CreateEventLikeDto } from './dto';
+import {
+  CreateCommentLikeDto,
+  CreateEventLikeDto,
+  CreateReviewLikeDto,
+} from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -10,7 +14,7 @@ export class LikeService {
   async likeEvent(userId: string, dto: CreateEventLikeDto) {
     try {
       const like = await this.prisma.like.create({ data: { ...dto, userId } });
-      return like;
+      return { message: 'Event liked', like };
     } catch (error) {
       throw error;
     }
@@ -22,7 +26,7 @@ export class LikeService {
       const like = await this.prisma.like.create({
         data: { crowdSourceId: dto.eventId, userId },
       });
-      return like;
+      return { message: 'Crowd sourced liked', like };
     } catch (error) {
       throw error;
     }
@@ -34,7 +38,19 @@ export class LikeService {
       const like = await this.prisma.like.create({
         data: { commentId: dto.commentId, userId },
       });
-      return like;
+      return { message: 'Comment liked', like };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // like the review
+  async likeReview(userId: string, dto: CreateReviewLikeDto) {
+    try {
+      const like = await this.prisma.like.create({
+        data: { reviewId: dto.reviewId, userId },
+      });
+      return { message: 'Review liked', like };
     } catch (error) {
       throw error;
     }
@@ -77,6 +93,22 @@ export class LikeService {
     try {
       const likes = await this.prisma.like.findMany({
         where: { commentId },
+      });
+
+      if (!likes || likes.length <= 0)
+        throw new NotFoundException('Likes not found');
+
+      return { message: 'Likes found', likes, count: likes?.length };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // view all likes based on reviews
+  async viewLikesByReview(reviewId: string) {
+    try {
+      const likes = await this.prisma.like.findMany({
+        where: { reviewId },
       });
 
       if (!likes || likes.length <= 0)

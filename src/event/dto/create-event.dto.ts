@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsDateString,
   IsNotEmpty,
   IsOptional,
@@ -74,11 +75,11 @@ export class CreateEventDto {
 
   @ApiPropertyOptional({
     description: 'Instruction',
-    example: 'Parent supervision is required',
+    example: ['Parent supervision is required'],
   })
-  @IsString({ message: 'Instruction must be a string' })
+  @IsArray({ message: 'Instruction must be a string of array' })
   @IsOptional()
-  instruction: string;
+  instructions: [string];
 
   @ApiProperty({
     description: 'Category',
