@@ -24,7 +24,7 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { CreateAdminDto, UpdateAdminDto } from './dto';
+import { CreateAdminDto, EditAdminDto, UpdateAdminDto } from './dto';
 import { GetUser } from '../auth/decorator';
 import { Role } from '../auth/enum';
 import { Roles } from '../auth/decorator/role-decorator';
@@ -146,6 +146,22 @@ export class AdminController {
   @Roles(Role.Admin)
   updateProfile(@GetUser('id') id: string, @Body() dto: UpdateAdminDto) {
     return this.adminService.updateProfile(id, dto);
+  }
+
+  @Patch('admins/:id/edit')
+  @Roles(Role.Admin)
+  @ApiOperation({
+    summary: 'Edit an admin',
+    description:
+      "Admin with admin role can update another admin's details and permissions",
+  })
+  @ApiOkResponse({ description: 'Admin successfully updated' })
+  async editAdminWeb(
+    @GetUser() admin: User,
+    @Param('id') id: string,
+    @Body() payload: EditAdminDto,
+  ): Promise<{ message: string }> {
+    return this.adminService.editAdmin(id, payload);
   }
 
   @ApiOperation({

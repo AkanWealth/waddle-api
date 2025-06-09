@@ -6,7 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { CreateAdminDto, UpdateAdminDto } from './dto';
+import { CreateAdminDto, EditAdminDto, UpdateAdminDto } from './dto';
 import { UpdatePasswordDto } from '../user/dto';
 import { Mailer } from '../helper';
 
@@ -50,28 +50,87 @@ export class AdminService {
     }
   }
 
-  async deactivateAdmin(id: string) {
+  async editAdmin(id: string, payload: EditAdminDto) {
+    const { firstName, lastName, emailAddress, role, permissions } = payload;
+
     try {
-      if (!id) {
-        throw new BadRequestException('Id is required');
-      }
-      const admin = await this.prisma.admin.findUnique({
-        where: { id },
-      });
+      if (!id) throw new BadRequestException('Admin ID is required');
 
-      if (!admin) {
-        throw new NotFoundException('Admin not found');
-      }
-
-      await this.prisma.admin.update({
+      // Update basic info
+      const updatedAdmin = await this.prisma.admin.update({
         where: { id },
         data: {
-          isActivated: false,
+          first_name: firstName,
+          last_name: lastName,
+          email: emailAddress,
+          role,
         },
       });
 
-      return { message: 'Admin successfully deactivated' };
+      // Upsert permissions
+      const permissionPromises = Object.entries(permissions).map(
+        async ([module, actions]) => {
+          return this.prisma.adminPermission.upsert({
+            where: {
+              adminId_module: {
+                adminId: id,
+                module,
+              },
+            },
+            update: {
+              canCreate: actions.create,
+              canView: actions.view,
+              canManage: actions.manage,
+              canDelete: actions.delete,
+            },
+            create: {
+              adminId: id,
+              module,
+              canCreate: actions.create,
+              canView: actions.view,
+              canManage: actions.manage,
+              canDelete: actions.delete,
+            },
+          });
+        },
+      );
+
+      await Promise.all(permissionPromises);
+
+      return {
+        message: `Admin (${updatedAdmin.first_name} ${updatedAdmin.last_name}) successfully updated`,
+      };
     } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Admin not found');
+      }
+
+      console.error('Error editing admin:', error);
+      throw error;
+    }
+  }
+
+  async deactivateAdmin(id: string) {
+    try {
+      if (!id) {
+        throw new BadRequestException('Admin ID is required');
+      }
+
+      const updatedAdmin = await this.prisma.admin.update({
+        where: { id },
+        data: { activationStatus: 'INACTIVE' },
+      });
+
+      console.log('Deactivated admin:', updatedAdmin);
+
+      return {
+        message: `Admin (${updatedAdmin.first_name} ${updatedAdmin.last_name}) successfully deactivated`,
+      };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Admin not found');
+      }
+
       throw error;
     }
   }
@@ -79,25 +138,23 @@ export class AdminService {
   async reactivateAdmin(id: string) {
     try {
       if (!id) {
-        throw new BadRequestException('Id is required');
+        throw new BadRequestException('Admin ID is required');
       }
-      const admin = await this.prisma.admin.findUnique({
+
+      const updatedAdmin = await this.prisma.admin.update({
         where: { id },
+        data: { activationStatus: 'ACTIVE' },
       });
 
-      if (!admin) {
+      return {
+        message: `Admin (${updatedAdmin.first_name} ${updatedAdmin.last_name}) successfully reactivated`,
+      };
+    } catch (error) {
+      if (error.code === 'P2025') {
         throw new NotFoundException('Admin not found');
       }
 
-      await this.prisma.admin.update({
-        where: { id },
-        data: {
-          isActivated: true,
-        },
-      });
-
-      return { message: 'Admin successfully deactivated' };
-    } catch (error) {
+      console.error('Error reactivating admin:', error);
       throw error;
     }
   }
