@@ -34,7 +34,7 @@ END$$;
 
 
 -- CreateTable
-CREATE TABLE "admin" (
+CREATE TABLE IF NOT EXISTS "admin" (
     "id" TEXT NOT NULL,
     "first_name" TEXT NOT NULL,
     "last_name" TEXT NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE "admin" (
 );
 
 -- CreateTable
-CREATE TABLE "organiser" (
+CREATE TABLE IF NOT EXISTS "organiser" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE "organiser" (
 );
 
 -- CreateTable
-CREATE TABLE "user" (
+CREATE TABLE IF NOT EXISTS "user" (
     "id" TEXT NOT NULL,
     "profile_picture" TEXT,
     "name" TEXT NOT NULL,
@@ -117,7 +117,7 @@ CREATE TABLE "user" (
 );
 
 -- CreateTable
-CREATE TABLE "event" (
+CREATE TABLE IF NOT EXISTS "event" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -142,7 +142,7 @@ CREATE TABLE "event" (
 );
 
 -- CreateTable
-CREATE TABLE "crowdsource" (
+CREATE TABLE IF NOT EXISTS "crowdsource" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "images" TEXT[],
@@ -166,7 +166,7 @@ CREATE TABLE "crowdsource" (
 );
 
 -- CreateTable
-CREATE TABLE "booking" (
+CREATE TABLE IF NOT EXISTS "booking" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "eventId" TEXT NOT NULL,
@@ -181,7 +181,7 @@ CREATE TABLE "booking" (
 );
 
 -- CreateTable
-CREATE TABLE "consent" (
+CREATE TABLE IF NOT EXISTS "consent" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "age" INTEGER NOT NULL,
@@ -195,7 +195,7 @@ CREATE TABLE "consent" (
 );
 
 -- CreateTable
-CREATE TABLE "favorite" (
+CREATE TABLE IF NOT EXISTS "favorite" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "eventId" TEXT NOT NULL,
@@ -206,7 +206,7 @@ CREATE TABLE "favorite" (
 );
 
 -- CreateTable
-CREATE TABLE "like" (
+CREATE TABLE IF NOT EXISTS "like" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "eventId" TEXT,
@@ -220,7 +220,7 @@ CREATE TABLE "like" (
 );
 
 -- CreateTable
-CREATE TABLE "recommendation" (
+CREATE TABLE IF NOT EXISTS "recommendation" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "eventId" TEXT NOT NULL,
@@ -232,7 +232,7 @@ CREATE TABLE "recommendation" (
 );
 
 -- CreateTable
-CREATE TABLE "comment" (
+CREATE TABLE IF NOT EXISTS "comment" (
     "id" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -245,7 +245,7 @@ CREATE TABLE "comment" (
 );
 
 -- CreateTable
-CREATE TABLE "review" (
+CREATE TABLE IF NOT EXISTS "review" (
     "id" TEXT NOT NULL,
     "rating" INTEGER NOT NULL,
     "comment" TEXT,
@@ -259,7 +259,7 @@ CREATE TABLE "review" (
 );
 
 -- CreateTable
-CREATE TABLE "blacklisted_token" (
+CREATE TABLE IF NOT EXISTS "blacklisted_token" (
     "id" TEXT NOT NULL,
     "access_token" TEXT NOT NULL,
     "refresh_token" TEXT NOT NULL,
