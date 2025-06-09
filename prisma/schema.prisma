@@ -8,28 +8,45 @@ datasource db {
 }
 
 model Admin {
-  id                            String   @id @default(cuid())
+  id                            String           @id @default(cuid())
   first_name                    String
   last_name                     String
-  email                         String   @unique
+  email                         String           @unique
   password                      String
-  email_verify                  Boolean  @default(false)
+  email_verify                  Boolean          @default(false)
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime @default(now())
-  updatedAt                     DateTime @updatedAt
+  createdAt                     DateTime         @default(now())
+  updatedAt                     DateTime         @updatedAt
   fcmToken                      String?
-  role                          Role     @default(ADMIN)
-  fcmIsOn                       Boolean  @default(false)
-  isActivated                   Boolean  @default(false)
-  isDeleted                     Boolean  @default(false)
+  role                          Role             @default(ADMIN)
+  fcmIsOn                       Boolean          @default(false)
+  activationStatus              ActivationStatus @default(PENDING)
+  isDeleted                     Boolean          @default(false)
   events                        Event[]
+  permissions                   AdminPermission[]
 
   @@index([email])
   @@map("admin")
 }
+
+model AdminPermission {
+  id         String   @id @default(cuid())
+  adminId    String
+  module     String   // e.g. 'analytics', 'userManagement', etc.
+  canCreate  Boolean  @default(false)
+  canView    Boolean  @default(false)
+  canManage  Boolean  @default(false)
+  canDelete  Boolean  @default(false)
+
+  admin      Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@unique([adminId, module])
+}
+
+
 
 model Organiser {
   id                            String   @id @default(cuid())
@@ -297,4 +314,10 @@ enum BookingStatus {
 enum Tag {
   Event
   Place
+}
+
+enum ActivationStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
 }
