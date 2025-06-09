@@ -269,110 +269,343 @@ CREATE TABLE IF NOT EXISTS "blacklisted_token" (
     CONSTRAINT "blacklisted_token_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "admin_email_key" ON "admin"("email");
+-- Indexes
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'admin_email_key' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE UNIQUE INDEX "admin_email_key" ON "admin"("email");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE INDEX "admin_email_idx" ON "admin"("email");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'admin_email_idx' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE INDEX "admin_email_idx" ON "admin"("email");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "organiser_email_key" ON "organiser"("email");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'organiser_email_key' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE UNIQUE INDEX "organiser_email_key" ON "organiser"("email");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "organiser_business_name_key" ON "organiser"("business_name");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'organiser_business_name_key' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE UNIQUE INDEX "organiser_business_name_key" ON "organiser"("business_name");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE INDEX "organiser_email_idx" ON "organiser"("email");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'organiser_email_idx' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE INDEX "organiser_email_idx" ON "organiser"("email");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'user_email_key' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE INDEX "user_email_idx" ON "user"("email");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'user_email_idx' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE INDEX "user_email_idx" ON "user"("email");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE INDEX "event_category_isPublished_age_range_idx" ON "event"("category", "isPublished", "age_range");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'event_category_isPublished_age_range_idx' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE INDEX "event_category_isPublished_age_range_idx" ON "event"("category", "isPublished", "age_range");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE INDEX "crowdsource_address_isVerified_idx" ON "crowdsource"("address", "isVerified");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'crowdsource_address_isVerified_idx' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE INDEX "crowdsource_address_isVerified_idx" ON "crowdsource"("address", "isVerified");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE INDEX "booking_userId_eventId_sessionId_status_idx" ON "booking"("userId", "eventId", "sessionId", "status");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'booking_userId_eventId_sessionId_status_idx' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE INDEX "booking_userId_eventId_sessionId_status_idx" ON "booking"("userId", "eventId", "sessionId", "status");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "favorite_eventId_key" ON "favorite"("eventId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'favorite_eventId_key' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE UNIQUE INDEX "favorite_eventId_key" ON "favorite"("eventId");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "like_userId_eventId_key" ON "like"("userId", "eventId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'like_userId_eventId_key' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE UNIQUE INDEX "like_userId_eventId_key" ON "like"("userId", "eventId");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "like_userId_crowdSourceId_key" ON "like"("userId", "crowdSourceId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'like_userId_crowdSourceId_key' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE UNIQUE INDEX "like_userId_crowdSourceId_key" ON "like"("userId", "crowdSourceId");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "like_userId_commentId_key" ON "like"("userId", "commentId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'like_userId_commentId_key' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE UNIQUE INDEX "like_userId_commentId_key" ON "like"("userId", "commentId");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "like_userId_reviewId_key" ON "like"("userId", "reviewId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'like_userId_reviewId_key' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE UNIQUE INDEX "like_userId_reviewId_key" ON "like"("userId", "reviewId");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE INDEX "comment_crowdSourceId_idx" ON "comment"("crowdSourceId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'comment_crowdSourceId_idx' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE INDEX "comment_crowdSourceId_idx" ON "comment"("crowdSourceId");
+  END IF;
+END$$;
 
--- CreateIndex
-CREATE INDEX "review_rating_idx" ON "review"("rating");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'review_rating_idx' AND c.relkind = 'i' AND n.nspname = 'public'
+  ) THEN
+    CREATE INDEX "review_rating_idx" ON "review"("rating");
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "event" ADD CONSTRAINT "event_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "admin"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- Foreign Keys
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'event_adminId_fkey') THEN
+    ALTER TABLE "event" ADD CONSTRAINT "event_adminId_fkey"
+      FOREIGN KEY ("adminId") REFERENCES "admin"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "event" ADD CONSTRAINT "event_organiserId_fkey" FOREIGN KEY ("organiserId") REFERENCES "organiser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'event_organiserId_fkey') THEN
+    ALTER TABLE "event" ADD CONSTRAINT "event_organiserId_fkey"
+      FOREIGN KEY ("organiserId") REFERENCES "organiser"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "crowdsource" ADD CONSTRAINT "crowdsource_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'crowdsource_creatorId_fkey') THEN
+    ALTER TABLE "crowdsource" ADD CONSTRAINT "crowdsource_creatorId_fkey"
+      FOREIGN KEY ("creatorId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "booking" ADD CONSTRAINT "booking_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'booking_eventId_fkey') THEN
+    ALTER TABLE "booking" ADD CONSTRAINT "booking_eventId_fkey"
+      FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "booking" ADD CONSTRAINT "booking_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'booking_userId_fkey') THEN
+    ALTER TABLE "booking" ADD CONSTRAINT "booking_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "consent" ADD CONSTRAINT "consent_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'consent_bookingId_fkey') THEN
+    ALTER TABLE "consent" ADD CONSTRAINT "consent_bookingId_fkey"
+      FOREIGN KEY ("bookingId") REFERENCES "booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "favorite" ADD CONSTRAINT "favorite_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'favorite_eventId_fkey') THEN
+    ALTER TABLE "favorite" ADD CONSTRAINT "favorite_eventId_fkey"
+      FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "favorite" ADD CONSTRAINT "favorite_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'favorite_userId_fkey') THEN
+    ALTER TABLE "favorite" ADD CONSTRAINT "favorite_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "like" ADD CONSTRAINT "like_commentId_fkey" FOREIGN KEY ("commentId") REFERENCES "comment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'like_commentId_fkey') THEN
+    ALTER TABLE "like" ADD CONSTRAINT "like_commentId_fkey"
+      FOREIGN KEY ("commentId") REFERENCES "comment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "like" ADD CONSTRAINT "like_reviewId_fkey" FOREIGN KEY ("reviewId") REFERENCES "review"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'like_reviewId_fkey') THEN
+    ALTER TABLE "like" ADD CONSTRAINT "like_reviewId_fkey"
+      FOREIGN KEY ("reviewId") REFERENCES "review"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "like" ADD CONSTRAINT "like_crowdSourceId_fkey" FOREIGN KEY ("crowdSourceId") REFERENCES "crowdsource"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'like_crowdSourceId_fkey') THEN
+    ALTER TABLE "like" ADD CONSTRAINT "like_crowdSourceId_fkey"
+      FOREIGN KEY ("crowdSourceId") REFERENCES "crowdsource"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "like" ADD CONSTRAINT "like_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'like_eventId_fkey') THEN
+    ALTER TABLE "like" ADD CONSTRAINT "like_eventId_fkey"
+      FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "like" ADD CONSTRAINT "like_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'like_userId_fkey') THEN
+    ALTER TABLE "like" ADD CONSTRAINT "like_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "recommendation" ADD CONSTRAINT "recommendation_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'recommendation_eventId_fkey') THEN
+    ALTER TABLE "recommendation" ADD CONSTRAINT "recommendation_eventId_fkey"
+      FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "recommendation" ADD CONSTRAINT "recommendation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'recommendation_userId_fkey') THEN
+    ALTER TABLE "recommendation" ADD CONSTRAINT "recommendation_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "comment" ADD CONSTRAINT "comment_crowdSourceId_fkey" FOREIGN KEY ("crowdSourceId") REFERENCES "crowdsource"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'comment_crowdSourceId_fkey') THEN
+    ALTER TABLE "comment" ADD CONSTRAINT "comment_crowdSourceId_fkey"
+      FOREIGN KEY ("crowdSourceId") REFERENCES "crowdsource"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "comment" ADD CONSTRAINT "comment_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "comment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'comment_parentId_fkey') THEN
+    ALTER TABLE "comment" ADD CONSTRAINT "comment_parentId_fkey"
+      FOREIGN KEY ("parentId") REFERENCES "comment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "comment" ADD CONSTRAINT "comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'comment_userId_fkey') THEN
+    ALTER TABLE "comment" ADD CONSTRAINT "comment_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END$$;
 
--- AddForeignKey
-ALTER TABLE "review" ADD CONSTRAINT "review_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'review_eventId_fkey') THEN
+    ALTER TABLE "review" ADD CONSTRAINT "review_eventId_fkey"
+      FOREIGN KEY ("eventId") REFERENCES "event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END$$;
