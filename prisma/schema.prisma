@@ -8,45 +8,42 @@ datasource db {
 }
 
 model Admin {
-  id                            String           @id @default(cuid())
+  id                            String            @id @default(cuid())
   first_name                    String
   last_name                     String
-  email                         String           @unique
+  email                         String            @unique
   password                      String
-  email_verify                  Boolean          @default(false)
+  email_verify                  Boolean           @default(false)
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime         @default(now())
-  updatedAt                     DateTime         @updatedAt
+  createdAt                     DateTime          @default(now())
+  updatedAt                     DateTime          @updatedAt
   fcmToken                      String?
-  role                          Role             @default(ADMIN)
-  fcmIsOn                       Boolean          @default(false)
-  activationStatus              ActivationStatus @default(PENDING)
-  isDeleted                     Boolean          @default(false)
-  events                        Event[]
+  role                          Role              @default(ADMIN)
+  fcmIsOn                       Boolean           @default(false)
+  isDeleted                     Boolean           @default(false)
+  activationStatus              ActivationStatus  @default(PENDING)
   permissions                   AdminPermission[]
+  events                        Event[]
 
   @@index([email])
   @@map("admin")
 }
 
 model AdminPermission {
-  id         String   @id @default(cuid())
-  adminId    String
-  module     String   // e.g. 'analytics', 'userManagement', etc.
-  canCreate  Boolean  @default(false)
-  canView    Boolean  @default(false)
-  canManage  Boolean  @default(false)
-  canDelete  Boolean  @default(false)
-
-  admin      Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  adminId   String
+  module    String
+  canCreate Boolean @default(false)
+  canView   Boolean @default(false)
+  canManage Boolean @default(false)
+  canDelete Boolean @default(false)
+  admin     Admin   @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@unique([adminId, module])
 }
-
-
 
 model Organiser {
   id                            String   @id @default(cuid())
@@ -106,10 +103,10 @@ model User {
   fcmIsOn                       Boolean          @default(false)
   bookings                      Booking[]
   comment                       Comment[]
+  crowdSource                   CrowdSource[]
   favorites                     Favorite[]
   like                          Like[]
   recommendation                Recommendation[]
-  crowdSource                   CrowdSource[]
 
   @@index([email])
   @@map("user")
@@ -127,7 +124,6 @@ model Event {
   date            DateTime
   time            String
   age_range       String
-  instructions    String[]
   category        String
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)
@@ -135,6 +131,7 @@ model Event {
   updatedAt       DateTime         @updatedAt
   adminId         String?
   organiserId     String?
+  instructions    String[]
   bookings        Booking[]
   admin           Admin?           @relation(fields: [adminId], references: [id])
   organiser       Organiser?       @relation(fields: [organiserId], references: [id])
@@ -154,7 +151,6 @@ model CrowdSource {
   description String
   address     String
   creatorId   String
-  creator     User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   isVerified  Boolean   @default(false)
   isDeleted   Boolean   @default(false)
   createdAt   DateTime  @default(now())
@@ -168,6 +164,7 @@ model CrowdSource {
   category    String
   facilities  String[]
   comment     Comment[]
+  creator     User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   like        Like[]
 
   @@index([address, isVerified])
@@ -184,6 +181,7 @@ model Booking {
   isDeleted       Boolean?      @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  payment_intent  String?
   event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   consent         Consent[]
@@ -228,9 +226,9 @@ model Like {
   commentId     String?
   reviewId      String?
   comment       Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  review        Review?      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
   crowdSource   CrowdSource? @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
   event         Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  review        Review?      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
@@ -280,8 +278,8 @@ model Review {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   name      String
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   like      Like[]
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([rating])
   @@map("review")
