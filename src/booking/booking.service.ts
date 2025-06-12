@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
 import { NotificationService } from '../notification/notification.service';
 import { Mailer } from '../helper';
-import { BookingConsentDto } from './dto';
+import { BookingConsentDto, CreateRefundDto } from './dto';
 
 @Injectable()
 export class BookingService {
@@ -58,7 +58,10 @@ export class BookingService {
 
       await this.prisma.booking.update({
         where: { id: booking.id },
-        data: { sessionId: session.id },
+        data: {
+          sessionId: session.id,
+          payment_intent: session.payment_intent.toString(),
+        },
       });
 
       return { checkout_url: session.url, bookingId: booking.id };
@@ -304,38 +307,56 @@ export class BookingService {
   }
 
   // delete a booking by id
-  async deleteBooking(id: string) {
+  async cancelBooking(dto: CreateRefundDto) {
     try {
       const booking = await this.prisma.booking.findUnique({
-        where: { id },
+        where: { id: dto.id },
         include: { event: true, user: true },
       });
 
       if (!booking)
         throw new NotFoundException('Booking with the provided ID not found');
 
-      await this.prisma.event.update({
-        where: { id: booking.event.id },
-        data: {
-          total_ticket: booking.event.total_ticket - booking.ticket_quantity,
-        },
+      const refund = await this.stripe.refunds.create({
+        payment_intent: dto.payment_intent,
       });
 
-      await this.prisma.booking.delete({ where: { id: booking.id } });
+      if (!refund) throw new Error('Unable to create a refund');
+
+      await this.prisma.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: 'Cancelled',
+        },
+      });
 
       const subject = 'Booking Confirmation';
       const message = `<p>Hello,</p>
 
-          <p>Thank you for booking the event <b>${booking.event.name}</b>, your booking id is <b>${booking.id}</b> to verify your email account.</p>
+      <p>Thank you for booking the event <b>${booking.event.name}</b>, your booking id is <b>${booking.id}</b> to verify your email account.</p>
 
-          <p>Warm regards,</p>
+      <p>Warm regards,</p>
 
-          <p>Waddle Team</p>
-          `;
+      <p>Waddle Team</p>
+      `;
 
       await this.mailer.sendMail(booking.user.email, subject, message);
     } catch (error) {
       throw error;
     }
+  }
+
+  async payoutBooking(connectedAccountId: string) {
+    const payout = await this.stripe.payouts.create(
+      {
+        amount: 1100,
+        currency: 'usd',
+        statement_descriptor: 'Event Payout',
+      },
+      {
+        stripeAccount: connectedAccountId,
+      },
+    );
+    if (!payout) throw new Error('Unable to payout!');
   }
 }
