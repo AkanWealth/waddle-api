@@ -205,7 +205,14 @@ export class BookingService {
   async viewAllBookings() {
     try {
       const bookings = await this.prisma.booking.findMany({
-        include: { event: true, user: true },
+        include: {
+          event: {
+            include: {
+              organiser: true,
+            },
+          },
+          user: true,
+        },
       });
 
       if (!bookings || bookings.length <= 0)
