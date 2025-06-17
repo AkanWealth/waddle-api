@@ -135,4 +135,48 @@ export class TicketService {
       throw error;
     }
   }
+
+  async fetchAllTickets() {
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${Buffer.from(this.freshdeskApiKey + ':X').toString('base64')}`,
+    };
+
+    let tickets = [];
+    let page = 1;
+    const perPage = 100; // max allowed by Freshdesk
+    let hasMore = true;
+
+    console.log('Testing');
+    try {
+      while (hasMore) {
+        const response = await fetch(
+          `${this.freshdeskApiUrl}/tickets?page=${page}&per_page=${perPage}`,
+          {
+            headers,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch tickets, status: ${response.status}`,
+          );
+        }
+        console.log(response);
+
+        const data = await response.json();
+        tickets = tickets.concat(data);
+
+        if (data.length < perPage) {
+          hasMore = false; // no more pages
+        } else {
+          page++;
+        }
+      }
+
+      return { message: 'All tickets fetched', data: tickets };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
