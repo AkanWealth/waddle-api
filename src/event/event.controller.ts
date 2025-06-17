@@ -138,6 +138,17 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary: 'view all published paginated events as admin',
+    description:
+      'Parents, Admin and Organisers are able to view all published paginated events as admin',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('/admin')
+  findAllAdmin() {
+    return this.eventService.viewAllEventAdmin();
+  }
+
+  @ApiOperation({
     summary: 'view created events by organiser',
     description: 'View all events created by the logged in organiser',
   })

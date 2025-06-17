@@ -191,6 +191,53 @@ export class EventService {
     }
   }
 
+  async viewAllEventAdmin() {
+    try {
+      // Calculate skip based on page and pageSize for pagination
+
+      const events = await this.prisma.event.findMany({
+        where: { isPublished: true },
+
+        include: {
+          admin: true,
+          organiser: true,
+          reviews: true,
+          bookings: true,
+          favorites: true,
+          like: true,
+          recommendations: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      // Get the total count of published events for pagination metadata
+
+      if (!events || events.length === 0) {
+        return {
+          message: 'No events found for the given page.',
+          events: [],
+        };
+      }
+
+      const eventsWithImages = events.map((event) => {
+        const imageUrl = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.images}`;
+        return {
+          ...event,
+          images: imageUrl,
+        };
+      });
+
+      return {
+        message: 'Events found',
+        events: eventsWithImages,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // async viewAllEvent() {
   //   try {
   //     const events = await this.prisma.event.findMany({
