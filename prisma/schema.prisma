@@ -23,8 +23,8 @@ model Admin {
   fcmToken                      String?
   role                          Role              @default(ADMIN)
   fcmIsOn                       Boolean           @default(false)
-  isDeleted                     Boolean           @default(false)
   activationStatus              ActivationStatus  @default(PENDING)
+  isDeleted                     Boolean           @default(false)
   permissions                   AdminPermission[]
   events                        Event[]
 
@@ -124,6 +124,7 @@ model Event {
   date            DateTime
   time            String
   age_range       String
+  instruction     String?
   category        String
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)
@@ -131,7 +132,6 @@ model Event {
   updatedAt       DateTime         @updatedAt
   adminId         String?
   organiserId     String?
-  instructions    String[]
   bookings        Booking[]
   admin           Admin?           @relation(fields: [adminId], references: [id])
   organiser       Organiser?       @relation(fields: [organiserId], references: [id])
@@ -181,11 +181,10 @@ model Booking {
   isDeleted       Boolean?      @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  payment_intent  String?
   event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   consent         Consent[]
-
+  payment_intent  String?  
   @@index([userId, eventId, sessionId, status])
   @@map("booking")
 }
