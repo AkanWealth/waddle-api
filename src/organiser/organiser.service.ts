@@ -325,6 +325,7 @@ export class OrganiserService {
         where: { id },
         data: { isApproved },
       });
+      console.log('This is the stuff!!!!!!', updated);
 
       return {
         message: `Organiser ${isApproved ? 'approved' : 'rejected'}`,

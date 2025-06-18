@@ -465,7 +465,8 @@ export class AuthService {
       // Reset login attempts on successful attempt
       await this.prisma.organiser.update({
         where: { id: organiser.id },
-        data: { failedLoginAttempts: 0 },
+
+        data: { lastLoginAt: new Date(), failedLoginAttempts: 0 },
       });
 
       // Proceed with your normal login logic (e.g., generating JWT)
