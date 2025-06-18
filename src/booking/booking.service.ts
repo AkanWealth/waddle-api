@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, RawBodyRequest } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  RawBodyRequest,
+} from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,6 +43,7 @@ export class BookingService {
       });
 
       const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
         line_items: [
           {
             price_data: {
@@ -60,7 +66,6 @@ export class BookingService {
         where: { id: booking.id },
         data: {
           sessionId: session.id,
-          payment_intent: session.payment_intent.toString(),
         },
       });
 
@@ -97,6 +102,13 @@ export class BookingService {
 
       // condition for payment status
       if (checkoutSession.payment_status === 'paid') {
+        const paymentIntent = await this.stripe.paymentIntents.retrieve(
+          checkoutSession.payment_intent as string,
+          {
+            expand: ['charges.data.balance_transaction'],
+          },
+        );
+
         const booking = await this.prisma.booking.findFirst({
           where: { sessionId: checkoutSession.id },
           include: { event: true, user: true },
@@ -106,7 +118,7 @@ export class BookingService {
 
         if (booking.status !== 'Confirmed') {
           await this.prisma.booking.update({
-            where: { id: booking.id },
+            where: { id: booking.id, payment_intent: paymentIntent.id },
             data: { status: 'Confirmed' },
           });
 
@@ -353,17 +365,28 @@ export class BookingService {
     }
   }
 
-  async payoutBooking(connectedAccountId: string) {
-    const payout = await this.stripe.payouts.create(
-      {
-        amount: 1100,
+  async payoutBooking(
+    payoutAccountId: string,
+    amount: number,
+    description: string,
+  ) {
+    try {
+      if (amount <= 0)
+        throw new BadRequestException('Amount must be greater than zero');
+
+      const payout = await this.stripe.payouts.create({
+        amount,
         currency: 'usd',
         statement_descriptor: 'Event Payout',
-      },
-      {
-        stripeAccount: connectedAccountId,
-      },
-    );
-    if (!payout) throw new Error('Unable to payout!');
+        destination: payoutAccountId,
+        description,
+        method: 'standard',
+      });
+      if (!payout) throw new Error('Unable to payout!');
+
+      return { message: 'Payout initiated', payout };
+    } catch (error) {
+      throw error;
+    }
   }
 }
