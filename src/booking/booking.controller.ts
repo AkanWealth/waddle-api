@@ -153,4 +153,40 @@ export class BookingController {
   async getVendorStats() {
     return this.bookingService.getRevenuePerVendor();
   }
+
+  @ApiOperation({
+    summary: 'Get booking report for vendors',
+    description:
+      'This endpoint generates a booking report for vendors, including details like total bookings, revenue, and other relevant statistics.',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Get('vendors/report')
+  async getReport() {
+    return this.bookingService.getBookingReport();
+  }
+
+  @Get(':organiserId/booking-report')
+  async getReport(
+    @Param('organiserId') organiserId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    const now = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(now.getFullYear() - 1);
+
+    const fromDate = from ? parseISO(from) : oneYearAgo;
+    const toDate = to ? parseISO(to) : now;
+
+    return this.bookingService.getOrganiserReport(
+      organiserId,
+      fromDate.toISOString(),
+      toDate.toISOString(),
+    );
+  }
 }
+function Query(arg0: string): (target: BookingController, propertyKey: "getReport", parameterIndex: 1) => void {
+  throw new Error('Function not implemented.');
+}
+
