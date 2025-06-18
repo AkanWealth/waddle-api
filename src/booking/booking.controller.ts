@@ -141,4 +141,16 @@ export class BookingController {
   cancelBooking(@Body() dto: CreateRefundDto) {
     return this.bookingService.cancelBooking(dto);
   }
+
+  @ApiOperation({
+    summary: 'Get list of all vendors with their revenue',
+    description:
+      'This endpoint returns a list of all vendors along with their total revenue from bookings.',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Get('vendors/revenue')
+  async getVendorStats() {
+    return this.bookingService.getRevenuePerVendor();
+  }
 }
