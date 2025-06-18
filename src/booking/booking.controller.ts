@@ -28,7 +28,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Role } from '../auth/enum';
-import { BookingConsentDto, CreateRefundDto } from './dto';
+import { BookingConsentDto, CreateRefundDto, PayoutBookingDto } from './dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -140,5 +140,20 @@ export class BookingController {
   @Post('cancel')
   cancelBooking(@Body() dto: CreateRefundDto) {
     return this.bookingService.cancelBooking(dto);
+  }
+
+  @ApiOperation({
+    summary: 'payout an organiser for booking',
+    description: 'Admin can payout an organiser for booked event',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('payout')
+  payoutBooking(@Body() dto: PayoutBookingDto) {
+    return this.bookingService.payoutBooking(
+      dto.paymentAccountId,
+      dto.amount,
+      dto.description,
+    );
   }
 }
