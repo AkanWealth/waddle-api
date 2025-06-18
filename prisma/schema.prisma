@@ -52,6 +52,7 @@ model Organiser {
   password                      String
   phone_number                  String
   business_logo                 String?
+  paymentAccountId              String?
   address                       String
   business_name                 String   @unique
   business_category             String
@@ -184,7 +185,8 @@ model Booking {
   event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   consent         Consent[]
-  payment_intent  String?  
+  payment_intent  String?
+
   @@index([userId, eventId, sessionId, status])
   @@map("booking")
 }
