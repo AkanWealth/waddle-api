@@ -389,4 +389,51 @@ export class BookingService {
       throw error;
     }
   }
+
+  async getRevenuePerVendor() {
+    const organisers = await this.prisma.organiser.findMany({
+      where: {
+        isDeleted: false,
+      },
+      include: {
+        events: {
+          where: {
+            isDeleted: false,
+          },
+          include: {
+            bookings: {
+              where: {
+                isDeleted: false,
+                status: 'Confirmed',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return organisers.map((organiser) => {
+      const totalEvents = organiser.events.length;
+
+      let totalBookings = 0;
+      let revenue = 0;
+
+      organiser.events.forEach((event) => {
+        const eventRevenue = event.bookings.reduce((sum, booking) => {
+          return sum + booking.ticket_quantity * Number(event.price);
+        }, 0);
+
+        revenue += eventRevenue;
+        totalBookings += event.bookings.length;
+      });
+
+      return {
+        name: organiser.business_name,
+        representative: organiser.name,
+        totalEvents,
+        totalBookings,
+        revenue,
+      };
+    });
+  }
 }
