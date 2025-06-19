@@ -160,7 +160,7 @@ export class BookingController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
-  @Post('payout')
+  @Post('organiser/payout')
   payoutBooking(@Body() dto: PayoutBookingDto) {
     return this.bookingService.payoutBooking(
       dto.paymentAccountId,
