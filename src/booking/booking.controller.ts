@@ -8,6 +8,8 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -167,7 +169,7 @@ export class BookingController {
   }
 
   @Get(':organiserId/booking-report')
-  async getReport(
+  async getOrganiserReport(
     @Param('organiserId') organiserId: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
@@ -176,8 +178,14 @@ export class BookingController {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(now.getFullYear() - 1);
 
-    const fromDate = from ? parseISO(from) : oneYearAgo;
-    const toDate = to ? parseISO(to) : now;
+    const fromDate = from ? new Date(from) : oneYearAgo;
+    const toDate = to ? new Date(to) : now;
+
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      throw new BadRequestException(
+        'Invalid date format. Use a valid ISO date string.',
+      );
+    }
 
     return this.bookingService.getOrganiserReport(
       organiserId,
@@ -186,7 +194,3 @@ export class BookingController {
     );
   }
 }
-function Query(arg0: string): (target: BookingController, propertyKey: "getReport", parameterIndex: 1) => void {
-  throw new Error('Function not implemented.');
-}
-
