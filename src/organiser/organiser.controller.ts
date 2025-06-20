@@ -95,6 +95,21 @@ export class OrganiserController {
   }
 
   @ApiOperation({
+    summary: 'view all organiser previous events as an admin',
+    description: 'Admin can view all organisers previous events',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('organiser/:organiserId/previous-events')
+  @Roles(Role.Admin)
+  viewAllOrganiserPreviousEvents(
+    @GetUser() admin: User,
+    @Param('organiserId') organiserId: string,
+  ) {
+    if (admin)
+      return this.organiserService.viewAllOrganiserPreviousEvents(organiserId);
+  }
+
+  @ApiOperation({
     summary: 'view my details as a loggedin organiser',
     description: 'Organiser can view their details',
   })
