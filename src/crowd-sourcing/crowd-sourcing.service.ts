@@ -118,6 +118,57 @@ export class CrowdSourcingService {
     }
   }
 
+  async findAllSourcedEventAdmin() {
+    try {
+      const events = await this.prisma.crowdSource.findMany({
+        where: {
+          isDeleted: false,
+          isVerified: true,
+          isPublished: true,
+          tag: 'Event',
+        },
+
+        include: { like: true, creator: true },
+      });
+
+      const totalEvents = await this.prisma.crowdSource.count({
+        where: {
+          isDeleted: false,
+          isVerified: true,
+          isPublished: true,
+          tag: 'Event',
+        },
+      });
+      if (!events || events.length === 0) {
+        return {
+          message: 'No events found for the given page.',
+          events: [],
+          totalEvents: totalEvents,
+        };
+      }
+
+      const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+      const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+      const url = `${baseUrl}/${folder}`;
+
+      const eventsWithImage = events.map((event) => {
+        const imageUrls = event.images.map((image) => `${url}/${image}`);
+        return {
+          ...event,
+          images: imageUrls,
+        };
+      });
+
+      return {
+        message: 'Events found',
+        events: eventsWithImage,
+        totalEvents: totalEvents,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAllSourcedPlace(page: number, pageSize: number) {
     const calSkip = (page - 1) * pageSize;
     const places = await this.prisma.crowdSource.findMany({
@@ -257,6 +308,24 @@ export class CrowdSourcingService {
 
     return {
       message: 'Verified',
+      event: updatedEvent,
+    };
+  }
+
+  async unverifyCrowdSourcedEvent(id: string) {
+    const event = await this.prisma.crowdSource.findUnique({
+      where: { id },
+    });
+    if (!event) {
+      throw new NotFoundException('Not found');
+    }
+    const updatedEvent = await this.prisma.crowdSource.update({
+      where: { id },
+      data: { isVerified: false },
+    });
+
+    return {
+      message: 'Unverified',
       event: updatedEvent,
     };
   }
