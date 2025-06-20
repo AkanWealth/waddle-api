@@ -10,7 +10,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { LikeService } from './like.service';
-import { CreateLikeDto } from './dto';
+import {
+  CreateEventLikeDto,
+  CreateCommentLikeDto,
+  CreateReviewLikeDto,
+} from './dto';
 import { User } from '@prisma/client';
 import { JwtGuard } from '../auth/guard/auth.guard';
 import { GetUser } from '../auth/decorator/get-user.decorator';
@@ -39,7 +43,7 @@ export class LikeController {
   })
   @ApiCreatedResponse({ description: 'Created' })
   @Post('event')
-  likeEvent(@GetUser() user: User, @Body() dto: CreateLikeDto) {
+  likeEvent(@GetUser() user: User, @Body() dto: CreateEventLikeDto) {
     return this.likeService.likeEvent(user.id, dto);
   }
 
@@ -49,8 +53,31 @@ export class LikeController {
   })
   @ApiCreatedResponse({ description: 'Created' })
   @Post('crowd-sourced')
-  likeCrowdSourcedEvent(@GetUser() user: User, @Body() dto: CreateLikeDto) {
+  likeCrowdSourcedEvent(
+    @GetUser() user: User,
+    @Body() dto: CreateEventLikeDto,
+  ) {
     return this.likeService.likeCrowdSourcedEvent(user.id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'like a comment',
+    description: 'Parents can like a comment',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('comment')
+  likeComment(@GetUser() user: User, @Body() dto: CreateCommentLikeDto) {
+    return this.likeService.likeComment(user.id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'like a review',
+    description: 'Parents can like a review',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('review')
+  likeReview(@GetUser() user: User, @Body() dto: CreateReviewLikeDto) {
+    return this.likeService.likeReview(user.id, dto);
   }
 
   @ApiOperation({
@@ -73,6 +100,28 @@ export class LikeController {
   @Get('crowd-sourced/:id')
   viewLikesByCrowdSourceEvent(@Param('id') eventId: string) {
     return this.likeService.viewLikesByCrowdSourceEvent(eventId);
+  }
+
+  @ApiOperation({
+    summary: 'view all likes for comment',
+    description: 'Parents can view all likes for comment',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('comment/:id')
+  viewLikesByComment(@Param('id') commentId: string) {
+    return this.likeService.viewLikesByComment(commentId);
+  }
+
+  @ApiOperation({
+    summary: 'view all likes for review',
+    description: 'Parents can view all likes for review',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('review/:id')
+  viewLikesByReview(@Param('id') reviewId: string) {
+    return this.likeService.viewLikesByReview(reviewId);
   }
 
   @ApiOperation({

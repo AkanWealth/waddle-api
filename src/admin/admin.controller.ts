@@ -24,7 +24,7 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { CreateAdminDto, UpdateAdminDto } from './dto';
+import { CreateAdminDto, EditAdminDto, UpdateAdminDto } from './dto';
 import { GetUser } from '../auth/decorator';
 import { Role } from '../auth/enum';
 import { Roles } from '../auth/decorator/role-decorator';
@@ -148,6 +148,22 @@ export class AdminController {
     return this.adminService.updateProfile(id, dto);
   }
 
+  @Patch('admins/:id/edit')
+  @Roles(Role.Admin)
+  @ApiOperation({
+    summary: 'Edit an admin',
+    description:
+      "Admin with admin role can update another admin's details and permissions",
+  })
+  @ApiOkResponse({ description: 'Admin successfully updated' })
+  async editAdminWeb(
+    @GetUser() admin: User,
+    @Param('id') id: string,
+    @Body() payload: EditAdminDto,
+  ): Promise<{ message: string }> {
+    return this.adminService.editAdmin(id, payload);
+  }
+
   @ApiOperation({
     summary: 'update my password as a loggedin admin',
     description: 'Admin can update their password',
@@ -238,5 +254,27 @@ export class AdminController {
     const parsedEnd = endDate ? new Date(endDate) : defaultEndDate;
 
     return await this.adminService.getUserActivity(parsedStart, parsedEnd);
+  }
+
+  @ApiOperation({
+    summary: 'Get event activity statistics',
+    description:
+      'Retrieves event statistics including total events, active events, cancelled events, total attendees, top performing events, and booking rate data',
+  })
+  @ApiOkResponse({ description: 'Event activity data retrieved successfully' })
+  @Get('analytics/event')
+  @Roles(Role.Admin)
+  async getEventActivity(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const now = new Date();
+    const defaultEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1); // start of next month
+    const defaultStartDate = new Date(now.getFullYear(), now.getMonth() - 2, 1); // start of month, 2 months ago
+
+    const parsedStart = startDate ? new Date(startDate) : defaultStartDate;
+    const parsedEnd = endDate ? new Date(endDate) : defaultEndDate;
+
+    return await this.adminService.getEventActivity(parsedStart, parsedEnd);
   }
 }
