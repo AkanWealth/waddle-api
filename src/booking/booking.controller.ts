@@ -8,6 +8,8 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -28,7 +30,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Role } from '../auth/enum';
-import { BookingConsentDto, CreateRefundDto } from './dto';
+import { BookingConsentDto, CreateRefundDto, PayoutBookingDto } from './dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -140,5 +142,76 @@ export class BookingController {
   @Post('cancel')
   cancelBooking(@Body() dto: CreateRefundDto) {
     return this.bookingService.cancelBooking(dto);
+  }
+
+  @ApiOperation({
+    summary: 'Get list of all vendors with their revenue',
+    description:
+      'This endpoint returns a list of all vendors along with their total revenue from bookings.',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Get('vendors/revenue')
+  async getVendorStats() {
+    return this.bookingService.getRevenuePerVendor();
+  }
+
+  @ApiOperation({
+    summary: 'payout an organiser for booking',
+    description: 'Admin can payout an organiser for booked event',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('organiser/payout')
+  payoutBooking(@Body() dto: PayoutBookingDto) {
+    return this.bookingService.payoutBooking(
+      dto.paymentAccountId,
+      dto.amount,
+      dto.description,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Get booking report for vendors',
+    description:
+      'This endpoint generates a booking report for vendors, including details like total bookings, revenue, and other relevant statistics.',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Get('vendors/report')
+  async getReport() {
+    return this.bookingService.getBookingReport();
+  }
+
+  @ApiOperation({
+    summary: 'Get booking report for a specific organiser',
+    description:
+      'This endpoint generates a booking report for a specific organiser, including details like total bookings, revenue, and other relevant statistics.',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get(':organiserId/booking-report')
+  async getOrganiserReport(
+    @Param('organiserId') organiserId: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    const now = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(now.getFullYear() - 1);
+
+    const fromDate = from ? new Date(from) : oneYearAgo;
+    const toDate = to ? new Date(to) : now;
+
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      throw new BadRequestException(
+        'Invalid date format. Use a valid ISO date string.',
+      );
+    }
+
+    return this.bookingService.getOrganiserReport(
+      organiserId,
+      fromDate.toISOString(),
+      toDate.toISOString(),
+    );
   }
 }
