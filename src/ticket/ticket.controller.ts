@@ -61,6 +61,17 @@ export class TicketController {
     return this.ticketService.viewConversation(id);
   }
 
+  @ApiOperation({
+    summary: 'fetch all tickets',
+    description: 'Admins can fetch all tickets in the system',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('all-tickets')
+  fetchAllTickets() {
+    console.log('Testing');
+    return this.ticketService.fetchAllTickets();
+  }
+
   // @Patch(':id')
   // updateTicket(@Param('id') id: number, @Body() dto: UpdateTicketDto) {
   //   return this.ticketService.updateTicket(id, dto);
