@@ -5,7 +5,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -23,14 +22,13 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
-  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Role } from '../auth/enum';
-import { BookingConsentDto } from './dto';
+import { BookingConsentDto, CreateRefundDto } from './dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -134,15 +132,13 @@ export class BookingController {
   }
 
   @ApiOperation({
-    summary: 'delete a booking by id',
-    description: 'Admin can delete a booked event by id',
+    summary: 'cancel a booking',
+    description: 'Admin can cancel a booked event',
   })
-  @ApiNoContentResponse({ description: 'No content' })
-  @ApiParam({ name: 'id' })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete(':id')
-  @Roles(Role.Admin)
-  deleteBooking(@Param('id') id: string) {
-    return this.bookingService.deleteBooking(id);
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('cancel')
+  cancelBooking(@Body() dto: CreateRefundDto) {
+    return this.bookingService.cancelBooking(dto);
   }
 }
