@@ -109,6 +109,43 @@ export class OrganiserService {
     }
   }
 
+  async viewAllOrganiserPreviousEvents(organiserId: string) {
+    try {
+      const organiser = await this.prisma.organiser.findUnique({
+        where: { id: organiserId },
+        include: {
+          events: {
+            where: { isDeleted: false },
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      });
+
+      if (!organiser) {
+        throw new NotFoundException(
+          'Organiser with the provided ID does not exist.',
+        );
+      }
+
+      const eventsWithLogo = organiser.events.map((event) => {
+        const event_logo = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow(
+          'S3_EVENT_FOLDER',
+        )}/${event.images}`;
+        return { ...event, event_logo };
+      });
+
+      return {
+        message: 'Organiser previous events found',
+        events: eventsWithLogo,
+      };
+    } catch (err: unknown) {
+      console.log(err);
+      throw new NotFoundException(
+        'Organiser with the provided ID does not exist.',
+      );
+    }
+  }
+
   async viewMe(authOrganiser: string) {
     try {
       const organiser = await this.prisma.organiser.findUnique({
@@ -288,6 +325,7 @@ export class OrganiserService {
         where: { id },
         data: { isApproved },
       });
+      console.log('This is the stuff!!!!!!', updated);
 
       return {
         message: `Organiser ${isApproved ? 'approved' : 'rejected'}`,
