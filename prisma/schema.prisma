@@ -43,6 +43,7 @@ model AdminPermission {
   admin     Admin   @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@unique([adminId, module])
+  @@map("adminpermission")
 }
 
 model Organiser {
