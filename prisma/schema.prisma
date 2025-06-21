@@ -135,7 +135,6 @@ model Event {
   updatedAt       DateTime         @updatedAt
   adminId         String?
   organiserId     String?
-  instructions    String[]
   bookings        Booking[]
   admin           Admin?           @relation(fields: [adminId], references: [id])
   organiser       Organiser?       @relation(fields: [organiserId], references: [id])
