@@ -247,8 +247,9 @@ export class AdminController {
     @Query('endDate') endDate?: string,
   ) {
     const now = new Date();
+    const defaultStartDate = new Date(now.getFullYear(), now.getMonth() - 3, 1); // start of month, 3 months ago
+
     const defaultEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1); // start of next month
-    const defaultStartDate = new Date(now.getFullYear(), now.getMonth() - 2, 1); // start of month, 2 months ago
 
     const parsedStart = startDate ? new Date(startDate) : defaultStartDate;
     const parsedEnd = endDate ? new Date(endDate) : defaultEndDate;

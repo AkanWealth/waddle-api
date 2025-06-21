@@ -23,8 +23,8 @@ model Admin {
   fcmToken                      String?
   role                          Role              @default(ADMIN)
   fcmIsOn                       Boolean           @default(false)
-  isDeleted                     Boolean           @default(false)
   activationStatus              ActivationStatus  @default(PENDING)
+  isDeleted                     Boolean           @default(false)
   permissions                   AdminPermission[]
   events                        Event[]
 
@@ -47,33 +47,35 @@ model AdminPermission {
 }
 
 model Organiser {
-  id                            String   @id @default(cuid())
+  id                            String    @id @default(cuid())
   name                          String
-  email                         String   @unique
+  email                         String    @unique
   password                      String
   phone_number                  String
   business_logo                 String?
+  paymentAccountId              String?
   address                       String
-  business_name                 String   @unique
+  business_name                 String    @unique
   business_category             String
   registration_number           String
-  email_verify                  Boolean  @default(true)
-  isLocked                      Boolean  @default(false)
-  isDeleted                     Boolean  @default(false)
-  isVerified                    Boolean  @default(true)
-  failedLoginAttempts           Int      @default(0)
+  email_verify                  Boolean   @default(true)
+  isLocked                      Boolean   @default(false)
+  isDeleted                     Boolean   @default(false)
+  isVerified                    Boolean   @default(true)
+  failedLoginAttempts           Int       @default(0)
   website_url                   String?
   facebook_url                  String?
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime @default(now())
-  updatedAt                     DateTime @updatedAt
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
   fcmToken                      String?
-  role                          Role     @default(ORGANISER)
-  fcmIsOn                       Boolean  @default(false)
-  isApproved                    Boolean  @default(false)
+  role                          Role      @default(ORGANISER)
+  fcmIsOn                       Boolean   @default(false)
+  isApproved                    Boolean   @default(false)
+  lastLoginAt                   DateTime? @db.Timestamp(6)
   events                        Event[]
 
   @@index([email])
@@ -125,6 +127,7 @@ model Event {
   date            DateTime
   time            String
   age_range       String
+  instruction     String?
   category        String
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)
@@ -132,7 +135,6 @@ model Event {
   updatedAt       DateTime         @updatedAt
   adminId         String?
   organiserId     String?
-  instructions    String[]
   bookings        Booking[]
   admin           Admin?           @relation(fields: [adminId], references: [id])
   organiser       Organiser?       @relation(fields: [organiserId], references: [id])

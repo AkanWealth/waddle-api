@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, RawBodyRequest } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  RawBodyRequest,
+} from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,6 +43,7 @@ export class BookingService {
       });
 
       const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
         line_items: [
           {
             price_data: {
@@ -60,7 +66,6 @@ export class BookingService {
         where: { id: booking.id },
         data: {
           sessionId: session.id,
-          payment_intent: session.payment_intent.toString(),
         },
       });
 
@@ -97,6 +102,13 @@ export class BookingService {
 
       // condition for payment status
       if (checkoutSession.payment_status === 'paid') {
+        const paymentIntent = await this.stripe.paymentIntents.retrieve(
+          checkoutSession.payment_intent as string,
+          {
+            expand: ['charges.data.balance_transaction'],
+          },
+        );
+
         const booking = await this.prisma.booking.findFirst({
           where: { sessionId: checkoutSession.id },
           include: { event: true, user: true },
@@ -106,7 +118,7 @@ export class BookingService {
 
         if (booking.status !== 'Confirmed') {
           await this.prisma.booking.update({
-            where: { id: booking.id },
+            where: { id: booking.id, payment_intent: paymentIntent.id },
             data: { status: 'Confirmed' },
           });
 
@@ -205,7 +217,14 @@ export class BookingService {
   async viewAllBookings() {
     try {
       const bookings = await this.prisma.booking.findMany({
-        include: { event: true, user: true },
+        include: {
+          event: {
+            include: {
+              organiser: true,
+            },
+          },
+          user: true,
+        },
       });
 
       if (!bookings || bookings.length <= 0)
@@ -346,17 +365,206 @@ export class BookingService {
     }
   }
 
-  async payoutBooking(connectedAccountId: string) {
-    const payout = await this.stripe.payouts.create(
-      {
-        amount: 1100,
+  async payoutBooking(
+    payoutAccountId: string,
+    amount: number,
+    description: string,
+  ) {
+    try {
+      if (amount <= 0)
+        throw new BadRequestException('Amount must be greater than zero');
+
+      const payout = await this.stripe.payouts.create({
+        amount,
         currency: 'usd',
         statement_descriptor: 'Event Payout',
+        destination: payoutAccountId,
+        description,
+        method: 'standard',
+      });
+      if (!payout) throw new Error('Unable to payout!');
+
+      return { message: 'Payout initiated', payout };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getRevenuePerVendor() {
+    const organisers = await this.prisma.organiser.findMany({
+      where: {
+        isDeleted: false,
       },
-      {
-        stripeAccount: connectedAccountId,
+      include: {
+        events: {
+          where: {
+            isDeleted: false,
+          },
+          include: {
+            bookings: {
+              where: {
+                isDeleted: false,
+                status: 'Confirmed',
+              },
+            },
+          },
+        },
       },
-    );
-    if (!payout) throw new Error('Unable to payout!');
+    });
+
+    return organisers.map((organiser) => {
+      const totalEvents = organiser.events.length;
+
+      let totalBookings = 0;
+      let revenue = 0;
+
+      organiser.events.forEach((event) => {
+        const eventRevenue = event.bookings.reduce((sum, booking) => {
+          return sum + booking.ticket_quantity * Number(event.price);
+        }, 0);
+
+        revenue += eventRevenue;
+        totalBookings += event.bookings.length;
+      });
+
+      return {
+        name: organiser.business_name,
+        representative: organiser.name,
+        totalEvents,
+        totalBookings,
+        revenue,
+      };
+    });
+  }
+
+  async getBookingReport() {
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        isDeleted: false,
+        event: {
+          isDeleted: false,
+        },
+      },
+      include: {
+        event: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const transformed = bookings.map((booking, index) => ({
+      id: index + 1,
+      name: booking.event?.name ?? 'Unknown',
+      date: booking.event?.date.toISOString().split('T')[0],
+      status: this.mapStatus(booking.status),
+      revenue:
+        Number(booking.ticket_quantity) * Number(booking.event?.price ?? 0),
+    }));
+
+    return transformed;
+  }
+
+  private mapStatus(status: string): string {
+    if (status === 'Confirmed') return 'Completed';
+    if (status === 'Cancelled') return 'Cancelled';
+    return 'Pending';
+  }
+
+  async getOrganiserReport(organiserId: string, from: string, to: string) {
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        isDeleted: false,
+        createdAt: {
+          gte: fromDate,
+          lte: toDate,
+        },
+        event: {
+          organiserId,
+          isDeleted: false,
+        },
+      },
+      include: {
+        event: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const bookingRows = bookings.map((b, i) => ({
+      id: i + 1,
+      name: b.event?.name ?? 'Unknown',
+      date: b.event?.date.toISOString().split('T')[0],
+      status: b.status,
+      revenue: Number(b.ticket_quantity) * Number(b.event?.price ?? 0),
+    }));
+
+    const totalBookings = bookingRows.length;
+    const totalCancelled = bookingRows.filter(
+      (b) => b.status === 'Cancelled',
+    ).length;
+    const totalRevenue = bookingRows.reduce((sum, b) => sum + b.revenue, 0);
+
+    const chart = this.generateChartData(bookingRows, fromDate, toDate);
+
+    const organiser = await this.prisma.organiser.findUnique({
+      where: { id: organiserId },
+    });
+
+    return {
+      summary: {
+        name: organiser?.business_name ?? '',
+        email: organiser?.email,
+        phone: organiser?.phone_number,
+        address: organiser?.address,
+        website: organiser?.website_url,
+      },
+      stats: {
+        totalBookings,
+        totalCancelled,
+        totalRevenue,
+      },
+      chart,
+      bookings: bookingRows,
+    };
+  }
+
+  private generateChartData(
+    bookings: { date: string; revenue: number }[],
+    from: Date,
+    to: Date,
+  ): { month: string; revenue: number }[] {
+    const diffDays = (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24);
+
+    const groupBy: 'day' | 'week' | 'month' =
+      diffDays <= 30 ? 'day' : diffDays <= 90 ? 'week' : 'month';
+
+    const buckets: Record<string, number> = {};
+
+    for (const booking of bookings) {
+      const date = new Date(booking.date);
+      let label: string;
+
+      if (groupBy === 'day') {
+        label = date.toISOString().split('T')[0]; // e.g. "2024-01-05"
+      } else if (groupBy === 'week') {
+        const weekStart = new Date(date);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        label = `Week of ${weekStart.toISOString().split('T')[0]}`;
+      } else {
+        label = date.toLocaleString('default', {
+          month: 'short',
+          year: 'numeric',
+        }); // e.g. "Jun 2025"
+      }
+
+      buckets[label] = (buckets[label] || 0) + booking.revenue;
+    }
+
+    return Object.entries(buckets)
+      .map(([month, revenue]) => ({ month, revenue }))
+      .sort((a, b) => a.month.localeCompare(b.month));
   }
 }
