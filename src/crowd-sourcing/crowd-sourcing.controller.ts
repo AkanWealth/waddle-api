@@ -85,6 +85,21 @@ export class CrowdSourcingController {
   }
 
   @ApiOperation({
+    summary: 'unverify a crowd sourcing event',
+    description: 'unverify a new crowd sourcing event by admin',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Post('unverify/:id')
+  @Roles(Role.Admin)
+  async unverifyCrowdSourcedEvent(
+    @GetUser() user: User,
+    @Param('id') id: string,
+  ) {
+    if (user) return this.crowdSourcingService.unverifyCrowdSourcedEvent(id);
+  }
+
+  @ApiOperation({
     summary: 'view all verified crowdsourced event',
     description: 'View all verified crowdsourced event',
   })
@@ -99,6 +114,17 @@ export class CrowdSourcingController {
       parseInt(page),
       parseInt(pageSize),
     );
+  }
+
+  @ApiOperation({
+    summary: 'view all verified crowdsourced event admin',
+    description: 'View all verified crowdsourced event admin',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('events/admin')
+  findAllSourcedEventAdmin() {
+    return this.crowdSourcingService.findAllSourcedEventAdmin();
   }
 
   @ApiOperation({
