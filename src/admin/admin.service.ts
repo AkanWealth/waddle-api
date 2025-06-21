@@ -84,7 +84,7 @@ export class AdminService {
               canDelete: actions.delete,
             },
             create: {
-              adminId: id,
+              admin: { connect: { id } },
               module,
               canCreate: actions.create,
               canView: actions.view,
