@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationService } from '../notification/notification.service';
 import { Mailer } from '../helper';
 import { BookingConsentDto, CreateRefundDto } from './dto';
+import { NotificationHelper } from 'src/notification/notification.helper';
 
 @Injectable()
 export class BookingService {
@@ -22,6 +23,7 @@ export class BookingService {
     private config: ConfigService,
     private notification: NotificationService,
     private mailer: Mailer,
+    private notificationHelper: NotificationHelper,
   ) {
     const stripeSecretKey = this.config.getOrThrow('STRIPE_SECRET_KEY');
 
@@ -123,14 +125,9 @@ export class BookingService {
           });
 
           if (booking.user.fcmIsOn) {
-            const userToken = await this.notification.getUserToken(
+            await this.notificationHelper.sendBookingConfirmation(
               booking.userId,
-            );
-
-            await this.notification.sendNotification(
-              userToken?.token || '-v[SYpXdZ4gYVFDU',
-              'Booking Confirmed!',
-              'Your event booking has been successfully confirmed.',
+              booking.event.name,
             );
           }
 
@@ -335,6 +332,12 @@ export class BookingService {
 
       if (!booking)
         throw new NotFoundException('Booking with the provided ID not found');
+      if (booking.user.fcmIsOn) {
+        await this.notificationHelper.sendBookingCancel(
+          booking.userId,
+          booking.event.name,
+        );
+      }
 
       const refund = await this.stripe.refunds.create({
         payment_intent: dto.payment_intent,
