@@ -4,9 +4,10 @@ import { BookingModule } from '../booking/booking.module';
 import { BookingService } from '../booking/booking.service';
 import { NotificationService } from '../notification/notification.service';
 import { Mailer } from '../helper';
+import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
-  imports: [BookingModule],
+  imports: [BookingModule, NotificationModule],
   controllers: [WebhookController],
   providers: [BookingService, NotificationService, Mailer],
 })
