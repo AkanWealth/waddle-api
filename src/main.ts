@@ -13,6 +13,8 @@ async function bootstrap() {
         'http://localhost:3000',
         'http://localhost:5173',
         'http://localhost:3030',
+        'https://waddle-admin.vercel.app',
+        'https://waddle-admn-k3a9.vercel.app',
       ],
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       preflightContinue: false,
