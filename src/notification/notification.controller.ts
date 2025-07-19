@@ -8,6 +8,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  Delete,
 } from '@nestjs/common';
 import {
   ApiInternalServerErrorResponse,
@@ -94,5 +95,28 @@ export class NotificationController {
   @Get('unread-count/:userId')
   async getUnreadCount(@Param('userId') userId: string) {
     return this.notificationService.getUnreadCount(userId);
+  }
+
+  @ApiOperation({
+    summary: 'Delete a notification',
+    description: 'Delete a specific notification for a user',
+  })
+  @ApiOkResponse({ description: 'Notification deleted successfully' })
+  @Delete(':id/user/:userId')
+  async deleteNotification(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.notificationService.deleteNotification(id, userId);
+  }
+
+  @ApiOperation({
+    summary: 'Delete all notifications for a user',
+    description: 'Delete all notifications for a user',
+  })
+  @ApiOkResponse({ description: 'All notifications deleted successfully' })
+  @Delete('user/:userId')
+  async deleteAllNotifications(@Param('userId') userId: string) {
+    return this.notificationService.deleteAllNotifications(userId);
   }
 }

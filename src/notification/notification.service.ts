@@ -259,4 +259,36 @@ export class NotificationService {
       throw error;
     }
   }
+
+  // Delete a single notification by ID and userId (for security)
+  async deleteNotification(notificationId: string, userId: string) {
+    try {
+      const notification = await this.prisma.notification.deleteMany({
+        where: {
+          id: notificationId,
+          recipientId: userId,
+        },
+      });
+      if (notification.count === 0) {
+        throw new NotFoundException(
+          'Notification not found or not owned by user',
+        );
+      }
+      return { message: 'Notification deleted successfully' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Delete all notifications for a user
+  async deleteAllNotifications(userId: string) {
+    try {
+      await this.prisma.notification.deleteMany({
+        where: { recipientId: userId },
+      });
+      return { message: 'All notifications deleted successfully' };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
