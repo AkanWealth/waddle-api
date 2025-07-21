@@ -130,6 +130,12 @@ model Event {
   age_range       String
   instruction     String?
   category        String
+  //ADDED STUFF
+  distance        Int
+  facilities      String[]
+  tags            String[]
+  eventType       EventType 
+
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)
   createdAt       DateTime         @default(now())
@@ -336,4 +342,9 @@ enum ActivationStatus {
   PENDING
   ACTIVE
   INACTIVE
+}
+
+enum EventType{
+  INDOOR
+  OUTDOOR
 }
