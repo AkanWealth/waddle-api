@@ -8,6 +8,8 @@ export class FavoriteService {
   constructor(private prisma: PrismaService) {}
 
   // create new favorite event
+  //To sort out later on
+
   async createFavorite(userId: string, dto: CreateFavoriteDto) {
     try {
       const favorite = await this.prisma.favorite.create({
