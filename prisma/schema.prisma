@@ -130,11 +130,11 @@ model Event {
   age_range       String
   instruction     String?
   category        String
-  //ADDED STUFF
-  distance        Int
+  //ADDED STUFF 
+  distance        Int?
   facilities      String[]
   tags            String[]
-  eventType       EventType 
+  eventType       EventType?
 
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)
