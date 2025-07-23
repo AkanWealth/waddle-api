@@ -15,7 +15,7 @@ export class CreateNotificationDto {
     description: 'Body',
     example: 'Your booking for Kids Party has been confirmed!',
     required: true,
-  })
+  }) 
   @IsString()
   @IsNotEmpty()
   body: string;
