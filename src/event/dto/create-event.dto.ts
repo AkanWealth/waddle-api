@@ -2,16 +2,20 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsDateString,
+  IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
 } from 'class-validator';
 
+export enum EventType {
+  INDOOR = 'INDOOR',
+  OUTDOOR = 'OUTDOOR',
+}
+
 export class CreateEventDto {
-  @ApiProperty({
-    description: 'Event name',
-    example: 'Art Workshop',
-  })
+  @ApiProperty({ description: 'Event name', example: 'Art Workshop' })
   @IsNotEmpty({ message: 'Name can not be blank' })
   @IsString({ message: 'Name must be a string' })
   name: string;
@@ -90,11 +94,37 @@ export class CreateEventDto {
   @IsNotEmpty({ message: 'Category can not be blank' })
   category: string;
 
+  @ApiPropertyOptional({ description: 'Published status', example: true })
+  @IsOptional()
+  isPublished?: boolean;
+
+  @ApiPropertyOptional({ description: 'Distance', example: 10 })
+  @IsOptional()
+  @IsNumber({}, { message: 'Distance must be a number' })
+  distance?: number;
+
   @ApiPropertyOptional({
-    description: 'Published status',
-    example: true,
+    description: 'Facilities',
+    example: ['WiFi', 'Parking'],
   })
   @IsString({ message: 'Published value must be a string' })
   @IsOptional()
-  isPublished: string;
+  @IsArray({ message: 'Facilities must be an array of strings' })
+  @IsString({ each: true, message: 'Each facility must be a string' })
+  facilities?: string[];
+
+  @ApiPropertyOptional({ description: 'Tags', example: ['Art', 'Kids'] })
+  @IsOptional()
+  @IsArray({ message: 'Tags must be an array of strings' })
+  @IsString({ each: true, message: 'Each tag must be a string' })
+  tags?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Event type',
+    enum: EventType,
+    example: EventType.INDOOR,
+  })
+  @IsOptional()
+  @IsEnum(EventType, { message: 'Event type must be INDOOR or OUTDOOR' })
+  eventType?: EventType;
 }
