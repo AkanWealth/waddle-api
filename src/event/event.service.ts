@@ -47,6 +47,9 @@ export class EventService {
           images: fileName || null,
           isPublished,
           organiserId: creatorId,
+          distance: dto.distance ? Number(dto.distance) : undefined,
+          facilities: dto.facilities ?? [],
+          tags: dto.tags ?? [],
         },
       });
 
@@ -75,13 +78,12 @@ export class EventService {
           ...dto,
           date,
           total_ticket: Number(dto.total_ticket),
-          distance: dto.distance,
-          facilities: dto.facilities ?? [],
-          tags: dto.tags ?? [],
-          eventType: dto.eventType,
           images: fileName || null,
           isPublished,
           adminId: creatorId,
+          distance: dto.distance ? Number(dto.distance) : undefined,
+          facilities: dto.facilities ?? [],
+          tags: dto.tags ?? [],
         },
       });
 
@@ -355,7 +357,14 @@ export class EventService {
     }
   }
 
-  async searchEvent(name: string, age: string, price: string) {
+  async searchEvent(
+    name: string,
+    age: string,
+    price: string,
+    tags?: string[] | string,
+    facilities?: string[] | string,
+    distance?: string,
+  ) {
     try {
       const whereClause: any = {};
 
@@ -374,13 +383,39 @@ export class EventService {
         whereClause.isPublished = true;
       }
 
+      if (tags) {
+        if (Array.isArray(tags)) {
+          whereClause.tags = { hasSome: tags };
+        } else {
+          whereClause.tags = { has: tags };
+        }
+        whereClause.isPublished = true;
+      }
+
+      if (facilities) {
+        if (Array.isArray(facilities)) {
+          whereClause.facilities = { hasSome: facilities };
+        } else {
+          whereClause.facilities = { has: facilities };
+        }
+        whereClause.isPublished = true;
+      }
+
+      if (distance) {
+        const distNum = Number(distance);
+        if (!isNaN(distNum)) {
+          whereClause.distance = distNum;
+          whereClause.isPublished = true;
+        }
+      }
+
       const event = await this.prisma.event.findMany({
         where: whereClause,
         include: { admin: true, organiser: true },
       });
       if (!event || event.length === 0)
         throw new NotFoundException(
-          'Event with the provided name does not exist.',
+          'Event with the provided criteria does not exist.',
         );
 
       const eventWithImage = event.map((list) => {
@@ -485,6 +520,9 @@ export class EventService {
           images: image || null,
           total_ticket: Number(dto.total_ticket) || undefined,
           isPublished,
+          distance: dto.distance ? Number(dto.distance) : undefined,
+          facilities: dto.facilities ?? [],
+          tags: dto.tags ?? [],
         },
       });
 
@@ -538,6 +576,9 @@ export class EventService {
           images: image || null,
           total_ticket: Number(dto.total_ticket) || undefined,
           isPublished,
+          distance: dto.distance ? Number(dto.distance) : undefined,
+          facilities: dto.facilities ?? [],
+          tags: dto.tags ?? [],
         },
       });
 

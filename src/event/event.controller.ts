@@ -179,13 +179,26 @@ export class EventController {
   @ApiQuery({ name: 'name', required: false, type: String })
   @ApiQuery({ name: 'age', required: false, type: String })
   @ApiQuery({ name: 'price', required: false, type: String })
+  @ApiQuery({ name: 'tags', required: false, type: [String] })
+  @ApiQuery({ name: 'facilities', required: false, type: [String] })
+  @ApiQuery({ name: 'distance', required: false, type: Number })
   @Get('search')
   searchEvent(
     @Query('name') name: string,
     @Query('age') age: string,
     @Query('price') price: string,
+    @Query('tags') tags?: string[] | string,
+    @Query('facilities') facilities?: string[] | string,
+    @Query('distance') distance?: string,
   ) {
-    return this.eventService.searchEvent(name, age, price);
+    return this.eventService.searchEvent(
+      name,
+      age,
+      price,
+      tags,
+      facilities,
+      distance,
+    );
   }
 
   @ApiOperation({
