@@ -37,7 +37,7 @@ export class EventService {
       if (file) await this.uploadEventImages(fileName, file);
 
       const date = new Date(dto.date);
-      const isPublished = this.stringToBoolean(dto.isPublished);
+      const isPublished = dto.isPublished ?? false;
 
       const event = await this.prisma.event.create({
         data: {
@@ -68,13 +68,17 @@ export class EventService {
       }
 
       const date = new Date(dto.date);
-      const isPublished = this.stringToBoolean(dto.isPublished);
+      const isPublished = dto.isPublished ?? false;
 
       const event = await this.prisma.event.create({
         data: {
           ...dto,
           date,
           total_ticket: Number(dto.total_ticket),
+          distance: dto.distance,
+          facilities: dto.facilities ?? [],
+          tags: dto.tags ?? [],
+          eventType: dto.eventType,
           images: fileName || null,
           isPublished,
           adminId: creatorId,
@@ -660,7 +664,10 @@ export class EventService {
     );
   }
 
-  private stringToBoolean(value: string): boolean {
+  private stringToBoolean(value: string | boolean): boolean {
+    if (typeof value === 'boolean') {
+      return value;
+    }
     if (value === 'true') {
       return true;
     } else if (value === 'false') {
