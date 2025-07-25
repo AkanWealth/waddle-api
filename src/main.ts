@@ -15,7 +15,7 @@ async function bootstrap() {
         'http://localhost:5173',
         'http://localhost:3030',
         'https://waddle-admin.vercel.app',
-        'https://waddle-admn-k3a9.vercel.app',
+        'https://waddle-admn.vercel.app',
         'https://waddleapp.io',
         'https://www.waddleapp.io',
       ],
