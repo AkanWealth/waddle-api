@@ -77,6 +77,7 @@ model Organiser {
   isApproved                    Boolean   @default(false)
   lastLoginAt                   DateTime? @db.Timestamp(6)
   events                        Event[]
+  disputes                      Dispute[]
 
   @@index([email])
   @@map("organiser")
@@ -111,6 +112,7 @@ model User {
   like                          Like[]
   recommendation                Recommendation[]
   notifications                 Notification[]
+  disputes                      Dispute[]        @relation("CustomerDisputes")
 
   @@index([email])
   @@map("user")
@@ -149,6 +151,7 @@ model Event {
   like            Like[]
   recommendations Recommendation[]
   reviews         Review[]
+  disputes        Dispute[]
 
   @@index([category, isPublished, age_range])
   @@map("event")
@@ -195,6 +198,7 @@ model Booking {
   event           Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   consent         Consent[]
+  disputes        Dispute[]
 
   @@index([userId, eventId, sessionId, status])
   @@map("booking")
@@ -319,6 +323,30 @@ model Notification {
   @@map("notification")
 }
 
+model Dispute {
+  id              String           @id @default(cuid())
+  category        DisputeCategory
+  reason          String
+  vendorId        String
+  customerId      String
+  eventId         String
+  bookingRef      String
+  refundRequest   String?   // Optional refund request
+  description     String
+  file            String?   // File path or URL
+  status          DisputeStatus @default(PENDING)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  vendor          Organiser @relation(fields: [vendorId], references: [id])
+  customer        User      @relation("CustomerDisputes", fields: [customerId], references: [id])
+  event           Event     @relation(fields: [eventId], references: [id])
+  booking         Booking   @relation(fields: [bookingRef], references: [id])
+
+  @@map("dispute")
+}
+
+
 enum Role {
   ADMIN
   ORGANISER
@@ -347,4 +375,18 @@ enum ActivationStatus {
 enum EventType{
   INDOOR
   OUTDOOR
+}
+
+enum DisputeCategory {
+  PAYMENT
+  SERVICE
+  REFUND
+  CANCELLATION
+  OTHER
+}
+
+enum DisputeStatus {
+  PENDING
+  IN_REVIEW
+  RESOLVED
 }
