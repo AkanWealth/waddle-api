@@ -470,7 +470,7 @@ export class DisputeController {
     description: 'Filter by dispute status',
     required: false,
     enum: DisputeStatus,
-    example: 'PENDING',
+    example: 'PENDING | IN_REVIEW | RESOLVED',
   })
   @ApiQuery({
     name: 'category',
