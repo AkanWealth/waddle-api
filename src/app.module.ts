@@ -19,6 +19,7 @@ import { LikeModule } from './like/like.module';
 import { TicketModule } from './ticket/ticket.module';
 import { AdminModule } from './admin/admin.module';
 import { CrowdSourcingModule } from './crowd-sourcing/crowd-sourcing.module';
+import { DisputeModule } from './dispute/dispute.module';
 import { Cleaner } from './helper';
 
 @Module({
@@ -48,6 +49,7 @@ import { Cleaner } from './helper';
     TicketModule,
     AdminModule,
     CrowdSourcingModule,
+    DisputeModule,
   ],
   providers: [AppService, Cleaner],
   controllers: [AppController],
