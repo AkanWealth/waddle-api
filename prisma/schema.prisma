@@ -365,7 +365,8 @@ model Payment {
   amountPaid     Decimal
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
-
+  refundId       String?        // Stripe refund ID, nullable
+  refundStatus   String?        // Stripe refund status, nullable
   booking        Booking        @relation(fields: [bookingId], references: [id])
   user           User           @relation(fields: [userId], references: [id])
   event          Event          @relation(fields: [eventId], references: [id])

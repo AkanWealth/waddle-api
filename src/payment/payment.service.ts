@@ -146,13 +146,26 @@ export class PaymentService {
       );
     }
     // Call Stripe to process the refund
-    const refund = await this.stripe.refunds.create({
-      payment_intent: paymentIntent,
-    });
-    // Optionally, store refundId in the payment record (add field if desired)
+    let refund;
+    try {
+      refund = await this.stripe.refunds.create({
+        payment_intent: paymentIntent,
+      });
+    } catch (error) {
+      throw new ForbiddenException('Stripe refund failed: ' + error.message);
+    }
+    // Optionally, check refund.status === 'succeeded'
+    if (refund.status !== 'succeeded') {
+      throw new ForbiddenException('Refund not successful: ' + refund.status);
+    }
+    // Update payment record with refundId and refundStatus
     return this.prisma.payment.update({
       where: { id },
-      data: { status: PaymentStatus.REFUNDED },
+      data: {
+        status: PaymentStatus.REFUNDED,
+        refundId: refund.id,
+        refundStatus: refund.status,
+      },
     });
   }
 }
