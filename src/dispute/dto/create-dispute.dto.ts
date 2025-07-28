@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
 import { DisputeCategory } from '@prisma/client';
 
 export class CreateDisputeDto {
@@ -8,25 +8,9 @@ export class CreateDisputeDto {
 
   @IsString()
   @IsNotEmpty()
-  reason: string;
-
-  @IsString()
-  @IsNotEmpty()
-  eventId: string;
-
-  @IsString()
-  @IsNotEmpty()
   bookingRef: string;
-
-  @IsString()
-  @IsOptional()
-  refundRequest?: string;
 
   @IsString()
   @IsNotEmpty()
   description: string;
-
-  @IsString()
-  @IsOptional()
-  file?: string;
 }

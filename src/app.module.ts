@@ -21,6 +21,7 @@ import { AdminModule } from './admin/admin.module';
 import { CrowdSourcingModule } from './crowd-sourcing/crowd-sourcing.module';
 import { DisputeModule } from './dispute/dispute.module';
 import { Cleaner } from './helper';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { Cleaner } from './helper';
     AdminModule,
     CrowdSourcingModule,
     DisputeModule,
+    PaymentModule,
   ],
   providers: [AppService, Cleaner],
   controllers: [AppController],

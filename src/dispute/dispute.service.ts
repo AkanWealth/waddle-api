@@ -45,11 +45,6 @@ export class DisputeService {
       );
     }
 
-    // Verify the event exists and matches the booking
-    if (booking.eventId !== createDisputeDto.eventId) {
-      throw new ForbiddenException('Event ID does not match the booking');
-    }
-
     // Generate custom dispute ID
     const disputeId = await this.generateDisputeId();
 
@@ -57,14 +52,14 @@ export class DisputeService {
       data: {
         id: disputeId,
         category: createDisputeDto.category,
-        reason: createDisputeDto.reason,
+        reason: '', // No reason in DTO, set to empty string
         vendorId: booking.event.organiserId,
         customerId: userId,
-        eventId: createDisputeDto.eventId,
+        eventId: booking.eventId,
         bookingRef: createDisputeDto.bookingRef,
-        refundRequest: createDisputeDto.refundRequest,
+        refundRequest: null, // No refundRequest in DTO
         description: createDisputeDto.description,
-        file: createDisputeDto.file,
+        file: (createDisputeDto as any).file || null,
         status: DisputeStatus.PENDING,
       },
       include: {
