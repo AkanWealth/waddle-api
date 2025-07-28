@@ -4,9 +4,10 @@ import { BookingController } from './booking.controller';
 import { NotificationService } from '../notification/notification.service';
 import { Mailer } from '../helper';
 import { NotificationModule } from 'src/notification/notification.module';
+import { PaymentModule } from '../payment/payment.module';
 
 @Module({
-  imports: [NotificationModule],
+  imports: [NotificationModule, PaymentModule],
   controllers: [BookingController],
   providers: [BookingService, NotificationService, Mailer],
 })
