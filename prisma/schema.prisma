@@ -113,6 +113,7 @@ model User {
   recommendation                Recommendation[]
   notifications                 Notification[]
   disputes                      Dispute[]        @relation("CustomerDisputes")
+  payments                      Payment[]
 
   @@index([email])
   @@map("user")
@@ -152,6 +153,7 @@ model Event {
   recommendations Recommendation[]
   reviews         Review[]
   disputes        Dispute[]
+  payments        Payment[]
 
   @@index([category, isPublished, age_range])
   @@map("event")
@@ -199,6 +201,7 @@ model Booking {
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   consent         Consent[]
   disputes        Dispute[]
+  payments        Payment[]
 
   @@index([userId, eventId, sessionId, status])
   @@map("booking")
@@ -346,6 +349,31 @@ model Dispute {
   @@map("dispute")
 }
 
+model Payment {
+  id             String         @id @default(cuid())
+  transactionId  String         @unique
+  bookingId      String
+  userId         String
+  eventId        String
+  username       String
+  eventName      String
+  amount         Decimal
+  status         PaymentStatus  @default(PENDING)
+  method         String
+  processingFee  Decimal
+  netAmount      Decimal
+  amountPaid     Decimal
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  refundId       String?        // Stripe refund ID, nullable
+  refundStatus   String?        // Stripe refund status, nullable
+  booking        Booking        @relation(fields: [bookingId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
+  event          Event          @relation(fields: [eventId], references: [id])
+
+  @@map("payment")
+}
+
 
 enum Role {
   ADMIN
@@ -380,13 +408,19 @@ enum EventType{
 enum DisputeCategory {
   PAYMENT
   SERVICE
-  REFUND
-  CANCELLATION
-  OTHER
+  TECHNICAL
 }
 
 enum DisputeStatus {
   PENDING
   IN_REVIEW
   RESOLVED
+}
+
+enum PaymentStatus {
+  PENDING
+  CANCELLED
+  SUCCESSFUL
+  FAILED
+  REFUNDED
 }

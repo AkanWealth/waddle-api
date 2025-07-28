@@ -13,6 +13,8 @@ import { NotificationService } from '../notification/notification.service';
 import { Mailer } from '../helper';
 import { BookingConsentDto, CreateRefundDto } from './dto';
 import { NotificationHelper } from 'src/notification/notification.helper';
+import { PaymentService } from '../payment/payment.service';
+import { PaymentStatus } from '@prisma/client';
 
 @Injectable()
 export class BookingService {
@@ -24,6 +26,7 @@ export class BookingService {
     private notification: NotificationService,
     private mailer: Mailer,
     private notificationHelper: NotificationHelper,
+    private paymentService: PaymentService, // Inject PaymentService
   ) {
     const stripeSecretKey = this.config.getOrThrow('STRIPE_SECRET_KEY');
 
@@ -42,6 +45,22 @@ export class BookingService {
       const booking = await this.prisma.booking.findUnique({
         where: { id: createBooking.id },
         include: { user: true, event: true },
+      });
+
+      // Create a payment record with status PENDING (transactionId = booking.id for now)
+      await this.paymentService.createPayment({
+        transactionId: booking.id,
+        bookingId: booking.id,
+        userId: booking.userId,
+        eventId: booking.eventId,
+        username: booking.user.name,
+        eventName: booking.event.name,
+        amount: Number(booking.event.price) * booking.ticket_quantity,
+        status: PaymentStatus.PENDING,
+        method: 'stripe',
+        processingFee: 0, // Set actual fee if available
+        netAmount: 0, // Set actual net if available
+        amountPaid: 0, // Set actual paid if available
       });
 
       const session = await this.stripe.checkout.sessions.create({
@@ -69,6 +88,11 @@ export class BookingService {
         data: {
           sessionId: session.id,
         },
+      });
+
+      // Update the payment record with the Stripe session ID as transactionId
+      await this.paymentService.updatePaymentByBookingId(booking.id, {
+        transactionId: session.id,
       });
 
       return { checkout_url: session.url, bookingId: booking.id };

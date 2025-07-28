@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   Query,
+  UploadedFile,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -115,7 +116,12 @@ export class DisputeController {
   async createDispute(
     @GetUser('id') userId: string,
     @Body() createDisputeDto: CreateDisputeDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
+    // Attach file name if file is present
+    if (file) {
+      (createDisputeDto as any).file = file.originalname;
+    }
     return this.disputeService.createDispute(userId, createDisputeDto);
   }
 
