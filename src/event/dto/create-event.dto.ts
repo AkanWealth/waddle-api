@@ -81,9 +81,9 @@ export class CreateEventDto {
     description: 'Instruction',
     example: ['Parent supervision is required'],
   })
-  @IsArray({ message: 'Instruction must be a string of array' })
   @IsOptional()
-  instructions: [string];
+  @IsArray({ message: 'Instruction must be a string of array' })
+  instructions?: [string];
 
   @ApiProperty({
     description: 'Category',
@@ -94,12 +94,12 @@ export class CreateEventDto {
   @IsNotEmpty({ message: 'Category can not be blank' })
   category: string;
 
-  @ApiPropertyOptional({ description: 'Published status', example: true })
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Published status', example: true })
   isPublished?: boolean;
 
-  @ApiPropertyOptional({ description: 'Distance', example: 10 })
   @IsOptional()
+  @ApiPropertyOptional({ description: 'Distance', example: 10 })
   @IsNumber({}, { message: 'Distance must be a number' })
   distance?: number;
 
