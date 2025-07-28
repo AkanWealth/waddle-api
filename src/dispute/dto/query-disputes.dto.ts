@@ -41,5 +41,5 @@ export class QueryDisputesDto {
 
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
-  includeResolved?: boolean = false;
+  includeResolved?: boolean = true;
 }
