@@ -63,11 +63,8 @@ export class DisputeController {
         summary: 'Payment Dispute',
         value: {
           category: 'PAYMENT',
-          reason: 'Double charged for tickets',
-          eventId: 'event-id-here',
           bookingRef: 'booking-id-here',
           description: 'I was charged twice for the same booking',
-          refundRequest: 'Please refund the duplicate charge',
         },
       },
       service: {
