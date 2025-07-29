@@ -224,6 +224,7 @@ export class DisputeService {
       startDate,
       endDate,
       includeResolved,
+      search,
     } = queryDto;
     const skip = (page - 1) * limit;
 
@@ -253,6 +254,74 @@ export class DisputeService {
       if (endDate) {
         where.createdAt.lte = new Date(endDate);
       }
+    }
+
+    // Add search filter
+    if (search && search.trim() !== '') {
+      const searchTerm = search.trim();
+      where.OR = [
+        // Search by dispute ID
+        {
+          id: {
+            contains: searchTerm,
+            mode: 'insensitive' as const,
+          },
+        },
+        // Search by event name
+        {
+          event: {
+            name: {
+              contains: searchTerm,
+              mode: 'insensitive' as const,
+            },
+          },
+        },
+        // Search by customer name
+        {
+          customer: {
+            OR: [
+              {
+                name: {
+                  contains: searchTerm,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                email: {
+                  contains: searchTerm,
+                  mode: 'insensitive' as const,
+                },
+              },
+            ],
+          },
+        },
+        // Search by vendor name
+        {
+          vendor: {
+            OR: [
+              {
+                name: {
+                  contains: searchTerm,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                business_name: {
+                  contains: searchTerm,
+                  mode: 'insensitive' as const,
+                },
+              },
+            ],
+          },
+        },
+        // Search by booking ID
+        {
+          bookingRef: {
+            contains: searchTerm,
+            mode: 'insensitive' as const,
+          },
+        },
+      ];
     }
 
     const [disputes, total] = await Promise.all([
