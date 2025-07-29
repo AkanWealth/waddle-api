@@ -5,6 +5,7 @@ import {
   IsInt,
   Min,
   Max,
+  IsString,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { DisputeStatus, DisputeCategory } from '@prisma/client';
@@ -42,4 +43,8 @@ export class QueryDisputesDto {
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
   includeResolved?: boolean = true;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

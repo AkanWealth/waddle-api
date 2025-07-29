@@ -500,6 +500,14 @@ export class DisputeController {
     type: Boolean,
     example: false,
   })
+  @ApiQuery({
+    name: 'search',
+    description:
+      'Search across dispute ID, event name, customer name, vendor name, and booking ID',
+    required: false,
+    type: String,
+    example: 'DPT-0001',
+  })
   @ApiOkResponse({
     description: 'List of all disputes with pagination',
     schema: {
