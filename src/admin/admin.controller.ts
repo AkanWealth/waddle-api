@@ -278,4 +278,67 @@ export class AdminController {
 
     return await this.adminService.getEventActivity(parsedStart, parsedEnd);
   }
+
+  @ApiOperation({
+    summary: 'Export user analytics data (CSV-friendly)',
+    description:
+      'Returns the full user analytics object plus CSV headings for each data array.',
+  })
+  @ApiOkResponse({ description: 'User analytics data for CSV export' })
+  @Get('analytics/export/csv')
+  @Roles(Role.Admin)
+  async exportUserAnalyticsCSV(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const now = new Date();
+    const defaultStartDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    const defaultEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const parsedStart = startDate ? new Date(startDate) : defaultStartDate;
+    const parsedEnd = endDate ? new Date(endDate) : defaultEndDate;
+    const data = await this.adminService.getUserActivity(
+      parsedStart,
+      parsedEnd,
+    );
+    // Provide headings for each array
+    return {
+      ...data,
+      headings: {
+        userStats: ['type', 'title', 'count', 'change', 'isPositive'],
+        monthlyData: ['name', 'parents', 'organizers'],
+      },
+    };
+  }
+
+  @ApiOperation({
+    summary: 'Export event analytics data (CSV-friendly)',
+    description:
+      'Returns the full event analytics object plus CSV headings for each data array.',
+  })
+  @ApiOkResponse({ description: 'Event analytics data for CSV export' })
+  @Get('analytics/event/export/csv')
+  @Roles(Role.Admin)
+  async exportEventAnalyticsCSV(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const now = new Date();
+    const defaultEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const defaultStartDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    const parsedStart = startDate ? new Date(startDate) : defaultStartDate;
+    const parsedEnd = endDate ? new Date(endDate) : defaultEndDate;
+    const data = await this.adminService.getEventActivity(
+      parsedStart,
+      parsedEnd,
+    );
+    // Provide headings for each array
+    return {
+      ...data,
+      headings: {
+        eventStats: ['type', 'title', 'count', 'change', 'isPositive'],
+        topEvents: ['id', 'event', 'vendor', 'attendees'],
+        bookingData: ['day', 'bookings'],
+      },
+    };
+  }
 }
