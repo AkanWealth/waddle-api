@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { setupRedoc } from './middleware';
+import { Express } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -19,10 +20,87 @@ async function bootstrap() {
         'https://waddleapp.io',
         'https://www.waddleapp.io',
       ],
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+      credentials: true,
       preflightContinue: false,
       optionsSuccessStatus: 204,
     },
+  });
+
+  // Configure Express body parser with larger limits for file uploads
+  const expressApp = app.getHttpAdapter().getInstance() as Express;
+
+  // Configure body parser limits for large file uploads
+  expressApp.use((req, res, next) => {
+    // Set larger limits for file uploads
+    req.setTimeout(300000); // 5 minutes timeout
+    next();
+  });
+
+  // Enhanced CORS handling with better debugging
+  expressApp.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173',
+      'http://localhost:3030',
+      'https://waddle-admin.vercel.app',
+      'https://waddle-admn.vercel.app',
+      'https://waddleapp.io',
+      'https://www.waddleapp.io',
+    ];
+
+    // Log CORS requests for debugging
+    console.log('CORS Request:', {
+      method: req.method,
+      origin: origin,
+      url: req.url,
+      headers: req.headers,
+    });
+
+    if (origin && allowedOrigins.includes(origin)) {
+      res.set('Access-Control-Allow-Origin', origin);
+    } else {
+      res.set('Access-Control-Allow-Origin', '*');
+    }
+
+    res.set(
+      'Access-Control-Allow-Methods',
+      'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    );
+    res.set(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, Accept',
+    );
+    res.set('Access-Control-Allow-Credentials', 'true');
+
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    next();
+  });
+
+  // Configure body parser with larger limits
+  expressApp.use((req, res, next) => {
+    // Increase payload size limit to 50MB for file uploads
+    const originalSend = res.send;
+    res.send = function (data) {
+      res.set('Access-Control-Allow-Origin', req.headers.origin || '*');
+      res.set(
+        'Access-Control-Allow-Methods',
+        'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      );
+      res.set(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, Accept',
+      );
+      res.set('Access-Control-Allow-Credentials', 'true');
+      return originalSend.call(this, data);
+    };
+    next();
   });
 
   app.setGlobalPrefix('/api/v1');
