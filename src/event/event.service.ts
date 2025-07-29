@@ -40,18 +40,24 @@ export class EventService {
       console.log(dto.isPublished, 'This is the published');
       const isPublished = dto.isPublished ?? false;
 
+      // Transform the DTO to match Prisma schema
+      const { instructions, ...restDto } = dto;
+      const eventData = {
+        ...restDto,
+        instruction:
+          instructions && instructions.length > 0 ? instructions[0] : null,
+        date,
+        total_ticket: Number(dto.total_ticket),
+        images: fileName || null,
+        isPublished: Boolean(isPublished),
+        organiserId: creatorId,
+        distance: 0,
+        facilities: dto.facilities ?? [],
+        tags: dto.tags ?? [],
+      };
+
       const event = await this.prisma.event.create({
-        data: {
-          ...dto,
-          date,
-          total_ticket: Number(dto.total_ticket),
-          images: fileName || null,
-          isPublished: Boolean(isPublished),
-          organiserId: creatorId,
-          distance: 0,
-          facilities: dto.facilities ?? [],
-          tags: dto.tags ?? [],
-        },
+        data: eventData,
       });
 
       return { message: 'Event created', event };
@@ -67,29 +73,48 @@ export class EventService {
     file?: Buffer,
   ) {
     try {
+      console.log('Creating event by admin:', {
+        creatorId,
+        fileName,
+        fileSize: file?.length,
+        dtoKeys: Object.keys(dto),
+        dtoData: dto,
+      });
+
       if (file) {
+        console.log('Uploading file to S3...');
         await this.uploadEventImages(fileName, file);
+        console.log('File uploaded successfully');
       }
 
       const date = new Date(dto.date);
       const isPublished = dto.isPublished ?? false;
 
+      // Transform the DTO to match Prisma schema
+      const { instructions, ...restDto } = dto;
+      const eventData = {
+        ...restDto,
+        instruction:
+          instructions && instructions.length > 0 ? instructions[0] : null,
+        date,
+        total_ticket: Number(dto.total_ticket),
+        images: fileName || null,
+        isPublished,
+        adminId: creatorId,
+        distance: 0,
+        facilities: dto.facilities ?? [],
+        tags: dto.tags ?? [],
+      };
+
+      console.log('Creating event in database with data:', eventData);
       const event = await this.prisma.event.create({
-        data: {
-          ...dto,
-          date,
-          total_ticket: Number(dto.total_ticket),
-          images: fileName || null,
-          isPublished,
-          adminId: creatorId,
-          distance: 0,
-          facilities: dto.facilities ?? [],
-          tags: dto.tags ?? [],
-        },
+        data: eventData,
       });
 
+      console.log('Event created successfully:', event.id);
       return { message: 'Event created', event };
     } catch (error) {
+      console.error('Error creating event by admin:', error);
       throw error;
     }
   }
@@ -200,11 +225,7 @@ export class EventService {
 
   async viewAllEventAdmin() {
     try {
-      // Calculate skip based on page and pageSize for pagination
-
       const events = await this.prisma.event.findMany({
-        where: { isPublished: true },
-
         include: {
           admin: true,
           organiser: true,
@@ -219,17 +240,17 @@ export class EventService {
         },
       });
 
-      // Get the total count of published events for pagination metadata
-
       if (!events || events.length === 0) {
         return {
-          message: 'No events found for the given page.',
+          message: 'No events found.',
           events: [],
         };
       }
 
       const eventsWithImages = events.map((event) => {
-        const imageUrl = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.images}`;
+        const imageUrl = event.images
+          ? `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.images}`
+          : null;
         return {
           ...event,
           images: imageUrl,
@@ -511,20 +532,27 @@ export class EventService {
       }
 
       const isPublished = this.stringToBoolean(dto.isPublished);
+
+      // Transform the DTO to match Prisma schema
+      const { instructions, ...restDto } = dto;
+      const updateData = {
+        ...restDto,
+        instruction:
+          instructions && instructions.length > 0 ? instructions[0] : undefined,
+        date: dto.date ? new Date(dto.date) : undefined,
+        images: image || null,
+        total_ticket: Number(dto.total_ticket) || undefined,
+        isPublished,
+        distance: 0,
+        facilities: dto.facilities ?? [],
+        tags: dto.tags ?? [],
+      };
+
       const event = await this.prisma.event.update({
         where: {
           id: existingEvent.id,
         },
-        data: <any>{
-          ...dto,
-          date: dto.date ? new Date(dto.date) : undefined,
-          images: image || null,
-          total_ticket: Number(dto.total_ticket) || undefined,
-          isPublished,
-          distance: 0,
-          facilities: dto.facilities ?? [],
-          tags: dto.tags ?? [],
-        },
+        data: updateData,
       });
 
       return { message: 'Event updated', event };
@@ -567,20 +595,27 @@ export class EventService {
       }
 
       const isPublished = this.stringToBoolean(dto.isPublished);
+
+      // Transform the DTO to match Prisma schema
+      const { instructions, ...restDto } = dto;
+      const updateData = {
+        ...restDto,
+        instruction:
+          instructions && instructions.length > 0 ? instructions[0] : undefined,
+        date: dto.date ? new Date(dto.date) : undefined,
+        images: image || null,
+        total_ticket: Number(dto.total_ticket) || undefined,
+        isPublished,
+        distance: 0,
+        facilities: dto.facilities ?? [],
+        tags: dto.tags ?? [],
+      };
+
       const event = await this.prisma.event.update({
         where: {
           id: existingEvent.id,
         },
-        data: <any>{
-          ...dto,
-          date: dto.date ? new Date(dto.date) : undefined,
-          images: image || null,
-          total_ticket: Number(dto.total_ticket) || undefined,
-          isPublished,
-          distance: 0,
-          facilities: dto.facilities ?? [],
-          tags: dto.tags ?? [],
-        },
+        data: updateData,
       });
 
       return { message: 'Event updated', event };
@@ -686,6 +721,13 @@ export class EventService {
   }
 
   private uploadEventImages(fileName: string, file: Buffer) {
+    console.log('Uploading to S3:', {
+      fileName,
+      fileSize: file.length,
+      bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+      folder: this.config.getOrThrow('S3_EVENT_FOLDER'),
+    });
+
     return this.s3Client.send(
       new PutObjectCommand({
         Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
