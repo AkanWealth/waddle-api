@@ -37,6 +37,7 @@ export class EventService {
       if (file) await this.uploadEventImages(fileName, file);
 
       const date = new Date(dto.date);
+      console.log(dto.isPublished, 'This is the published');
       const isPublished = dto.isPublished ?? false;
 
       const event = await this.prisma.event.create({
@@ -45,7 +46,7 @@ export class EventService {
           date,
           total_ticket: Number(dto.total_ticket),
           images: fileName || null,
-          isPublished,
+          isPublished: Boolean(isPublished),
           organiserId: creatorId,
           distance: 0,
           facilities: dto.facilities ?? [],
