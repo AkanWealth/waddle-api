@@ -108,7 +108,6 @@ export class CreateEventDto {
     example: ['WiFi', 'Parking'],
   })
   @IsOptional()
-  @IsString({ message: 'Published value must be a string' })
   @IsArray({ message: 'Facilities must be an array of strings' })
   @IsString({ each: true, message: 'Each facility must be a string' })
   facilities?: string[];
