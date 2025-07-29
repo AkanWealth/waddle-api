@@ -215,7 +215,7 @@ export class EventService {
           recommendations: true,
         },
         orderBy: {
-          date: 'asc',
+          date: 'desc',
         },
       });
 
