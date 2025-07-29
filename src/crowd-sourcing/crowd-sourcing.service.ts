@@ -123,19 +123,18 @@ export class CrowdSourcingService {
       const events = await this.prisma.crowdSource.findMany({
         where: {
           isDeleted: false,
-          isVerified: true,
-          isPublished: true,
           tag: 'Event',
         },
 
         include: { like: true, creator: true },
+        orderBy: {
+          date: 'desc',
+        },
       });
 
       const totalEvents = await this.prisma.crowdSource.count({
         where: {
           isDeleted: false,
-          isVerified: true,
-          isPublished: true,
           tag: 'Event',
         },
       });
@@ -170,24 +169,21 @@ export class CrowdSourcingService {
   }
 
   async findAllSourcedPlace(page: number, pageSize: number) {
-    const calSkip = (page - 1) * pageSize;
+    console.log(page, pageSize);
     const places = await this.prisma.crowdSource.findMany({
       where: {
         isDeleted: false,
-        isVerified: true,
-        isPublished: true,
         tag: 'Place',
       },
-      skip: calSkip,
-      take: pageSize,
+      orderBy: {
+        date: 'desc',
+      },
       include: { like: true, creator: true },
     });
 
     const totalPlaces = await this.prisma.crowdSource.count({
       where: {
         isDeleted: false,
-        isVerified: true,
-        isPublished: true,
         tag: 'Place',
       },
     });
@@ -196,9 +192,6 @@ export class CrowdSourcingService {
         message: 'No place found for the given page.',
         events: [],
         totalPlaces: totalPlaces,
-        currentPage: page,
-        pageSize: pageSize,
-        totalPages: Math.ceil(totalPlaces / pageSize),
       };
     }
 
@@ -218,9 +211,6 @@ export class CrowdSourcingService {
       message: 'Places found',
       places: placesWithImage,
       totalPlaces: totalPlaces,
-      currentPage: page,
-      pageSize: pageSize,
-      totalPages: Math.ceil(totalPlaces / pageSize),
     };
   }
 
