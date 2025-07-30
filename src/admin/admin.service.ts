@@ -250,7 +250,11 @@ export class AdminService {
 
   async viewAllAdmin() {
     try {
-      const admin = await this.prisma.admin.findMany();
+      const admin = await this.prisma.admin.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
       if (!admin || admin.length <= 0)
         throw new NotFoundException('No admin found');
 

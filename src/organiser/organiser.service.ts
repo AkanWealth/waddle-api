@@ -93,7 +93,11 @@ export class OrganiserService {
 
   async viewAllOrganiser() {
     try {
-      const organiser = await this.prisma.organiser.findMany();
+      const organiser = await this.prisma.organiser.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
       const organisersWithLogo = organiser.map((list) => {
         const business_logo = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${list.business_logo}`;
