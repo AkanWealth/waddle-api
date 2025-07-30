@@ -137,6 +137,9 @@ export class CrowdSourcingService {
           isDeleted: false,
           tag: 'Event',
         },
+        orderBy: {
+          date: 'desc',
+        },
       });
       if (!events || events.length === 0) {
         return {

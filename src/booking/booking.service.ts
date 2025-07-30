@@ -246,6 +246,9 @@ export class BookingService {
           },
           user: true,
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
 
       if (!bookings || bookings.length <= 0)

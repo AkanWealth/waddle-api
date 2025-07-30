@@ -92,7 +92,11 @@ export class UserService {
   // function to find all the user
   async findAll() {
     try {
-      const user = await this.prisma.user.findMany();
+      const user = await this.prisma.user.findMany({
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
       const usersWithImage = user.map((list) => {
         const profile_picture = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_USER_FOLDER')}/${list.profile_picture}`;
