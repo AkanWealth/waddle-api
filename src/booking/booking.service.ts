@@ -125,6 +125,7 @@ export class BookingService {
           expand: ['line_items'],
         },
       );
+      console.log('checkoutSession', checkoutSession);
 
       // condition for payment status
       if (checkoutSession.payment_status === 'paid') {
@@ -147,6 +148,12 @@ export class BookingService {
             where: { id: booking.id, payment_intent: paymentIntent.id },
             data: { status: 'Confirmed' },
           });
+
+          // Update payment status to SUCCESSFUL
+          await this.paymentService.updatePaymentStatusByTransactionId(
+            sessionId,
+            { status: PaymentStatus.SUCCESSFUL },
+          );
 
           if (booking.user.fcmIsOn) {
             await this.notificationHelper.sendBookingConfirmation(
@@ -192,6 +199,12 @@ export class BookingService {
             where: { id: booking.id },
             data: { status: 'Failed' },
           });
+
+          // Update payment status to FAILED
+          await this.paymentService.updatePaymentStatusByTransactionId(
+            sessionId,
+            { status: PaymentStatus.FAILED },
+          );
 
           return { message: `Booking ${checkoutSession.id} failed` };
         } else {
