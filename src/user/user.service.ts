@@ -93,6 +93,34 @@ export class UserService {
   async findAll() {
     try {
       const user = await this.prisma.user.findMany({
+        where: {
+          isDeleted: false,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const usersWithImage = user.map((list) => {
+        const profile_picture = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_USER_FOLDER')}/${list.profile_picture}`;
+        return {
+          ...list,
+          profile_picture,
+        };
+      });
+
+      return usersWithImage;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllDeletedUsers() {
+    try {
+      const user = await this.prisma.user.findMany({
+        where: {
+          isDeleted: true,
+        },
         orderBy: {
           createdAt: 'desc',
         },
@@ -247,6 +275,23 @@ export class UserService {
       });
 
       return { message: 'User deleted' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // function to restore a user
+  async restoreUser(id: string) {
+    try {
+      const existingUser = await this.prisma.user.findUnique({ where: { id } });
+      if (!existingUser) throw new NotFoundException('User not found');
+
+      await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: { isDeleted: false },
+      });
+
+      return { message: 'User restored' };
     } catch (error) {
       throw error;
     }

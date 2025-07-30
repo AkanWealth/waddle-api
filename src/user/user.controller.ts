@@ -95,6 +95,18 @@ export class UserController {
     return this.userService.findAll();
   }
 
+  @ApiOperation({
+    summary: 'view all users as an admin',
+    description: 'Admin can view all users',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiBearerAuth()
+  @Get('all-deleted')
+  @Roles(Role.Admin)
+  findAllDeletedUsers() {
+    return this.userService.findAllDeletedUsers();
+  }
+
   // get the loggedin user
   @ApiOperation({
     summary: 'view my details as a loggedin user',
@@ -175,5 +187,18 @@ export class UserController {
   @Roles(Role.Admin)
   deleteUser(@Param('id') id: string) {
     return this.userService.deleteUser(id);
+  }
+
+  // restore a user
+  @ApiOperation({
+    summary: 'restore a user by id as an admin',
+    description: 'Admin can restore a user by id',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Patch('restore/:id')
+  @Roles(Role.Admin)
+  restoreUser(@Param('id') id: string) {
+    return this.userService.restoreUser(id);
   }
 }
