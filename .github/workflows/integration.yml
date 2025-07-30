@@ -1,5 +1,3 @@
-# Continuous Integration
-
 name: Test and Build
 
 on:
@@ -56,8 +54,10 @@ jobs:
           R2_PUBLIC_ENDPOINT: https://pub-42f91b17061547449f97974510335219.r2.dev
           S3_API: https://81c852930641402981b6a613c8239927.r2.cloudflarestorage.com
           BASE_URL: https://waddleapi.vercel.app
-          STRIPE_SECRET_KEY: sk_test_51Q0lCJJ1vqI8s6tcBqAbHqYQcmompSqF3Nlh7bQ7RzVga7kHMYWlLSaz7xiFxALj5kaHXA9RLLBgM9o65NSNCbI1004n2VHSPr
-          STRIPE_ENDPOINT_SECRET: whsec_533ef27f4aa69f4accf9bd07ad54ca51b0c682adf8d95931ea21b1e3e013c1d8
+          BASE_URL_STRIPE_REFRESH: https://api.waddleapp.io/api/v1/organisers/refresh
+          BASE_URL_STRIPE_RETURN: https://api.waddleapp.io/api/v1/organisers/return
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_ENDPOINT_SECRET: ${{ secrets.STRIPE_ENDPOINT_SECRET }}
           FRESHDESK_DOMAIN: philipoyelegbincom.freshdesk.com
           FRESHDESK_EMAIL: support@philipoyelegbincom.freshdesk.com
           FRESHDESK_API_KEY: nIV3Lubwi6Eo0qWM24Sy
