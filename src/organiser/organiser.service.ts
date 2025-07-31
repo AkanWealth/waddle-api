@@ -15,6 +15,7 @@ import {
 import Stripe from 'stripe';
 import { UpdatePasswordDto } from '../user/dto';
 import { NotificationService } from '../notification/notification.service';
+import { OrganiserStatus } from 'src/utils/constants/organiserTypes';
 
 @Injectable()
 export class OrganiserService {
@@ -392,9 +393,12 @@ export class OrganiserService {
     try {
       const updated = await this.prisma.organiser.update({
         where: { id },
-        data: { isApproved },
+        data: {
+          status: isApproved
+            ? OrganiserStatus.APPROVED
+            : OrganiserStatus.REJECTED,
+        },
       });
-      console.log('This is the stuff!!!!!!', updated);
 
       return {
         message: `Organiser ${isApproved ? 'approved' : 'rejected'}`,
@@ -408,6 +412,27 @@ export class OrganiserService {
     }
   }
 
+  async suspendOrganiser(id: string, suspensionReason: string) {
+    try {
+      const updated = await this.prisma.organiser.update({
+        where: { id },
+        data: {
+          status: OrganiserStatus.SUSPENDED,
+          suspensionReason,
+        },
+      });
+
+      return {
+        message: `Organiser suspended`,
+        organiser: updated,
+      };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Organiser not found');
+      }
+      throw error;
+    }
+  }
   // End Organiser
 
   // Start staff
