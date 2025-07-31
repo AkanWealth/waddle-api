@@ -71,7 +71,7 @@ export class OrganiserService {
     }
 
     const onboardingUrl = await this.generateAccountLink(accountId);
-    return onboardingUrl;
+    return { status: 'success', url: onboardingUrl };
   }
 
   async disconnect(userId: string) {
@@ -93,7 +93,7 @@ export class OrganiserService {
       where: { id: userId },
       data: { stripe_account_id: null, is_stripe_connected: false },
     });
-    return { success: true };
+    return { status: 'success', message: 'Stripe disconnected' };
   }
 
   // Start Organiser
