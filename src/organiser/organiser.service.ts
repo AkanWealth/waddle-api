@@ -12,6 +12,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import Stripe from 'stripe';
 import { UpdatePasswordDto } from '../user/dto';
 import { NotificationService } from '../notification/notification.service';
 
@@ -24,12 +25,76 @@ export class OrganiserService {
       secretAccessKey: this.config.getOrThrow('AWS_SECRET_KEY'),
     },
   });
+  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2025-02-24.acacia',
+  });
 
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
     private notificationService: NotificationService,
   ) {}
+
+  private async createConnectAccount(userId: string) {
+    const account = await this.stripe.accounts.create({
+      type: 'express', // or 'standard'
+    });
+    // Save account ID in DB
+    await this.prisma.organiser.update({
+      where: { id: userId },
+      data: { stripe_account_id: account.id, is_stripe_connected: true },
+    });
+
+    return account;
+  }
+  private async generateAccountLink(accountId: string) {
+    const link = await this.stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${process.env.BASE_URL_STRIPE_REFRESH}`,
+      return_url: `${process.env.BASE_URL_STRIPE_RETURN}`,
+      type: 'account_onboarding',
+    });
+
+    return link.url;
+  }
+
+  async connect(userId: string) {
+    const user = await this.prisma.organiser.findUnique({
+      where: { id: userId },
+    });
+
+    let accountId = user?.stripe_account_id;
+
+    if (!accountId) {
+      const account = await this.createConnectAccount(userId);
+      accountId = account.id;
+    }
+
+    const onboardingUrl = await this.generateAccountLink(accountId);
+    return onboardingUrl;
+  }
+
+  async disconnect(userId: string) {
+    const user = await this.prisma.organiser.findUnique({
+      where: { id: userId },
+      select: { stripe_account_id: true, is_stripe_connected: true },
+    });
+
+    if (!user?.stripe_account_id) {
+      throw new Error('No Stripe account connected');
+    }
+
+    await this.stripe.oauth.deauthorize({
+      client_id: process.env.STRIPE_CLIENT_ID,
+      stripe_user_id: user.stripe_account_id,
+    });
+
+    await this.prisma.organiser.update({
+      where: { id: userId },
+      data: { stripe_account_id: null, is_stripe_connected: false },
+    });
+    return { success: true };
+  }
 
   // Start Organiser
   async saveOrganiserFcmToken(userId: string, token: string) {
