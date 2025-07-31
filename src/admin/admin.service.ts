@@ -251,6 +251,9 @@ export class AdminService {
   async viewAllAdmin() {
     try {
       const admin = await this.prisma.admin.findMany({
+        where: {
+          isDeleted: false,
+        },
         orderBy: {
           createdAt: 'desc',
         },
