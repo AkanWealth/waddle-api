@@ -257,6 +257,24 @@ export class OrganiserController {
     }
   }
 
+  @Patch(':id/suspend')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.Admin)
+  @ApiOperation({
+    summary: 'suspend an organiser',
+    description: 'Admin can suspend an organiser by setting  to true.',
+  })
+  @ApiOkResponse({ description: 'Organiser suspension status updated' })
+  suspendOrganiser(
+    @GetUser() admin: User,
+    @Param('id') id: string,
+    @Body() body: { suspensionReason: string },
+  ) {
+    if (admin) {
+      return this.organiserService.suspendOrganiser(id, body.suspensionReason);
+    }
+  }
+
   // End Organiser
 
   // Start Staff

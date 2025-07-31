@@ -81,6 +81,8 @@ model Organiser {
   stripe_account_id             String?
   is_stripe_connected           Boolean          @default(false)
 
+  status                        String           @default("PENDING")
+  suspensionReason              String?
   @@index([email])
   @@map("organiser")
 }
@@ -425,3 +427,5 @@ enum PaymentStatus {
   FAILED
   REFUNDED
 }
+
+
