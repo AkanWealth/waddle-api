@@ -73,6 +73,50 @@ export class OrganiserController {
   }
 
   @ApiOperation({
+    summary: 'connect to stripe',
+    description: 'Connect to stripe',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Post('connect')
+  async connect(@GetUser('id') userId: string) {
+    return this.organiserService.connect(userId);
+  }
+
+  @ApiOperation({
+    summary: 'disconnect from stripe',
+    description: 'Disconnect from stripe',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Delete('disconnect')
+  async disconnect(@GetUser('id') userId: string) {
+    return this.organiserService.disconnect(userId);
+  }
+
+  @ApiOperation({
+    summary: 'stripe return',
+    description: 'Stripe return',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Get('return')
+  handleReturn() {
+    return 'Stripe return completed. You can close this tab.';
+  }
+
+  @ApiOperation({
+    summary: 'stripe refresh',
+    description: 'Stripe refresh',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Get('refresh')
+  handleRefresh() {
+    return 'Stripe onboarding was cancelled or expired.';
+  }
+
+  @ApiOperation({
     summary: 'toogle push notification for loggedin organiser',
     description: 'Toogle push notification for loggedin organiser',
   })
