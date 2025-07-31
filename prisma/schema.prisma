@@ -78,6 +78,8 @@ model Organiser {
   lastLoginAt                   DateTime? @db.Timestamp(6)
   events                        Event[]
   disputes                      Dispute[]
+  stripe_account_id             String?
+  is_stripe_connected           Boolean          @default(false)
 
   @@index([email])
   @@map("organiser")
@@ -114,7 +116,6 @@ model User {
   notifications                 Notification[]
   disputes                      Dispute[]        @relation("CustomerDisputes")
   payments                      Payment[]
-
   @@index([email])
   @@map("user")
 }
