@@ -50,8 +50,8 @@ export class OrganiserService {
   private async generateAccountLink(accountId: string) {
     const link = await this.stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${process.env.BASE_URL_STRIPE_REFRESH}`,
-      return_url: `${process.env.BASE_URL_STRIPE_RETURN}`,
+      refresh_url: 'https://api.waddleapp.io/api/v1/organisers/refresh',
+      return_url: 'https://api.waddleapp.io/api/v1/organisers/return',
       type: 'account_onboarding',
     });
 

@@ -4,7 +4,7 @@ import { Cleaner } from './helper';
 
 @Injectable()
 export class AppService {
-  constructor(private readonly cleaner: Cleaner) {}  
+  constructor(private readonly cleaner: Cleaner) {}
 
   // cron job to run automated task
   @Cron('0 0 * * *') // runs every day at midnight
