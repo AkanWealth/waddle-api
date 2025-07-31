@@ -95,6 +95,17 @@ export class OrganiserController {
   }
 
   @ApiOperation({
+    summary: 'check if stripe is connected',
+    description: 'Check if stripe is connected',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Get('is-stripe-connected')
+  async isStripeConnected(@GetUser('id') userId: string) {
+    return this.organiserService.isStripeConnected(userId);
+  }
+
+  @ApiOperation({
     summary: 'stripe return',
     description: 'Stripe return',
   })

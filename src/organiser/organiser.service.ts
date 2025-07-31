@@ -97,6 +97,31 @@ export class OrganiserService {
     return { status: 'success', message: 'Stripe disconnected' };
   }
 
+  async isStripeConnected(
+    organiserId: string,
+  ): Promise<{ status: string; message: string; data: boolean }> {
+    const organiser = await this.prisma.organiser.findUnique({
+      where: { id: organiserId },
+      select: {
+        stripe_account_id: true,
+        is_stripe_connected: true,
+      },
+    });
+
+    if (!organiser) {
+      throw new NotFoundException('Organiser not found');
+    }
+
+    const connected =
+      !!organiser.stripe_account_id && organiser.is_stripe_connected === true;
+
+    return {
+      status: 'success',
+      message: 'Stripe is connected successfully',
+      data: connected,
+    };
+  }
+
   // Start Organiser
   async saveOrganiserFcmToken(userId: string, token: string) {
     try {
