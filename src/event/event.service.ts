@@ -360,6 +360,37 @@ export class EventService {
     }
   }
 
+  // async viewMyEventsAsAdmin(creatorId: string) {
+  //   try {
+  //     const event = await this.prisma.event.findMany({
+  //       where: { adminId: creatorId },
+  //       include: {
+  //         admin: true,
+  //         reviews: true,
+  //         bookings: true,
+  //         favorites: true,
+  //         like: true,
+  //         recommendations: true,
+  //       },
+  //     });
+
+  //     if (!event || event.length <= 0)
+  //       throw new NotFoundException('No event found');
+
+  //     const eventWithImage = event.map((list) => {
+  //       const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.images}`;
+  //       return {
+  //         ...list,
+  //         images,
+  //       };
+  //     });
+
+  //     return { message: 'Events found', events: eventWithImage };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
   async viewOneEvent(id: string) {
     try {
       const event = await this.prisma.event.findUnique({

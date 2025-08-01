@@ -171,6 +171,17 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary: 'Approve Events',
+    description: 'Approve an event as an admin',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('host')
+  @Roles(Role.Admin)
+  approveEventAsAdmin(@GetUser() user: { id: string }) {
+    return this.eventService.viewMyEventsAsAdmin(user.id);
+  }
+
+  @ApiOperation({
     summary: 'search for published events by name, age or price',
     description:
       'Parents, Admin or Organisers are able to search for published events',

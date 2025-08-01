@@ -11,10 +11,14 @@ import {
   QueryDisputesDto,
 } from './dto';
 import { DisputeStatus } from '@prisma/client';
+import { NotificationHelper } from 'src/notification/notification.helper';
 
 @Injectable()
 export class DisputeService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationHelper: NotificationHelper,
+  ) {}
 
   private async generateDisputeId(): Promise<string> {
     // Get the count of existing disputes to generate the next number
@@ -48,7 +52,7 @@ export class DisputeService {
     // Generate custom dispute ID
     const disputeId = await this.generateDisputeId();
 
-    return this.prisma.dispute.create({
+    const dispute = await this.prisma.dispute.create({
       data: {
         id: disputeId,
         category: createDisputeDto.category,
@@ -69,6 +73,10 @@ export class DisputeService {
         booking: true,
       },
     });
+
+    await this.notificationHelper.sendPendingDisputeAlert(userId);
+
+    return dispute;
   }
 
   async getUserDisputes(userId: string, queryDto: QueryDisputesDto) {
@@ -443,8 +451,7 @@ export class DisputeService {
         'Cannot directly resolve a pending dispute. Must go through IN_REVIEW first',
       );
     }
-
-    return this.prisma.dispute.update({
+    const updatedDispute = await this.prisma.dispute.update({
       where: {
         id: disputeId,
       },
@@ -458,6 +465,19 @@ export class DisputeService {
         booking: true,
       },
     });
+
+    if (updatedDispute.status === DisputeStatus.IN_REVIEW) {
+      await this.notificationHelper.sendDisputeInReviewAlert(
+        updatedDispute.customerId,
+      );
+    }
+    if (updatedDispute.status === DisputeStatus.RESOLVED) {
+      await this.notificationHelper.sendDisputeResolvedAlert(
+        updatedDispute.customerId,
+      );
+    }
+
+    return updatedDispute;
   }
 
   async getDisputesByStatus(status: DisputeStatus, queryDto: QueryDisputesDto) {
