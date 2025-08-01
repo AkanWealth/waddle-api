@@ -18,12 +18,16 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { PaymentService } from './payment.service';
-import { UpdatePaymentStatusDto, QueryPaymentDto } from './dto';
+import {
+  UpdatePaymentStatusDto,
+  QueryPaymentDto,
+  RevenueQueryDto,
+} from './dto';
 import { JwtGuard } from '../auth/guard/auth.guard';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { GetUser } from '../auth/decorator/get-user.decorator';
-import { Role } from '@prisma/client';
+import { PaymentStatus, Role } from '@prisma/client';
 
 @ApiTags('Payments')
 @ApiBearerAuth()
@@ -40,6 +44,16 @@ export class PaymentController {
     @Query() query: QueryPaymentDto,
   ) {
     return this.paymentService.getPayments({ ...query, userId });
+  }
+
+  @Get('revenue/admin')
+  @ApiOperation({ summary: 'Get revenue data' })
+  @ApiOkResponse({ description: 'Revenue data' })
+  async getRevenue(@Query() query: RevenueQueryDto) {
+    return this.paymentService.getRevenue(
+      query.period,
+      query.status as PaymentStatus,
+    );
   }
 
   @Get()
