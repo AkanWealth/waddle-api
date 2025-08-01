@@ -138,7 +138,7 @@ export class EventController {
   }
 
   @ApiOperation({
-    summary: 'view all published paginated events as admin',
+    summary: 'view all published paginated events as an admin ',
     description:
       'Parents, Admin and Organisers are able to view all published paginated events as admin',
   })
