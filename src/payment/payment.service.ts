@@ -10,6 +10,8 @@ import {
   CreatePaymentDto,
   UpdatePaymentStatusDto,
   QueryPaymentDto,
+  RevenuePeriod,
+  RevenueData,
 } from './dto';
 import { PaymentStatus } from '@prisma/client';
 
@@ -167,5 +169,145 @@ export class PaymentService {
         refundStatus: refund.status,
       },
     });
+  }
+
+  async getRevenue(
+    period: RevenuePeriod = RevenuePeriod.SIX_MONTHS,
+    status: PaymentStatus = PaymentStatus.SUCCESSFUL,
+  ): Promise<RevenueData[]> {
+    const { startDate, endDate } = this.getDateRange(period);
+
+    // Get successful payments within the date range
+    const payments = await this.prisma.payment.findMany({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: status,
+      },
+      select: {
+        amount: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+    const monthlyRevenue: Record<string, number> = {};
+    payments.forEach((payment) => {
+      const date = new Date(payment.createdAt);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      if (!monthlyRevenue[monthKey]) {
+        monthlyRevenue[monthKey] = 0;
+      }
+      monthlyRevenue[monthKey] += parseFloat(payment.amount.toString());
+    });
+
+    // Format as required: [{ date: "Jan", amount: 42000 }]
+    return this.formatMonthlyData(monthlyRevenue, period);
+  }
+
+  private getDateRange(period: RevenuePeriod): {
+    startDate: Date;
+    endDate: Date;
+  } {
+    const now = new Date();
+    let startDate: Date;
+
+    switch (period) {
+      case RevenuePeriod.THREE_MONTHS:
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 3,
+          now.getDate(),
+        );
+        break;
+      case RevenuePeriod.SIX_MONTHS:
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 6,
+          now.getDate(),
+        );
+        break;
+      case RevenuePeriod.NINE_MONTHS:
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 9,
+          now.getDate(),
+        );
+        break;
+      case RevenuePeriod.TWELVE_MONTHS:
+        startDate = new Date(
+          now.getFullYear() - 1,
+          now.getMonth(),
+          now.getDate(),
+        );
+        break;
+      default:
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth() - 6,
+          now.getDate(),
+        );
+    }
+
+    return { startDate, endDate: now };
+  }
+
+  private formatMonthlyData(
+    monthlyRevenue: Record<string, number>,
+    period: RevenuePeriod,
+  ): RevenueData[] {
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const now = new Date();
+    const data: RevenueData[] = [];
+
+    // Get the number of months based on period
+    let monthsToInclude: number;
+    switch (period) {
+      case RevenuePeriod.THREE_MONTHS:
+        monthsToInclude = 3;
+        break;
+      case RevenuePeriod.SIX_MONTHS:
+        monthsToInclude = 6;
+        break;
+      case RevenuePeriod.NINE_MONTHS:
+        monthsToInclude = 9;
+        break;
+      case RevenuePeriod.TWELVE_MONTHS:
+        monthsToInclude = 12;
+        break;
+      default:
+        monthsToInclude = 6;
+    }
+
+    // Generate data for the specified number of months (going backwards from current month)
+    for (let i = monthsToInclude - 1; i >= 0; i--) {
+      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = monthNames[targetDate.getMonth()];
+
+      data.push({
+        date: monthName,
+        amount: parseFloat((monthlyRevenue[monthKey] || 0).toFixed(2)),
+      });
+    }
+
+    return data;
   }
 }

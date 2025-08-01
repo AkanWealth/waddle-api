@@ -86,7 +86,7 @@ export class OrganiserService {
     }
 
     await this.stripe.oauth.deauthorize({
-      client_id: process.env.STRIPE_CLIENT_ID,
+      client_id: process.env.STRIPE_SECRET_KEY,
       stripe_user_id: user.stripe_account_id,
     });
 
