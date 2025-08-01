@@ -140,6 +140,7 @@ model Event {
   facilities      String[]
   tags            String[]
   eventType       EventType?
+  status          String?           @default("PENDING")
 
 
   isPublished     Boolean?         @default(false)
@@ -379,6 +380,7 @@ model Payment {
 
 
 enum Role {
+  EDITOR
   ADMIN
   ORGANISER
   GUARDIAN
