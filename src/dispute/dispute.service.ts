@@ -74,7 +74,10 @@ export class DisputeService {
       },
     });
 
-    await this.notificationHelper.sendPendingDisputeAlert(userId);
+    await this.notificationHelper.sendPendingDisputeAlert(
+      userId,
+      dispute.customer.name,
+    );
 
     return dispute;
   }
@@ -474,6 +477,7 @@ export class DisputeService {
     if (updatedDispute.status === DisputeStatus.RESOLVED) {
       await this.notificationHelper.sendDisputeResolvedAlert(
         updatedDispute.customerId,
+        updatedDispute.customer.name,
       );
     }
 
