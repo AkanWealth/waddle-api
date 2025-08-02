@@ -28,6 +28,8 @@ model Admin {
   permissions                   AdminPermission[]
   events                        Event[]
 
+  adminNotificationStatuses AdminNotificationStatus[]
+
   @@index([email])
   @@map("admin")
 }
@@ -47,42 +49,44 @@ model AdminPermission {
 }
 
 model Organiser {
-  id                            String    @id @default(cuid())
+  id                            String         @id @default(cuid())
   name                          String
-  email                         String    @unique
+  email                         String         @unique
   password                      String
   phone_number                  String
   business_logo                 String?
   paymentAccountId              String?
   address                       String
-  business_name                 String    @unique
+  business_name                 String         @unique
   business_category             String
   registration_number           String
-  email_verify                  Boolean   @default(true)
-  isLocked                      Boolean   @default(false)
-  isDeleted                     Boolean   @default(false)
-  isVerified                    Boolean   @default(true)
-  failedLoginAttempts           Int       @default(0)
+  email_verify                  Boolean        @default(true)
+  isLocked                      Boolean        @default(false)
+  isDeleted                     Boolean        @default(false)
+  isVerified                    Boolean        @default(true)
+  failedLoginAttempts           Int            @default(0)
   website_url                   String?
   facebook_url                  String?
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime  @default(now())
-  updatedAt                     DateTime  @updatedAt
+  createdAt                     DateTime       @default(now())
+  updatedAt                     DateTime       @updatedAt
   fcmToken                      String?
-  role                          Role      @default(ORGANISER)
-  fcmIsOn                       Boolean   @default(false)
-  isApproved                    Boolean   @default(false)
-  lastLoginAt                   DateTime? @db.Timestamp(6)
+  role                          Role           @default(ORGANISER)
+  fcmIsOn                       Boolean        @default(false)
+  isApproved                    Boolean        @default(false)
+  lastLoginAt                   DateTime?      @db.Timestamp(6)
   events                        Event[]
   disputes                      Dispute[]
   stripe_account_id             String?
-  is_stripe_connected           Boolean          @default(false)
+  is_stripe_connected           Boolean        @default(false)
+  notifications                 Notification[] @relation("OrganiserNotifications")
 
-  status                        String           @default("PENDING")
-  suspensionReason              String?
+  status           String  @default("PENDING")
+  suspensionReason String?
+
   @@index([email])
   @@map("organiser")
 }
@@ -115,33 +119,34 @@ model User {
   favorites                     Favorite[]
   like                          Like[]
   recommendation                Recommendation[]
-  notifications                 Notification[]
-  disputes                      Dispute[]        @relation("CustomerDisputes")
-  payments                      Payment[]
+  notifications                 Notification[]   @relation("UserNotifications")
+
+  disputes Dispute[] @relation("CustomerDisputes")
+  payments Payment[]
+
   @@index([email])
   @@map("user")
 }
 
 model Event {
-  id              String           @id @default(cuid())
-  name            String
-  description     String
-  address         String
-  images          String?
-  price           Decimal
-  total_ticket    Int
-  ticket_booked   Int              @default(0)
-  date            DateTime
-  time            String
-  age_range       String
-  instruction     String?
-  category        String
-  distance        Int?
-  facilities      String[]
-  tags            String[]
-  eventType       EventType?
-  status          String?           @default("PENDING")
-
+  id            String     @id @default(cuid())
+  name          String
+  description   String
+  address       String
+  images        String?
+  price         Decimal
+  total_ticket  Int
+  ticket_booked Int        @default(0)
+  date          DateTime
+  time          String
+  age_range     String
+  instruction   String?
+  category      String
+  distance      Int?
+  facilities    String[]
+  tags          String[]
+  eventType     EventType?
+  status        String?    @default("PENDING")
 
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)
@@ -164,28 +169,28 @@ model Event {
 }
 
 model CrowdSource {
-  id          String    @id @default(cuid())
+  id          String            @id @default(cuid())
   name        String
   images      String[]
   description String
   address     String
   creatorId   String
-  isVerified  Boolean   @default(false)
-  isDeleted   Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  isVerified  Boolean           @default(false)
+  isDeleted   Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   date        DateTime?
   fee         Decimal
-  tag         Tag       @default(Place)
+  tag         Tag               @default(Place)
   time        String?
   tips        String?
-  isPublished Boolean   @default(false)
+  isPublished Boolean           @default(false)
   category    String
   facilities  String[]
   comment     Comment[]
-  creator     User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creator     User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   like        Like[]
-  status      CrowdSourceStatus        @default(PENDING)
+  status      CrowdSourceStatus @default(PENDING)
 
   @@index([address, isVerified])
   @@map("crowdsource")
@@ -318,67 +323,110 @@ model BlacklistedToken {
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  title       String
-  body        String
-  recipientId String
-  recipient   User     @relation(fields: [recipientId], references: [id])
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  title           String
+  body            String
+  userId          String?
+  organiserId     String?
+  isRead          Boolean  @default(false)
+  visibleToAdmins Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@index([recipientId])
+  userRecipient      User?      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  organiserRecipient Organiser? @relation("OrganiserNotifications", fields: [organiserId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organiserId])
   @@map("notification")
 }
 
-model Dispute {
-  id              String           @id @default(cuid())
-  category        DisputeCategory
-  reason          String
-  vendorId        String
-  customerId      String
-  eventId         String
-  bookingRef      String
-  refundRequest   String?   // Optional refund request
-  description     String
-  file            String?   // File path or URL
-  status          DisputeStatus @default(PENDING)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+model AdminNotification {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  type      String? // e.g., "ORGANISER_SUSPENSION", "PAYMENT_DISPUTE", etc.
+  data      Json? // Store additional structured data if needed
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  vendor          Organiser @relation(fields: [vendorId], references: [id])
-  customer        User      @relation("CustomerDisputes", fields: [customerId], references: [id])
-  event           Event     @relation(fields: [eventId], references: [id])
-  booking         Booking   @relation(fields: [bookingRef], references: [id])
+  // Relations to track individual admin read status
+  readStatuses AdminNotificationStatus[]
+
+  @@index([createdAt])
+  @@map("admin_notification")
+}
+
+model AdminNotificationStatus {
+  id                  String    @id @default(cuid())
+  adminId             String
+  adminNotificationId String
+  isRead              Boolean   @default(false)
+  isVisible           Boolean   @default(true)
+  isCleared           Boolean   @default(false)
+  isDeleted           Boolean   @default(false)
+  readAt              DateTime?
+  clearedAt           DateTime?
+  deletedAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  admin             Admin             @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminNotification AdminNotification @relation(fields: [adminNotificationId], references: [id], onDelete: Cascade)
+
+  @@unique([adminId, adminNotificationId])
+  @@index([adminId, isRead, isCleared, isDeleted])
+  @@map("admin_notification_status")
+}
+
+model Dispute {
+  id            String          @id @default(cuid())
+  category      DisputeCategory
+  reason        String
+  vendorId      String
+  customerId    String
+  eventId       String
+  bookingRef    String
+  refundRequest String? // Optional refund request
+  description   String
+  file          String? // File path or URL
+  status        DisputeStatus   @default(PENDING)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  vendor   Organiser @relation(fields: [vendorId], references: [id])
+  customer User      @relation("CustomerDisputes", fields: [customerId], references: [id])
+  event    Event     @relation(fields: [eventId], references: [id])
+  booking  Booking   @relation(fields: [bookingRef], references: [id])
 
   @@map("dispute")
 }
 
 model Payment {
-  id             String         @id @default(cuid())
-  transactionId  String         @unique
-  bookingId      String
-  userId         String
-  eventId        String
-  username       String
-  eventName      String
-  amount         Decimal
-  status         PaymentStatus  @default(PENDING)
-  method         String
-  processingFee  Decimal
-  netAmount      Decimal
-  amountPaid     Decimal
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  refundId       String?        // Stripe refund ID, nullable
-  refundStatus   String?        // Stripe refund status, nullable
-  booking        Booking        @relation(fields: [bookingId], references: [id])
-  user           User           @relation(fields: [userId], references: [id])
-  event          Event          @relation(fields: [eventId], references: [id])
+  id            String        @id @default(cuid())
+  transactionId String        @unique
+  bookingId     String
+  userId        String
+  eventId       String
+  username      String
+  eventName     String
+  amount        Decimal
+  status        PaymentStatus @default(PENDING)
+  method        String
+  processingFee Decimal
+  netAmount     Decimal
+  amountPaid    Decimal
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  refundId      String? // Stripe refund ID, nullable
+  refundStatus  String? // Stripe refund status, nullable
+  booking       Booking       @relation(fields: [bookingId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  event         Event         @relation(fields: [eventId], references: [id])
 
   @@map("payment")
 }
-
 
 enum Role {
   EDITOR
@@ -406,7 +454,7 @@ enum ActivationStatus {
   INACTIVE
 }
 
-enum EventType{
+enum EventType {
   INDOOR
   OUTDOOR
 }
@@ -431,9 +479,13 @@ enum PaymentStatus {
   REFUNDED
 }
 
-enum CrowdSourceStatus{
+enum CrowdSourceStatus {
   PENDING
   APPROVED
   REJECTED
 }
 
+enum RecipientType {
+  ORGANISER
+  USER
+}

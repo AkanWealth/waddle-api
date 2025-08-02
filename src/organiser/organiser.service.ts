@@ -16,6 +16,7 @@ import Stripe from 'stripe';
 import { UpdatePasswordDto } from '../user/dto';
 import { NotificationService } from '../notification/notification.service';
 import { OrganiserStatus } from 'src/utils/constants/organiserTypes';
+import { NotificationHelper } from 'src/notification/notification.helper';
 
 @Injectable()
 export class OrganiserService {
@@ -34,6 +35,7 @@ export class OrganiserService {
     private prisma: PrismaService,
     private config: ConfigService,
     private notificationService: NotificationService,
+    private notificationHelper: NotificationHelper,
   ) {}
 
   private async createConnectAccount(userId: string) {
@@ -424,6 +426,10 @@ export class OrganiserService {
             : OrganiserStatus.REJECTED,
         },
       });
+      await this.notificationHelper.sendAccountApprovalStatusAlert(
+        id,
+        isApproved,
+      );
 
       return {
         message: `Organiser ${isApproved ? 'approved' : 'rejected'}`,
@@ -446,6 +452,10 @@ export class OrganiserService {
           suspensionReason,
         },
       });
+      await this.notificationHelper.sendAccountSuspensionAlert(
+        id,
+        suspensionReason,
+      );
 
       return {
         message: `Organiser suspended`,

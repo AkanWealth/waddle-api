@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { RecipientType } from '@prisma/client';
 import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateNotificationDto {
@@ -15,7 +16,7 @@ export class CreateNotificationDto {
     description: 'Body',
     example: 'Your booking for Kids Party has been confirmed!',
     required: true,
-  }) 
+  })
   @IsString()
   @IsNotEmpty()
   body: string;
@@ -36,4 +37,27 @@ export class CreateNotificationDto {
   })
   @IsOptional()
   sendPush?: boolean = true;
+
+  @ApiProperty({
+    description: 'Recipient type',
+    example: RecipientType,
+    required: false,
+  })
+  @IsString()
+  recipientType: RecipientType;
+
+  @ApiProperty({
+    description: 'Should be visible to admins',
+    example: true,
+    required: false,
+  })
+  @IsOptional()
+  visibleToAdmins?: boolean = false;
+}
+
+export interface CreateAdminNotificationDto {
+  title: string;
+  body: string;
+  type?: string;
+  data?: any;
 }
