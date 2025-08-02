@@ -27,7 +27,7 @@ export class NotificationHelper {
     });
   }
 
-  async sendBookingCancel(userId: string, eventName: string) {
+  async sendBookingCancel(userId: string, name: string, eventName: string) {
     await this.notificationService.createNotification({
       title: 'Booking Cancelled',
       body: `Your booking for "${eventName}" has been cancelled!`,
@@ -35,6 +35,17 @@ export class NotificationHelper {
       sendPush: true,
       visibleToAdmins: true,
       recipientType: recipientTypeEnum.USER,
+    });
+
+    await this.notificationService.createAdminNotification({
+      title: 'Booking Cancelled',
+      body: `${name} has cancelled their booking for "${eventName}".`,
+      type: 'BOOKING_CANCELLED',
+      data: {
+        userId,
+        eventName,
+        timestamp: new Date().toISOString(),
+      },
     });
   }
 
@@ -48,15 +59,26 @@ export class NotificationHelper {
     });
   }
 
-  async sendPendingDisputeAlert(userId: string) {
+  async sendPendingDisputeAlert(userId: string, name: string) {
     await this.notificationService.createNotification({
       title: 'You have a pending dispute',
-      body: `You have just created a dispute. Please wait for the resolution by the admin.`,
+      body: 'You have just created a dispute. Please wait for the resolution by the admin.',
       recipientId: userId,
       sendPush: true,
       recipientType: recipientTypeEnum.USER,
     });
+
+    await this.notificationService.createAdminNotification({
+      title: 'New Dispute Created',
+      body: ` ${name} has submitted a new dispute. Please review it.`,
+      type: 'NEW_DISPUTE',
+      data: {
+        userId,
+        timestamp: new Date().toISOString(),
+      },
+    });
   }
+
   async sendDisputeInReviewAlert(userId: string) {
     await this.notificationService.createNotification({
       title: 'Dispute in Review',
@@ -67,13 +89,23 @@ export class NotificationHelper {
     });
   }
 
-  async sendDisputeResolvedAlert(userId: string) {
+  async sendDisputeResolvedAlert(userId: string, name: string) {
     await this.notificationService.createNotification({
       title: 'Dispute Resolved',
-      body: `Your dispute has been resolved. Please check the result.`,
+      body: 'Your dispute has been resolved. Please check the result.',
       recipientId: userId,
       sendPush: true,
       recipientType: recipientTypeEnum.USER,
+    });
+
+    await this.notificationService.createAdminNotification({
+      title: 'Dispute Resolved',
+      body: `The dispute submitted by ${name} has been resolved.`,
+      type: 'DISPUTE_RESOLVED',
+      data: {
+        userId,
+        timestamp: new Date().toISOString(),
+      },
     });
   }
 

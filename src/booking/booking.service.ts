@@ -375,6 +375,7 @@ export class BookingService {
       if (booking.user.fcmIsOn) {
         await this.notificationHelper.sendBookingCancel(
           booking.userId,
+          booking.user.name,
           booking.event.name,
         );
       }
