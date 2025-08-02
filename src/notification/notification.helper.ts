@@ -77,7 +77,11 @@ export class NotificationHelper {
     });
   }
 
-  async sendAccountSuspensionAlert(organiserId: string, reason?: string) {
+  async sendAccountSuspensionAlert(
+    organiserId: string,
+    name: string,
+    reason?: string,
+  ) {
     const title = 'Account Suspended!';
     const body =
       'Your Waddle event organiser account has been suspended due to a violation of our terms. Please contact support for more information.';
@@ -95,7 +99,7 @@ export class NotificationHelper {
     // Send to admins
     await this.notificationService.createAdminNotification({
       title: 'Organiser Suspended',
-      body: `An organiser has been suspended${reason ? ` due to: ${reason}` : ''}`,
+      body: `An organiser named ${name}  has been suspended${reason ? ` due to: ${reason}` : ''}`,
       type: 'ORGANISER_SUSPENSION',
       data: {
         organiserId,
@@ -105,7 +109,11 @@ export class NotificationHelper {
     });
   }
 
-  async sendAccountApprovalStatusAlert(userId: string, isApproved: boolean) {
+  async sendAccountApprovalStatusAlert(
+    userId: string,
+    name: string,
+    isApproved: boolean,
+  ) {
     await this.notificationService.createNotification({
       title: isApproved ? 'Account Approved!' : 'Account Rejected!',
       body: isApproved
@@ -115,6 +123,19 @@ export class NotificationHelper {
       visibleToAdmins: true,
       sendPush: true,
       recipientType: recipientTypeEnum.ORGANISER,
+    });
+    await this.notificationService.createAdminNotification({
+      title: isApproved ? 'Organiser Approved!' : 'Organiser Rejected!',
+
+      body: isApproved
+        ? `An organiser named ${name}  has been approved`
+        : `An organiser named ${name}  has been rejected`,
+      type: isApproved ? 'ORGANISER_APPROVED' : 'ORGANISER_APPROVED',
+      data: {
+        organiserId: userId,
+        reason: 'No specific reason provided',
+        timestamp: new Date().toISOString(),
+      },
     });
   }
 }
