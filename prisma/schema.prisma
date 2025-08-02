@@ -185,6 +185,7 @@ model CrowdSource {
   comment     Comment[]
   creator     User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   like        Like[]
+  status      CrowdSourceStatus        @default(PENDING)
 
   @@index([address, isVerified])
   @@map("crowdsource")
@@ -430,4 +431,9 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum CrowdSourceStatus{
+  PENDING
+  APPROVED
+  REJECTED
+}
 
