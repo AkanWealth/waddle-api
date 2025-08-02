@@ -3,6 +3,7 @@ import { OrganiserService } from './organiser.service';
 import { OrganiserController } from './organiser.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { NotificationService } from '../notification/notification.service';
+import { NotificationHelper } from 'src/notification/notification.helper';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { NotificationService } from '../notification/notification.service';
     }),
   ],
   controllers: [OrganiserController],
-  providers: [OrganiserService, NotificationService],
+  providers: [OrganiserService, NotificationService, NotificationHelper],
 })
 export class OrganiserModule implements NestModule {
   configure() {}

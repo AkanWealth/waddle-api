@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
+import { recipientTypeEnum } from './recepientTypes';
 
 export class SendPushDto {
   @ApiProperty({
@@ -28,4 +29,13 @@ export class SendPushDto {
   @IsString()
   @IsNotEmpty()
   userId: string;
+
+  @ApiProperty({
+    description: 'User or Organiser',
+    example: recipientTypeEnum.USER,
+    required: true,
+  })
+  @IsString()
+  @IsNotEmpty()
+  recipientType: recipientTypeEnum;
 }
