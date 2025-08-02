@@ -428,6 +428,7 @@ export class OrganiserService {
       });
       await this.notificationHelper.sendAccountApprovalStatusAlert(
         id,
+        updated.name,
         isApproved,
       );
 
@@ -454,6 +455,7 @@ export class OrganiserService {
       });
       await this.notificationHelper.sendAccountSuspensionAlert(
         id,
+        updated.name,
         suspensionReason,
       );
 
