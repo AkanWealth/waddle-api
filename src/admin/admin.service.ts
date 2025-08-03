@@ -19,32 +19,74 @@ export class AdminService {
 
   async createAdmin(dto: CreateAdminDto) {
     try {
-      const existingEmail = await this.prisma.admin.findUnique({
-        where: { email: dto.email },
-      });
+      const [existingEmail, hash] = await Promise.all([
+        this.prisma.admin.findUnique({
+          where: { email: dto.email },
+          select: { id: true },
+        }),
+        argon.hash(dto.password),
+      ]);
+
       if (existingEmail) throw new BadRequestException('Email already in use');
 
-      const hash = await argon.hash(dto.password);
-      const resetToken = Math.random().toString(36).substr(2);
+      const resetToken = Math.random().toString(36).slice(2);
       const resetTokenExpiration = Date.now() + 3600000; // 1 hour
 
+      // 2. Create admin first
       const admin = await this.prisma.admin.create({
         data: {
-          ...dto,
+          email: dto.email,
+          first_name: dto.first_name,
+          last_name: dto.last_name,
+          role: dto.role,
           password: hash,
           reset_token: resetToken,
           reset_expiration: resetTokenExpiration.toString(),
         },
       });
 
-      await this.sendInvite(admin.id);
+      if (dto.permissions && Object.keys(dto.permissions).length > 0) {
+        const permissionEntries = Object.entries(dto.permissions);
+
+        const permissionOperations = permissionEntries.map(
+          ([module, actions]) =>
+            this.prisma.adminPermission.upsert({
+              where: {
+                adminId_module: {
+                  adminId: admin.id,
+                  module,
+                },
+              },
+              update: {
+                canCreate: actions.create,
+                canView: actions.view,
+                canManage: actions.manage,
+                canDelete: actions.delete,
+              },
+              create: {
+                adminId: admin.id,
+                module,
+                canCreate: actions.create,
+                canView: actions.view,
+                canManage: actions.manage,
+                canDelete: actions.delete,
+              },
+            }),
+        );
+
+        await Promise.all(permissionOperations);
+      }
+
+      // 4. Send invite after DB ops
+      this.sendInviteWeb(admin.id); // Don't await if it's non-critical
 
       return { message: 'Admin created and invite sent' };
     } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          throw new BadRequestException('Credentials Taken');
-        }
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new BadRequestException('Credentials Taken');
       }
       throw error;
     }

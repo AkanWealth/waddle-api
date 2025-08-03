@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsObject, IsOptional, IsString } from 'class-validator';
 import { SignInDto } from '../../auth/dto';
+import { Role } from '@prisma/client';
 
 export class CreateAdminDto extends SignInDto {
   @ApiPropertyOptional({
@@ -20,4 +21,25 @@ export class CreateAdminDto extends SignInDto {
   @IsString({ message: 'Last name must be a string' })
   @IsOptional()
   last_name: string;
+
+  @ApiPropertyOptional({
+    description: 'Role',
+    type: String,
+    example: 'Admin',
+  })
+  @IsString({ message: 'Last name must be a string' })
+  @IsOptional()
+  role: Role;
+
+  @IsOptional()
+  @IsObject()
+  permissions?: Record<
+    string, // e.g., 'analytics', 'userManagement', etc.
+    {
+      create: boolean;
+      view: boolean;
+      manage: boolean;
+      delete: boolean;
+    }
+  >;
 }

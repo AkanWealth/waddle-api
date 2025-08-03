@@ -212,8 +212,20 @@ export class OrganiserService {
         where: { id: organiserId },
         include: {
           events: {
-            where: { isDeleted: false },
-            orderBy: { createdAt: 'desc' },
+            where: {
+              isDeleted: false,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            include: {
+              bookings: {
+                where: {
+                  isDeleted: false,
+                  status: 'Confirmed', // or all bookings if needed
+                },
+              },
+            },
           },
         },
       });
@@ -224,19 +236,45 @@ export class OrganiserService {
         );
       }
 
-      const eventsWithLogo = organiser.events.map((event) => {
+      const now = new Date();
+
+      let totalAttendees = 0;
+      let upcomingEvents = 0;
+      let pastEvents = 0;
+
+      const eventsWithExtras = organiser.events.map((event) => {
         const event_logo = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow(
           'S3_EVENT_FOLDER',
         )}/${event.images}`;
-        return { ...event, event_logo };
+
+        const isUpcoming = event.date > now;
+        if (isUpcoming) upcomingEvents++;
+        else pastEvents++;
+
+        const totalEventAttendees = event.bookings.reduce(
+          (acc, booking) => acc + booking.ticket_quantity,
+          0,
+        );
+        totalAttendees += totalEventAttendees;
+
+        return {
+          ...event,
+          event_logo,
+          totalEventAttendees,
+          isUpcoming,
+        };
       });
 
       return {
-        message: 'Organiser previous events found',
-        events: eventsWithLogo,
+        message: 'Organiser events overview fetched successfully',
+        totalEventsCreated: organiser.events.length,
+        upcomingEvents,
+        pastEvents,
+        totalAttendees,
+        events: eventsWithExtras,
       };
-    } catch (err: unknown) {
-      console.log(err);
+    } catch (error) {
+      console.error(error);
       throw new NotFoundException(
         'Organiser with the provided ID does not exist.',
       );
