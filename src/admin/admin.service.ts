@@ -225,7 +225,7 @@ export class AdminService {
         },
       });
 
-      const setUpPasswordUrl = `http://localhost:3000/set-password?token=${resetToken}`;
+      const setUpPasswordUrl = `${process.env.FRONTEND_URL}/set-password?token=${resetToken}`;
       const subject = 'Waddle Admin Invite';
       const message = `<p>Hello ${subAdmin.first_name},</p>
     <
