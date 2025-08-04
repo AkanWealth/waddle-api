@@ -288,7 +288,8 @@ export class EventController {
   }
 
   @ApiOperation({
-    summary: 'filter published events by age,category or address',
+    summary:
+      'Filter published events by age, category or address with pagination',
     description:
       'Parents, Admin and Organisers are able to filter published events',
   })
@@ -296,13 +297,17 @@ export class EventController {
   @ApiQuery({ name: 'age', required: false, type: String })
   @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'address', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
   @Get('filter')
   filterByCriteria(
     @Query('age') age: string,
     @Query('category') category: string,
     @Query('address') address: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
   ) {
-    return this.eventService.filterEvent(age, category, address);
+    return this.eventService.filterEvent(age, category, address, page, limit);
   }
 
   @ApiOperation({

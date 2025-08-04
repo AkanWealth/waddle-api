@@ -604,45 +604,56 @@ export class EventService {
     }
   }
 
-  async filterEvent(age_range?: string, category?: string, address?: string) {
+  async filterEvent(
+    age_range?: string,
+    category?: string,
+    address?: string,
+    page = 1,
+    limit = 10,
+  ) {
     try {
-      const whereClause: any = {};
+      const whereClause: any = {
+        isPublished: true,
+      };
 
-      if (age_range) {
-        whereClause.age_range = age_range;
-        whereClause.isPublished = true;
-      }
-
-      if (address) {
+      if (age_range) whereClause.age_range = age_range;
+      if (address)
         whereClause.address = { contains: address, mode: 'insensitive' };
-        whereClause.isPublished = true;
-      }
-
-      if (category) {
+      if (category)
         whereClause.category = { equals: category, mode: 'insensitive' };
-        whereClause.isPublished = true;
-      }
 
-      const event = await this.prisma.event.findMany({
-        where: whereClause,
-        include: { admin: true, organiser: true },
-      });
+      const skip = (page - 1) * limit;
 
-      if (!event || event.length === 0) {
+      const [events, total] = await this.prisma.$transaction([
+        this.prisma.event.findMany({
+          where: whereClause,
+          include: { admin: true, organiser: true },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.event.count({ where: whereClause }),
+      ]);
+
+      if (!events || events.length === 0) {
         throw new NotFoundException(
           'No Event found with the provided criteria.',
         );
       }
 
-      const eventWithImage = event.map((list) => {
+      const eventWithImage = events.map((list) => {
         const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.images}`;
-        return {
-          ...list,
-          images,
-        };
+        return { ...list, images };
       });
 
-      return { message: 'Event found', event: eventWithImage };
+      return {
+        message: 'Event found',
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        event: eventWithImage,
+      };
     } catch (error) {
       throw error;
     }
