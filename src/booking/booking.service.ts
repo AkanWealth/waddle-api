@@ -308,17 +308,33 @@ export class BookingService {
   }
 
   // find all bookings created by a loggedin user
-  async viewAllBookingForUser(userId: string) {
+  async viewAllBookingForUser(userId: string, page = 1, limit = 10) {
     try {
-      const bookings = await this.prisma.booking.findMany({
-        where: { userId },
-        include: { event: true },
-      });
+      const skip = (page - 1) * limit;
 
-      if (!bookings || bookings.length <= 0)
+      const [bookings, total] = await this.prisma.$transaction([
+        this.prisma.booking.findMany({
+          where: { userId },
+          include: { event: true },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.booking.count({ where: { userId } }),
+      ]);
+
+      if (!bookings || bookings.length === 0) {
         throw new NotFoundException('No booking found');
+      }
 
-      return bookings;
+      return {
+        message: 'Bookings found',
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        bookings,
+      };
     } catch (error) {
       throw error;
     }

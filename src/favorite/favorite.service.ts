@@ -22,16 +22,33 @@ export class FavoriteService {
   }
 
   // find all favorite event for a user
-  async viewAllFavorite(userId: string) {
+  async viewAllFavorite(userId: string, page = 1, limit = 10) {
     try {
-      const favorites = await this.prisma.favorite.findMany({
-        where: { userId },
-        include: { event: true },
-      });
-      if (!favorites || favorites.length <= 0)
-        throw new NotFoundException('No favourite found');
+      const skip = (page - 1) * limit;
 
-      return favorites;
+      const [favorites, total] = await this.prisma.$transaction([
+        this.prisma.favorite.findMany({
+          where: { userId },
+          include: { event: true },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.favorite.count({ where: { userId } }),
+      ]);
+
+      if (!favorites || favorites.length === 0) {
+        throw new NotFoundException('No favourite found');
+      }
+
+      return {
+        message: 'Favorites found',
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        favorites,
+      };
     } catch (error) {
       throw error;
     }

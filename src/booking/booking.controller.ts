@@ -27,6 +27,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Role } from '../auth/enum';
@@ -100,13 +101,19 @@ export class BookingController {
   }
 
   @ApiOperation({
-    summary: 'view my bookings as a loggedin parent',
+    summary: 'View my bookings as a logged-in parent with pagination',
     description: 'Parents can view their booked events',
   })
   @ApiOkResponse({ description: 'Ok' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
   @Get('me')
-  viewAllBookingForUser(@GetUser() user: User) {
-    return this.bookingService.viewAllBookingForUser(user.id);
+  viewAllBookingForUser(
+    @GetUser() user: User,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    return this.bookingService.viewAllBookingForUser(user.id, page, limit);
   }
 
   @ApiOperation({

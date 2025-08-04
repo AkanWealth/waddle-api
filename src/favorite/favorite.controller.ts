@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { FavoriteService } from './favorite.service';
 import { CreateFavoriteDto } from './dto/create-favorite.dto';
@@ -22,6 +23,7 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { JwtGuard } from '../auth/guard/auth.guard';
@@ -46,13 +48,19 @@ export class FavoriteController {
   }
 
   @ApiOperation({
-    summary: 'view all my wishlist',
+    summary: 'View all my wishlist with pagination',
     description: 'Parents can view all their wishlist',
   })
   @ApiOkResponse({ description: 'Ok' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
   @Get()
-  viewAllFavorite(@GetUser() user: User) {
-    return this.favoriteService.viewAllFavorite(user.id);
+  viewAllFavorite(
+    @GetUser() user: User,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    return this.favoriteService.viewAllFavorite(user.id, page, limit);
   }
 
   @ApiOperation({
