@@ -29,6 +29,7 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
+  ApiResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
@@ -37,6 +38,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { Role } from '../auth/enum';
+import { EventStatus } from 'src/utils/constants/eventTypes';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -99,6 +101,27 @@ export class EventController {
     @Body() dto: CreateEventDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
+    return this.eventService.createEventByAdmin(
+      user.id,
+      dto,
+      file?.originalname,
+      file?.buffer,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Draft an event by admin',
+    description: 'Draft by the admin',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('host/draft')
+  @Roles(Role.Admin)
+  @UseInterceptors(FileInterceptor('images'))
+  draftsEventByAdmin(
+    @GetUser() user: { id: string },
+    @Body() dto: CreateEventDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
     if (file) {
       try {
         new ParseFilePipe({
@@ -110,20 +133,72 @@ export class EventController {
       } catch (error) {
         throw error;
       }
-      return this.eventService.createEventByAdmin(
+      return this.eventService.draftsEventByAdmin(
         user.id,
         dto,
         file.originalname,
         file.buffer,
       );
     } else {
-      return this.eventService.createEventByAdmin(
+      return this.eventService.draftsEventByAdmin(
         user.id,
         dto,
         file?.originalname,
         file?.buffer,
       );
     }
+  }
+
+  @Patch('host/:id/approve')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Approve and publish a drafted event by admin' })
+  @ApiParam({ name: 'id', type: String, description: 'Event ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Event approved and published',
+    schema: {
+      example: {
+        success: true,
+        message: 'Event approved and published',
+        data: {
+          id: 'clxyz...',
+          name: 'Sample Event',
+          status: 'APPROVED',
+          isPublished: true,
+          // other event fields...
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async approveDraftedEventsByAdmin(@Param('id') eventId: string) {
+    return this.eventService.approveDraftedEventsByAdmin(eventId);
+  }
+
+  @Patch('host/:id/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Rejected a drafted event by admin' })
+  @ApiParam({ name: 'id', type: String, description: 'Event ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Event rejected',
+    schema: {
+      example: {
+        success: true,
+        message: 'Event rejected',
+        data: {
+          id: 'clxyz...',
+          name: 'Sample Event',
+          status: EventStatus.NON_COMPLIANT,
+          isPublished: false,
+          // other event fields...
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async rejectDraftedEventsByAdmin(@Param('id') eventId: string) {
+    return this.eventService.rejectDraftedEventsByAdmin(eventId);
   }
 
   @ApiOperation({

@@ -11,6 +11,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { EventStatus } from 'src/utils/constants/eventTypes';
 
 @Injectable()
 export class EventService {
@@ -88,22 +89,32 @@ export class EventService {
       }
 
       const date = new Date(dto.date);
-      const isPublished = dto.isPublished ?? false;
+      // const isPublished = dto.isPublished ?? false;
 
       // Transform the DTO to match Prisma schema
-      const { instructions, ...restDto } = dto;
+      const { instructions, total_ticket, ...restDto } = dto;
+      const parsedTotalTicket = Number(total_ticket);
+
       const eventData = {
         ...restDto,
         instruction:
           instructions && instructions.length > 0 ? instructions[0] : null,
         date,
-        total_ticket: Number(dto.total_ticket),
+
+        ...(isNaN(parsedTotalTicket) || parsedTotalTicket === 0
+          ? { isUnlimited: true }
+          : { total_ticket: parsedTotalTicket }),
+
         images: fileName || null,
-        isPublished,
-        adminId: creatorId,
+        isPublished: true,
+        status: EventStatus.APPROVED,
+        admin: {
+          connect: { id: creatorId },
+        },
         distance: 0,
         facilities: dto.facilities ?? [],
         tags: dto.tags ?? [],
+        files: dto.files,
       };
 
       console.log('Creating event in database with data:', eventData);
@@ -116,6 +127,114 @@ export class EventService {
     } catch (error) {
       console.error('Error creating event by admin:', error);
       throw error;
+    }
+  }
+
+  async draftsEventByAdmin(
+    creatorId: string,
+    dto: CreateEventDto,
+    fileName?: string,
+    file?: Buffer,
+  ) {
+    try {
+      console.log('Creating event by admin:', {
+        creatorId,
+        fileName,
+        fileSize: file?.length,
+        dtoKeys: Object.keys(dto),
+        dtoData: dto,
+      });
+
+      if (file) {
+        console.log('Uploading file to S3...');
+        await this.uploadEventImages(fileName, file);
+        console.log('File uploaded successfully');
+      }
+
+      const date = new Date(dto.date);
+      const isPublished = dto.isPublished ?? false;
+
+      // Transform the DTO to match Prisma schema
+      const { instructions, total_ticket, ...restDto } = dto; // Extract total_ticket from restDto
+      const parsedTotalTicket = Number(total_ticket);
+
+      const eventData = {
+        ...restDto,
+        instruction: instructions?.[0] ?? null,
+        date,
+        ...(isNaN(parsedTotalTicket) || parsedTotalTicket === 0
+          ? { isUnlimited: true }
+          : { total_ticket: parsedTotalTicket }), // Now this won't be overridden
+        images: fileName || null,
+        isPublished,
+        status: EventStatus.DRAFT,
+        admin: {
+          connect: { id: creatorId },
+        },
+        distance: 0,
+        facilities: dto.facilities ?? [],
+        tags: dto.tags ?? [],
+        files: dto.files,
+      };
+
+      console.log('Creating event in database with data:', eventData);
+      const event = await this.prisma.event.create({
+        data: eventData,
+      });
+
+      console.log('Event created successfully:', event.id);
+      return { message: 'Event created' };
+    } catch (error) {
+      console.error('Error creating event by admin:', error);
+      throw error;
+    }
+  }
+  async approveDraftedEventsByAdmin(eventId: string) {
+    try {
+      const event = await this.prisma.event.update({
+        where: { id: eventId },
+        data: {
+          status: EventStatus.APPROVED,
+          isPublished: true,
+        },
+      });
+
+      if (!event) {
+        throw new Error('Event not found or could not be updated');
+      }
+
+      return {
+        success: true,
+        message: 'Event approved and published',
+        data: event,
+      };
+    } catch (error) {
+      // You can customize this error to use a custom AppError class or logging
+      throw new Error(`Failed to approve event: ${error.message}`);
+    }
+  }
+  async rejectDraftedEventsByAdmin(eventId: string) {
+    try {
+      const event = await this.prisma.event.update({
+        where: { id: eventId },
+        data: {
+          status: EventStatus.NON_COMPLIANT,
+          isPublished: false,
+        },
+      });
+
+      if (!event) {
+        throw new Error('Event not found or could not be updated');
+      }
+
+      return {
+        success: true,
+        message: 'The Event has been rejected',
+        data: event,
+      };
+    } catch (error) {
+      // You can customize this error to use a custom AppError class or logging
+      throw new Error(`Failed to approve event: ${error.message}`);
     }
   }
 

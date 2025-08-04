@@ -126,4 +126,13 @@ export class CreateEventDto {
   @IsOptional()
   @IsEnum(EventType, { message: 'Event type must be INDOOR or OUTDOOR' })
   eventType?: EventType;
+
+  @ApiPropertyOptional({
+    description: 'Files',
+    example: ['https:s3//shhhs.com'],
+  })
+  @IsOptional()
+  @IsArray({ message: 'File must be an array of strings' })
+  @IsString({ each: true, message: 'Each file must be a string' })
+  files?: string[];
 }

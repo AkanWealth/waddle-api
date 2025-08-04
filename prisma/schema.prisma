@@ -135,7 +135,8 @@ model Event {
   address       String
   images        String?
   price         Decimal
-  total_ticket  Int
+  total_ticket  Int?
+  isUnlimited   Boolean    @default(false)
   ticket_booked Int        @default(0)
   date          DateTime
   time          String
@@ -147,6 +148,7 @@ model Event {
   tags          String[]
   eventType     EventType?
   status        String?    @default("PENDING")
+  files         String[]
 
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)

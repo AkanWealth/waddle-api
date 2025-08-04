@@ -22,6 +22,7 @@ import { CrowdSourcingModule } from './crowd-sourcing/crowd-sourcing.module';
 import { DisputeModule } from './dispute/dispute.module';
 import { Cleaner } from './helper';
 import { PaymentModule } from './payment/payment.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { PaymentModule } from './payment/payment.module';
     CrowdSourcingModule,
     DisputeModule,
     PaymentModule,
+    UploadModule,
   ],
   providers: [AppService, Cleaner],
   controllers: [AppController],
