@@ -129,26 +129,28 @@ model User {
 }
 
 model Event {
-  id            String     @id @default(cuid())
-  name          String
-  description   String
-  address       String
-  images        String?
-  price         Decimal
-  total_ticket  Int?
-  isUnlimited   Boolean    @default(false)
-  ticket_booked Int        @default(0)
-  date          DateTime
-  time          String
-  age_range     String
-  instruction   String?
-  category      String
-  distance      Int?
-  facilities    String[]
-  tags          String[]
-  eventType     EventType?
-  status        String?    @default("PENDING")
-  files         String[]
+  id              String     @id @default(cuid())
+  name            String
+  description     String
+  address         String
+  images          String?
+  price           Decimal
+  total_ticket    Int?
+  isUnlimited     Boolean    @default(false)
+  ticket_booked   Int        @default(0)
+  date            DateTime
+  time            String
+  age_range       String
+  instruction     String?
+  category        String
+  distance        Int?
+  facilities      String[]
+  tags            String[]
+  eventType       EventType?
+  status          String?    @default("PENDING")
+  rejectionReason String?
+
+  files String[]
 
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)
