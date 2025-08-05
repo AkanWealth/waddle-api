@@ -27,6 +27,7 @@ model Admin {
   isDeleted                     Boolean           @default(false)
   permissions                   AdminPermission[]
   events                        Event[]
+  avatarUrl                     String?
 
   adminNotificationStatuses AdminNotificationStatus[]
 

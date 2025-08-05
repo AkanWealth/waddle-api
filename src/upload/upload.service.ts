@@ -66,11 +66,11 @@ export class UploadService {
   }
 
   private constructPublicUrl(folder: string, fileName: string): string {
-    const publicUrl = this.config.get('R2_PUBLIC_ENDPOINT');
-    if (publicUrl) {
-      // Use Cloudflare R2 public endpoint
-      return `${publicUrl}/${folder}/${fileName}`;
-    }
+    // const publicUrl = this.config.get('R2_PUBLIC_ENDPOINT');
+    // if (publicUrl) {
+    //   // Use Cloudflare R2 public endpoint
+    //   return `${publicUrl}/${folder}/${fileName}`;
+    // }
 
     // Fallback to S3 URL construction
     const bucket = this.config.getOrThrow('AWS_BUCKET_NAME');

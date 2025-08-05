@@ -238,6 +238,50 @@ export class EventService {
     }
   }
 
+  async restoreSoftDeletedEvent(eventId: string) {
+    try {
+      const event = await this.prisma.event.update({
+        where: { id: eventId },
+        data: {
+          status: EventStatus.PENDING,
+          isDeleted: false,
+          isPublished: false, // Optionally set to true if you want to restore as published
+        },
+      });
+
+      if (!event) {
+        throw new NotFoundException('Event not found or could not be restored');
+      }
+
+      return { message: 'Event restored successfully', event };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getAllSoftDeletedEvents() {
+    try {
+      console.log('Soft deleted events retrieval initiated');
+
+      const softDeletedEvents = await this.prisma.event.findMany({
+        where: { isDeleted: true },
+        include: {
+          admin: true,
+          organiser: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      });
+      if (!softDeletedEvents || softDeletedEvents.length === 0) {
+        return { message: 'No soft-deleted events found.' };
+      }
+
+      return { success: true, data: softDeletedEvents };
+    } catch (error) {
+      throw error;
+    }
+  }
   // async createEvent(
   //   creatorId: string,
   //   creatorType: string,
@@ -345,6 +389,9 @@ export class EventService {
   async viewAllEventAdmin() {
     try {
       const events = await this.prisma.event.findMany({
+        where: {
+          isDeleted: false,
+        },
         include: {
           admin: true,
           organiser: true,
@@ -856,6 +903,37 @@ export class EventService {
   //   }
   // }
 
+  async softDeleteEvent(id: string) {
+    try {
+      const existingEvent = await this.prisma.event.findUnique({
+        where: { id },
+      });
+
+      if (!existingEvent)
+        throw new NotFoundException(
+          'Event with the provided ID does not exist.',
+        );
+
+      // Optional: delete associated images if any
+      if (existingEvent.images) {
+        await this.deleteEventImages(existingEvent.images);
+      }
+
+      // Soft delete by setting isDeleted to true and isPublished to false
+      await this.prisma.event.update({
+        where: { id: existingEvent.id },
+        data: {
+          isDeleted: true,
+          isPublished: false, // optional: unpublish when soft-deleted
+        },
+      });
+
+      return { message: 'Event soft-deleted successfully.' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async deleteEvent(id: string) {
     try {
       const existingEvent = await this.prisma.event.findUnique({
@@ -871,9 +949,16 @@ export class EventService {
         await this.deleteEventImages(existingEvent.images);
       }
 
-      await this.prisma.event.delete({
-        where: { id: existingEvent.id },
-      });
+      await this.prisma.$transaction([
+        this.prisma.payment.deleteMany({ where: { eventId: id } }),
+        this.prisma.booking.deleteMany({ where: { eventId: id } }),
+        this.prisma.review.deleteMany({ where: { eventId: id } }),
+        this.prisma.recommendation.deleteMany({ where: { eventId: id } }),
+        this.prisma.like.deleteMany({ where: { eventId: id } }),
+        this.prisma.favorite.deleteMany({ where: { eventId: id } }),
+        this.prisma.dispute.deleteMany({ where: { eventId: id } }),
+        this.prisma.event.delete({ where: { id } }),
+      ]);
 
       return { message: 'Event deleted.' };
     } catch (error) {

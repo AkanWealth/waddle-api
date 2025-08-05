@@ -202,17 +202,6 @@ export class EventController {
   }
 
   @ApiOperation({
-    summary: 'view all published paginated events',
-    description:
-      'Parents, Admin and Organisers are able to view all published paginated events',
-  })
-  @ApiOkResponse({ description: 'Ok' })
-  @Get('/:page/:pageSize')
-  findAll(@Param('page') page: string, @Param('pageSize') pageSize: string) {
-    return this.eventService.viewAllEvent(parseInt(page), parseInt(pageSize));
-  }
-
-  @ApiOperation({
     summary: 'view all published paginated events as an admin ',
     description:
       'Parents, Admin and Organisers are able to view all published paginated events as admin',
@@ -243,6 +232,18 @@ export class EventController {
   @Roles(Role.Admin)
   viewMyEventsAsAdmin(@GetUser() user: { id: string }) {
     return this.eventService.viewMyEventsAsAdmin(user.id);
+  }
+
+  @ApiOperation({
+    summary: 'fetch all soft deleted events',
+    description:
+      'Fetch all soft deleted events based on the logged in Organiser or Admin',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('all/soft-deleted')
+  @Roles(Role.Admin)
+  async fetchAllSoftDeletedEvents() {
+    return this.eventService.getAllSoftDeletedEvents();
   }
 
   @ApiOperation({
@@ -401,6 +402,20 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary: 'soft delete an event by event ID',
+    description:
+      'Soft delete an event by event ID based on the logged in Organiser or Admin',
+  })
+  @ApiNoContentResponse({ description: 'No content' })
+  @ApiParam({ name: 'id' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('soft-delete/:id')
+  @Roles(Role.Admin, Role.Organiser)
+  softDeleteEvent(@Param('id') id: string, @GetUser() user: User) {
+    if (user) return this.eventService.softDeleteEvent(id);
+  }
+
+  @ApiOperation({
     summary: 'delete an event by event ID',
     description:
       'Delete an event by event ID based on the logged in Organiser or Admin',
@@ -412,5 +427,42 @@ export class EventController {
   @Roles(Role.Admin, Role.Organiser)
   deleteEvent(@Param('id') id: string, @GetUser() user: User) {
     if (user) return this.eventService.deleteEvent(id);
+  }
+
+  @Patch('/soft-delete/:id/restore')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Restore a soft-deleted event by admin' })
+  @ApiParam({ name: 'id', type: String, description: 'Event ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Event restored successfully',
+    schema: {
+      example: {
+        success: true,
+        message: 'Event restored successfully',
+        data: {
+          id: 'clxyz...',
+          name: 'Sample Event',
+          status: 'APPROVED',
+          isPublished: true,
+          // other event fields...
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async restoreSoftDeletedEvent(@Param('id') eventId: string) {
+    return this.eventService.restoreSoftDeletedEvent(eventId);
+  }
+
+  @ApiOperation({
+    summary: 'view all published paginated events',
+    description:
+      'Parents, Admin and Organisers are able to view all published paginated events',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('/:page/:pageSize')
+  findAll(@Param('page') page: string, @Param('pageSize') pageSize: string) {
+    return this.eventService.viewAllEvent(parseInt(page), parseInt(pageSize));
   }
 }
