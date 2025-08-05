@@ -1,7 +1,6 @@
 import {
   ForbiddenException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateEventDto, UpdateEventDto } from './dto';
@@ -667,7 +666,8 @@ export class EventService {
       if (age_range) whereClause.age_range = age_range;
       if (address)
         whereClause.address = { contains: address, mode: 'insensitive' };
-      if (category) whereClause.category = category; // safer if it's an enum
+      if (category)
+        whereClause.category = { equals: category, mode: 'insensitive' };
 
       const skip = (page - 1) * limit;
 
@@ -702,10 +702,7 @@ export class EventService {
         event: eventWithImage,
       };
     } catch (error) {
-      console.error(error); // Log for debugging
-      throw new InternalServerErrorException(
-        error.message || 'An error occurred while filtering events',
-      );
+      throw error;
     }
   }
 
