@@ -112,7 +112,10 @@ export class CreateEventDto {
   @IsString({ each: true, message: 'Each facility must be a string' })
   facilities?: string[];
 
-  @ApiPropertyOptional({ description: 'Tags', example: ['Art', 'Kids'] })
+  @ApiPropertyOptional({
+    description: 'Tags',
+    example: ['Art', 'Kids', 'Science'],
+  })
   @IsOptional()
   @IsArray({ message: 'Tags must be an array of strings' })
   @IsString({ each: true, message: 'Each tag must be a string' })
