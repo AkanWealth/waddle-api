@@ -84,6 +84,8 @@ model Organiser {
   stripe_account_id             String?
   is_stripe_connected           Boolean        @default(false)
   notifications                 Notification[] @relation("OrganiserNotifications")
+  attachment                    String?
+  description                   String?
 
   status           String  @default("PENDING")
   suspensionReason String?

@@ -28,4 +28,18 @@ export class UpdateOrganiserDto extends PartialType(OrganiserSignUpDto) {
   })
   @IsOptional()
   isVerified: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Business attachment link',
+    example: 'https://waddle.aws.link',
+  })
+  @IsOptional()
+  attachment: string;
+
+  @ApiPropertyOptional({
+    description: 'Business description',
+    example: 'A random description of your business',
+  })
+  @IsOptional()
+  description: string;
 }
