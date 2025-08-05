@@ -704,7 +704,7 @@ export class EventService {
     } catch (error) {
       console.error(error); // Log for debugging
       throw new InternalServerErrorException(
-        'Something went wrong while filtering events',
+        error.message || 'An error occurred while filtering events',
       );
     }
   }
