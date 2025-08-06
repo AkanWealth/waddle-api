@@ -88,7 +88,7 @@ export class OrganiserService {
     }
 
     await this.stripe.oauth.deauthorize({
-      client_id: process.env.STRIPE_SECRET_KEY,
+      client_id: process.env.STRIPE_CLIENT_ID,
       stripe_user_id: user.stripe_account_id,
     });
 
@@ -358,13 +358,37 @@ export class OrganiserService {
       }
 
       // if no password is provided, update the user without changing the password
+      // Filter out undefined values from DTO and ensure business_name is included if present
+      const data: any = {
+        ...Object.fromEntries(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          Object.entries(dto).filter(([_, value]) => value !== undefined),
+        ),
+        ...(businessLogo !== undefined && { business_logo: businessLogo }),
+      };
+
+      // Check if user is trying to update business_name
+      if ('business_name' in data && data.business_name) {
+        const existing = await this.prisma.organiser.findFirst({
+          where: {
+            business_name: data.business_name,
+            NOT: { id }, // exclude the current user
+          },
+        });
+
+        if (existing) {
+          throw new BadRequestException('Business name is already taken');
+        }
+      }
+
       const user = await this.prisma.organiser.update({
         where: { id },
-        data: {
-          ...dto,
-          business_logo: businessLogo || null,
-        },
+        data,
       });
+
+      if (!user) {
+        throw new NotFoundException('Organiser not found');
+      }
 
       delete user.password;
       return { message: 'Profile updated', user };
