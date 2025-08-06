@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -15,6 +16,8 @@ import {
   CreateCrowdSourcingDto,
   UpdateCrowdSourcingDto,
 } from './dto';
+import { UpdateReviewDto } from './dto/update-review.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
 export class CrowdSourcingService {
@@ -531,5 +534,733 @@ export class CrowdSourcingService {
       return false;
     }
     return undefined;
+  }
+
+  async setAttendance(userId: string, crowdSourceId: string, isGoing: boolean) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    // Upsert attendance record
+    const attendance = await this.prisma.crowdSourceAttendance.upsert({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+      update: {
+        isGoing,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId,
+        crowdSourceId,
+        isGoing,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: `Attendance ${isGoing ? 'confirmed' : 'declined'} successfully`,
+      data: attendance,
+    };
+  }
+
+  async getAttendanceStats(crowdSourceId: string) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    const attendanceStats = await this.prisma.crowdSourceAttendance.groupBy({
+      by: ['isGoing'],
+      where: {
+        crowdSourceId,
+        user: {
+          isDeleted: false,
+        },
+      },
+      _count: {
+        isGoing: true,
+      },
+    });
+
+    const going =
+      attendanceStats.find((stat) => stat.isGoing === true)?._count?.isGoing ||
+      0;
+    const notGoing =
+      attendanceStats.find((stat) => stat.isGoing === false)?._count?.isGoing ||
+      0;
+    const total = going + notGoing;
+
+    return {
+      success: true,
+      data: {
+        going,
+        notGoing,
+        total,
+        percentageGoing: total > 0 ? Math.round((going / total) * 100) : 0,
+        percentageNotGoing:
+          total > 0 ? Math.round((notGoing / total) * 100) : 0,
+      },
+    };
+  }
+
+  async getParentAttendanceStats(crowdSourceId: string) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    const parentAttendanceStats =
+      await this.prisma.crowdSourceAttendance.groupBy({
+        by: ['isGoing'],
+        where: {
+          crowdSourceId,
+          user: {
+            role: 'GUARDIAN',
+            isDeleted: false,
+          },
+        },
+        _count: {
+          isGoing: true,
+        },
+      });
+
+    const going =
+      parentAttendanceStats.find((stat) => stat.isGoing === true)?._count
+        ?.isGoing || 0;
+    const notGoing =
+      parentAttendanceStats.find((stat) => stat.isGoing === false)?._count
+        ?.isGoing || 0;
+    const total = going + notGoing;
+
+    return {
+      success: true,
+      data: {
+        parentsGoing: going,
+        parentsNotGoing: notGoing,
+        totalParentsResponded: total,
+        percentageParentsGoing:
+          total > 0 ? Math.round((going / total) * 100) : 0,
+        percentageParentsNotGoing:
+          total > 0 ? Math.round((notGoing / total) * 100) : 0,
+      },
+    };
+  }
+
+  async getDetailedAttendanceStats(crowdSourceId: string) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    const attendanceRecords = await this.prisma.crowdSourceAttendance.findMany({
+      where: {
+        crowdSourceId,
+        user: {
+          isDeleted: false,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    // Separate by role and attendance
+    const stats = {
+      parents: {
+        going: attendanceRecords.filter(
+          (r) => r.user.role === 'GUARDIAN' && r.isGoing,
+        ).length,
+        notGoing: attendanceRecords.filter(
+          (r) => r.user.role === 'GUARDIAN' && !r.isGoing,
+        ).length,
+      },
+      organisers: {
+        going: attendanceRecords.filter(
+          (r) => r.user.role === 'ORGANISER' && r.isGoing,
+        ).length,
+        notGoing: attendanceRecords.filter(
+          (r) => r.user.role === 'ORGANISER' && !r.isGoing,
+        ).length,
+      },
+      others: {
+        going: attendanceRecords.filter(
+          (r) => !['GUARDIAN', 'ORGANISER'].includes(r.user.role) && r.isGoing,
+        ).length,
+        notGoing: attendanceRecords.filter(
+          (r) => !['GUARDIAN', 'ORGANISER'].includes(r.user.role) && !r.isGoing,
+        ).length,
+      },
+    };
+
+    const totalParents = stats.parents.going + stats.parents.notGoing;
+    const totalAll = attendanceRecords.length;
+    const totalGoing =
+      stats.parents.going + stats.organisers.going + stats.others.going;
+
+    return {
+      success: true,
+      data: {
+        summary: {
+          totalResponses: totalAll,
+          totalGoing,
+          totalNotGoing: totalAll - totalGoing,
+          overallPercentageGoing:
+            totalAll > 0 ? Math.round((totalGoing / totalAll) * 100) : 0,
+        },
+        parents: {
+          going: stats.parents.going,
+          notGoing: stats.parents.notGoing,
+          total: totalParents,
+          percentageGoing:
+            totalParents > 0
+              ? Math.round((stats.parents.going / totalParents) * 100)
+              : 0,
+        },
+        organisers: {
+          going: stats.organisers.going,
+          notGoing: stats.organisers.notGoing,
+          total: stats.organisers.going + stats.organisers.notGoing,
+        },
+        others: {
+          going: stats.others.going,
+          notGoing: stats.others.notGoing,
+          total: stats.others.going + stats.others.notGoing,
+        },
+      },
+    };
+  }
+
+  async getMyAttendanceStatus(userId: string, crowdSourceId: string) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    const attendance = await this.prisma.crowdSourceAttendance.findUnique({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        hasResponded: !!attendance,
+        isGoing: attendance?.isGoing || null,
+        respondedAt: attendance?.createdAt || null,
+      },
+    };
+  }
+
+  async removeAttendance(userId: string, crowdSourceId: string) {
+    const attendance = await this.prisma.crowdSourceAttendance.findUnique({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+    });
+
+    if (!attendance) {
+      throw new NotFoundException('Attendance record not found');
+    }
+
+    await this.prisma.crowdSourceAttendance.delete({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Attendance removed successfully',
+    };
+  }
+
+  async getBulkAttendanceStats(crowdSourceIds: string[]) {
+    const bulkStats = await Promise.all(
+      crowdSourceIds.map(async (id) => {
+        try {
+          const attendanceStats =
+            await this.prisma.crowdSourceAttendance.groupBy({
+              by: ['isGoing'],
+              where: {
+                crowdSourceId: id,
+                user: {
+                  role: 'GUARDIAN',
+                  isDeleted: false,
+                },
+              },
+              _count: {
+                isGoing: true,
+              },
+            });
+
+          const going =
+            attendanceStats.find((stat) => stat.isGoing === true)?._count
+              ?.isGoing || 0;
+          const notGoing =
+            attendanceStats.find((stat) => stat.isGoing === false)?._count
+              ?.isGoing || 0;
+          const total = going + notGoing;
+
+          return {
+            crowdSourceId: id,
+            parentsGoing: going,
+            parentsNotGoing: notGoing,
+            totalParents: total,
+            percentageGoing: total > 0 ? Math.round((going / total) * 100) : 0,
+          };
+        } catch (error: unknown) {
+          console.error(`Error fetching stats for:`, error);
+          return {
+            crowdSourceId: id,
+            error: 'Failed to fetch stats',
+            parentsGoing: 0,
+            parentsNotGoing: 0,
+            totalParents: 0,
+            percentageGoing: 0,
+          };
+        }
+      }),
+    );
+
+    return {
+      success: true,
+      data: { stats: bulkStats },
+    };
+  }
+  // End Attendance Methods
+
+  // Start Review Methods
+  async createReview(
+    userId: string,
+    crowdSourceId: string,
+    dto: CreateReviewDto,
+  ) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        isPublished: true, // Only allow reviews on published crowdsources
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found or not published');
+    }
+
+    // Check if user already reviewed this crowdsource
+    const existingReview = await this.prisma.crowdSourceReview.findUnique({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+    });
+
+    if (existingReview) {
+      throw new BadRequestException(
+        'You have already reviewed this crowdsource',
+      );
+    }
+
+    // Check if user attended (optional - for verified reviews)
+    const attendance = await this.prisma.crowdSourceAttendance.findUnique({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+    });
+
+    const review = await this.prisma.crowdSourceReview.create({
+      data: {
+        userId,
+        crowdSourceId,
+        rating: dto.rating,
+        comment: dto.comment,
+        verified: attendance?.isGoing === true, // Mark as verified if they said they were going
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+          },
+        },
+        _count: {
+          select: {
+            likes: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Review created successfully',
+      data: review,
+    };
+  }
+
+  async getReviews(crowdSourceId: string, page: number, pageSize: number) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    const skip = (page - 1) * pageSize;
+
+    const [reviews, total] = await Promise.all([
+      this.prisma.crowdSourceReview.findMany({
+        where: {
+          crowdSourceId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profile_picture: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+            },
+          },
+        },
+        orderBy: [
+          { verified: 'desc' }, // Verified reviews first
+          { createdAt: 'desc' },
+        ],
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.crowdSourceReview.count({
+        where: {
+          crowdSourceId,
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / pageSize);
+
+    return {
+      success: true,
+      data: {
+        reviews,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      },
+    };
+  }
+
+  async updateReview(userId: string, reviewId: string, dto: UpdateReviewDto) {
+    const review = await this.prisma.crowdSourceReview.findUnique({
+      where: {
+        id: reviewId,
+      },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    if (review.userId !== userId) {
+      throw new ForbiddenException('You can only update your own reviews');
+    }
+
+    const updatedReview = await this.prisma.crowdSourceReview.update({
+      where: {
+        id: reviewId,
+      },
+      data: {
+        ...(dto.comment !== undefined && { comment: dto.comment }),
+        updatedAt: new Date(),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+          },
+        },
+        _count: {
+          select: {
+            likes: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Review updated successfully',
+      data: updatedReview,
+    };
+  }
+
+  async deleteReview(userId: string, reviewId: string) {
+    const review = await this.prisma.crowdSourceReview.findUnique({
+      where: {
+        id: reviewId,
+      },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    if (review.userId !== userId) {
+      throw new ForbiddenException('You can only delete your own reviews');
+    }
+
+    await this.prisma.crowdSourceReview.delete({
+      where: {
+        id: reviewId,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Review deleted successfully',
+    };
+  }
+
+  async getReviewStats(crowdSourceId: string) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    const stats = await this.prisma.crowdSourceReview.aggregate({
+      where: {
+        crowdSourceId,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    const ratingBreakdown = await this.prisma.crowdSourceReview.groupBy({
+      by: ['rating'],
+      where: {
+        crowdSourceId,
+      },
+      _count: {
+        rating: true,
+      },
+      orderBy: {
+        rating: 'desc',
+      },
+    });
+
+    const verifiedCount = await this.prisma.crowdSourceReview.count({
+      where: {
+        crowdSourceId,
+        verified: true,
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        totalReviews: stats._count.id,
+        verifiedReviews: verifiedCount,
+        ratingBreakdown: ratingBreakdown.reduce((acc, curr) => {
+          acc[`${curr.rating}Stars`] = curr._count.rating;
+          return acc;
+        }, {}),
+      },
+    };
+  }
+
+  // Start Review Like Methods
+  async toggleReviewLike(userId: string, reviewId: string) {
+    // Verify review exists
+    const review = await this.prisma.crowdSourceReview.findUnique({
+      where: {
+        id: reviewId,
+      },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    // Check if user already liked this review
+    const existingLike = await this.prisma.like.findUnique({
+      where: {
+        userId_crowdSourceReviewId: {
+          userId,
+          crowdSourceReviewId: reviewId,
+        },
+      },
+    });
+
+    if (existingLike) {
+      // Unlike the review
+      await this.prisma.like.delete({
+        where: {
+          userId_crowdSourceReviewId: {
+            userId,
+            crowdSourceReviewId: reviewId,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Review unliked successfully',
+        data: { liked: false },
+      };
+    } else {
+      // Like the review
+      await this.prisma.like.create({
+        data: {
+          userId,
+          crowdSourceReviewId: reviewId,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Review liked successfully',
+        data: { liked: true },
+      };
+    }
+  }
+
+  async getReviewLikes(reviewId: string) {
+    // Verify review exists
+    const review = await this.prisma.crowdSourceReview.findUnique({
+      where: {
+        id: reviewId,
+      },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    const likes = await this.prisma.like.findMany({
+      where: {
+        crowdSourceReviewId: reviewId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        likeCount: likes.length,
+        likes: likes.map((like) => ({
+          id: like.id,
+          user: like.user,
+          likedAt: like.createdAt,
+        })),
+      },
+    };
   }
 }

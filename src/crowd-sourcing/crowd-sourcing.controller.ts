@@ -36,6 +36,9 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/decorator/role-decorator';
 import { Role } from '../auth/enum';
+import { UpdateReviewDto } from './dto/update-review.dto';
+import { BulkAttendanceStatsDto } from './dto/bulk-attendance-stats.dto';
+import { SetAttendanceDto } from './dto/set-attendance.dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -285,5 +288,55 @@ export class CrowdSourcingController {
   async viewRepliesForComment(@Param('id') id: string) {
     return this.crowdSourcingService.viewRepliesForComment(id);
   }
-  // End Commenting and Replying
+
+  @ApiOperation({
+    summary: 'set attendance for a crowdsourced place',
+    description:
+      'Set whether you are going or not going to a crowdsourced event/place',
+  })
+  @ApiCreatedResponse({ description: 'Attendance set successfully' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @ApiNotFoundResponse({ description: 'CrowdSource not found' })
+  @Post('attendance/:id')
+  async setAttendance(
+    @GetUser('id') userId: string,
+    @Param('id') crowdSourceId: string,
+    @Body() dto: SetAttendanceDto,
+  ) {
+    return this.crowdSourcingService.setAttendance(
+      userId,
+      crowdSourceId,
+      dto.isGoing,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'update a review for a crowdsourced place',
+    description: 'Update your review for a crowdsourced place',
+  })
+  @ApiAcceptedResponse({ description: 'Review updated successfully' })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @ApiNotFoundResponse({ description: 'Review not found' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('review/:id')
+  async updateReview(
+    @GetUser('id') userId: string,
+    @Param('id') reviewId: string,
+    @Body() dto: UpdateReviewDto,
+  ) {
+    return this.crowdSourcingService.updateReview(userId, reviewId, dto);
+  }
+
+  @ApiOperation({
+    summary: 'get bulk attendance statistics',
+    description: 'Get attendance statistics for multiple crowdsourced places',
+  })
+  @ApiOkResponse({
+    description: 'Bulk attendance statistics retrieved successfully',
+  })
+  @ApiBadRequestResponse({ description: 'Bad request' })
+  @Post('attendance/bulk-stats')
+  async getBulkAttendanceStats(@Body() dto: BulkAttendanceStatsDto) {
+    return this.crowdSourcingService.getBulkAttendanceStats(dto.crowdSourceIds);
+  }
 }
