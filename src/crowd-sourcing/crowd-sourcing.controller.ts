@@ -290,7 +290,7 @@ export class CrowdSourcingController {
   }
 
   @ApiOperation({
-    summary: 'set attendance for a crowdsourced place',
+    summary: 'set attendance for a crowdsourced event',
     description:
       'Set whether you are going or not going to a crowdsourced event/place',
   })
