@@ -29,7 +29,8 @@ jobs:
             echo "Deploying to EC2 instance..."
             cd /home/ec2-user/waddle-api && \
             echo "Updating code from repository..." && \
-            git pull https://github.com/AkanWealth/waddle-api.git main && \
+            git fetch origin && \
+            git reset --hard origin/main && \
             echo "Installing dependencies..." && \
             npm ci --omit=dev && \
             echo "Creating .env file..." && \
