@@ -42,4 +42,13 @@ export class CreateAdminDto extends SignInDto {
       delete: boolean;
     }
   >;
+
+  @ApiPropertyOptional({
+    description: 'Avatar URL',
+    type: String,
+    example: 'https://s3.amazonaws.com/mybucket/avatar.png',
+  })
+  @IsString({ message: 'Avatar URL must be a string' })
+  @IsOptional()
+  avatarUrl?: string;
 }
