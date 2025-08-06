@@ -252,8 +252,8 @@ export class NotificationService {
     try {
       const whereClause =
         recipientType === recipientTypeEnum.USER
-          ? { id: notificationId, userId: recipientId, recipientType }
-          : { id: notificationId, organiserId: recipientId, recipientType };
+          ? { id: notificationId, userId: recipientId }
+          : { id: notificationId, organiserId: recipientId };
 
       const notification = await this.prisma.notification.update({
         where: whereClause,
@@ -271,8 +271,8 @@ export class NotificationService {
     try {
       const whereClause =
         recipientType === recipientTypeEnum.USER
-          ? { userId: recipientId, recipientType, isRead: false }
-          : { organiserId: recipientId, recipientType, isRead: false };
+          ? { userId: recipientId, isRead: false }
+          : { organiserId: recipientId, isRead: false };
 
       await this.prisma.notification.updateMany({
         where: whereClause,
@@ -290,8 +290,8 @@ export class NotificationService {
     try {
       const whereClause =
         recipientType === recipientTypeEnum.USER
-          ? { userId: recipientId, recipientType, isRead: false }
-          : { organiserId: recipientId, recipientType, isRead: false };
+          ? { userId: recipientId, isRead: false }
+          : { organiserId: recipientId, isRead: false };
 
       const count = await this.prisma.notification.count({
         where: whereClause,
@@ -312,8 +312,8 @@ export class NotificationService {
     try {
       const whereClause =
         recipientType === recipientTypeEnum.USER
-          ? { id: notificationId, userId: recipientId, recipientType }
-          : { id: notificationId, organiserId: recipientId, recipientType };
+          ? { id: notificationId, userId: recipientId }
+          : { id: notificationId, organiserId: recipientId };
 
       const notification = await this.prisma.notification.deleteMany({
         where: whereClause,
@@ -339,8 +339,8 @@ export class NotificationService {
     try {
       const whereClause =
         recipientType === recipientTypeEnum.USER
-          ? { userId: recipientId, recipientType }
-          : { organiserId: recipientId, recipientType };
+          ? { userId: recipientId }
+          : { organiserId: recipientId };
 
       await this.prisma.notification.deleteMany({
         where: whereClause,

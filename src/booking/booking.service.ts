@@ -323,10 +323,6 @@ export class BookingService {
         this.prisma.booking.count({ where: { userId } }),
       ]);
 
-      if (!bookings || bookings.length === 0) {
-        throw new NotFoundException('No booking found');
-      }
-
       return {
         message: 'Bookings found',
         total,

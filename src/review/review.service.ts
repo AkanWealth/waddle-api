@@ -24,6 +24,7 @@ export class ReviewService {
       const reviews = await this.prisma.review.findMany({
         where: { eventId },
         include: { event: true },
+        orderBy: { createdAt: 'desc' },
       });
 
       if (!reviews || reviews.length <= 0)
