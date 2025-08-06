@@ -483,6 +483,7 @@ export class OrganiserService {
       const updated = await this.prisma.organiser.update({
         where: { id },
         data: {
+          isApproved: isApproved ? true : false,
           status: isApproved
             ? OrganiserStatus.APPROVED
             : OrganiserStatus.REJECTED,
