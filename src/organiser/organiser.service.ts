@@ -124,28 +124,25 @@ export class OrganiserService {
     };
   }
 
-  // Start Organiser
   async saveOrganiserFcmToken(userId: string, token: string) {
+    if (!userId || !token) {
+      throw new BadRequestException('User ID and token are required.');
+    }
+
     try {
-      const existingOrganiser = await this.prisma.organiser.findUnique({
-        where: { id: userId },
-      });
-
-      if (!existingOrganiser) {
-        throw new NotFoundException(
-          'Organiser with the provided ID does not exist.',
-        );
-      }
-
       await this.prisma.organiser.update({
         where: { id: userId },
-        data: {
-          fcmToken: token,
-        },
+        data: { fcmToken: token },
       });
 
       return { message: 'FCM token updated successfully' };
     } catch (error) {
+      console.error('Error saving FCM token:', error);
+      if (error.code === 'P2025') {
+        throw new NotFoundException(
+          'Organiser with the provided ID does not exist.',
+        );
+      }
       throw error;
     }
   }
