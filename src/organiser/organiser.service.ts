@@ -184,6 +184,9 @@ export class OrganiserService {
   async viewAllOrganiser() {
     try {
       const organiser = await this.prisma.organiser.findMany({
+        // where: {
+        //   isProfileCompleted: true,
+        // },
         orderBy: {
           createdAt: 'desc',
         },
@@ -357,6 +360,7 @@ export class OrganiserService {
       // Filter out undefined values from dto
       const data: any = {
         ...Object.fromEntries(
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           Object.entries(dto).filter(([_, value]) => value !== undefined),
         ),
         ...(businessLogo !== undefined && { business_logo: businessLogo }),
