@@ -11,6 +11,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CrowdSourcingService } from './crowd-sourcing.service';
@@ -41,6 +42,7 @@ import { Role } from '../auth/enum';
 // import { BulkAttendanceStatsDto } from './dto/bulk-attendance-stats.dto';
 import { SetAttendanceDto } from './dto/set-attendance.dto';
 import { CreateCrowdSourceReviewDto } from './dto/create-crowdsource-review.dto';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -348,6 +350,26 @@ export class CrowdSourcingController {
         crowdSourceId,
       );
     return { crowdSourceId, percentage };
+  }
+
+  @ApiOperation({
+    summary: 'Fetch paginated reviews for a crowdsourced place',
+    description:
+      'Returns reviews (including comment, recommendation, user info) in paginated form',
+  })
+  @ApiOkResponse({ description: 'Reviews fetched successfully' })
+  @ApiNotFoundResponse({ description: 'CrowdSource not found' })
+  @Get('review/:id/paginated')
+  async getPaginatedReviews(
+    @Param('id') crowdSourceId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    const { page, limit } = query;
+    return this.crowdSourcingService.getPaginatedPlaceReviews(
+      crowdSourceId,
+      page,
+      limit,
+    );
   }
 
   // @ApiOperation({

@@ -1267,8 +1267,6 @@ export class CrowdSourcingService {
     };
   }
 
-  // crowdsource-review.service.ts
-
   async createPlaceReview(
     userId: string,
     crowdSourceId: string,
@@ -1293,8 +1291,6 @@ export class CrowdSourcingService {
     });
   }
 
-  // crowdsource-review.service.ts
-
   async getRecommendationPlacePercentage(
     crowdSourceId: string,
   ): Promise<number> {
@@ -1311,5 +1307,44 @@ export class CrowdSourcingService {
     const percentage = (totalRecommendations / totalReviews) * 100;
 
     return Math.round(percentage);
+  }
+
+  // crowdsource-review.service.ts
+
+  async getPaginatedPlaceReviews(
+    crowdSourceId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [total, reviews] = await this.prisma.$transaction([
+      this.prisma.crowdSourceReview.count({
+        where: { crowdSourceId },
+      }),
+      this.prisma.crowdSourceReview.findMany({
+        where: { crowdSourceId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              name: true,
+              profile_picture: true,
+              password: false,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      reviews,
+    };
   }
 }
