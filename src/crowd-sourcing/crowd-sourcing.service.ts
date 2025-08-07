@@ -18,6 +18,7 @@ import {
 } from './dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { CrowdSourceStatus } from '@prisma/client';
 
 @Injectable()
 export class CrowdSourcingService {
@@ -182,7 +183,7 @@ export class CrowdSourcingService {
         tag: 'Place',
       },
       orderBy: {
-        date: 'desc',
+        createdAt: 'desc',
       },
       include: { like: true, creator: true },
     });
@@ -299,7 +300,7 @@ export class CrowdSourcingService {
     }
     const updatedEvent = await this.prisma.crowdSource.update({
       where: { id },
-      data: { isVerified: true },
+      data: { isVerified: true, status: CrowdSourceStatus.APPROVED },
     });
 
     return {
@@ -317,7 +318,7 @@ export class CrowdSourcingService {
     }
     const updatedEvent = await this.prisma.crowdSource.update({
       where: { id },
-      data: { isVerified: false },
+      data: { isVerified: false, status: CrowdSourceStatus.REJECTED },
     });
 
     return {

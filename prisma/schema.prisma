@@ -51,15 +51,15 @@ model AdminPermission {
 
 model Organiser {
   id                            String         @id @default(cuid())
-  name                          String
+  name                          String?
   email                         String         @unique
   password                      String
   phone_number                  String
   business_logo                 String?
   paymentAccountId              String?
   address                       String
-  business_name                 String         @unique
-  business_category             String
+  business_name                 String?        
+  business_category             String?
   registration_number           String
   email_verify                  Boolean        @default(true)
   isLocked                      Boolean        @default(false)
@@ -191,6 +191,7 @@ model CrowdSource {
   updatedAt   DateTime          @updatedAt
   date        DateTime?
   fee         Decimal
+  isFree      Boolean           @default(false)
   tag         Tag               @default(Place)
   time        String?
   tips        String?
