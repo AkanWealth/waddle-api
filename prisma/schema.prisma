@@ -215,7 +215,7 @@ model CrowdSourceAttendance {
   id            String   @id @default(cuid())
   userId        String
   crowdSourceId String
-  isGoing       Boolean  @default(true) // true = going, false = not going
+  going         String   @default("PENDING") // YES/NO/PENDING
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -223,7 +223,7 @@ model CrowdSourceAttendance {
   crowdSource CrowdSource @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, crowdSourceId]) // One attendance record per user per crowdsource
-  @@index([crowdSourceId, isGoing]) // For quick queries on who's going
+  @@index([crowdSourceId, going]) // For quick queries on who's going
   @@map("crowdsource_attendance")
 }
 
@@ -231,7 +231,7 @@ model CrowdSourceReview {
   id              String  @id @default(cuid())
   userId          String
   crowdSourceId   String
-  rating          Int // 1-5 star rating
+  rating          Int? // 1-5 star rating
   comment         String? // Optional review text
   would_recommend Boolean @default(false) // <-- Add this line
 

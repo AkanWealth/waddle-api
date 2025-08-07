@@ -26,6 +26,7 @@ import {
   ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
@@ -33,6 +34,8 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
+  ApiResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -40,9 +43,13 @@ import { Roles } from '../auth/decorator/role-decorator';
 import { Role } from '../auth/enum';
 // import { UpdateReviewDto } from './dto/update-review.dto';
 // import { BulkAttendanceStatsDto } from './dto/bulk-attendance-stats.dto';
-import { SetAttendanceDto } from './dto/set-attendance.dto';
+// import { SetAttendanceDto } from './dto/set-attendance.dto';
 import { CreateCrowdSourceReviewDto } from './dto/create-crowdsource-review.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
+import {
+  AttendanceStatusDto,
+  ToggleRecommendationDto,
+} from './dto/recommendation.dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -294,27 +301,6 @@ export class CrowdSourcingController {
   }
 
   @ApiOperation({
-    summary: 'set attendance for a crowdsourced event',
-    description:
-      'Set whether you are going or not going to a crowdsourced event/place',
-  })
-  @ApiCreatedResponse({ description: 'Attendance set successfully' })
-  @ApiBadRequestResponse({ description: 'Bad request' })
-  @ApiNotFoundResponse({ description: 'CrowdSource not found' })
-  @Post('attendance/:id')
-  async setAttendance(
-    @GetUser('id') userId: string,
-    @Param('id') crowdSourceId: string,
-    @Body() dto: SetAttendanceDto,
-  ) {
-    return this.crowdSourcingService.setAttendance(
-      userId,
-      crowdSourceId,
-      dto.isGoing,
-    );
-  }
-
-  @ApiOperation({
     summary: 'Submit a review for a crowdsourced place',
     description:
       'Each parent can review a crowdsourced place. Only one review per user per place is allowed.',
@@ -370,6 +356,73 @@ export class CrowdSourcingController {
       page,
       limit,
     );
+  }
+
+  @Get('place/:crowdSourceId/parents')
+  @ApiOperation({ summary: 'Get list of parents who recommended a place' })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiResponse({ status: 200, description: 'List retrieved successfully' })
+  getParentsWhoRecommendedPlace(@Param('crowdSourceId') id: string) {
+    return this.crowdSourcingService.getParentsWhoRecommendedPlace(id);
+  }
+
+  @Get('event/:crowdSourceId/parents')
+  @ApiOperation({ summary: 'Get list of parents who recommended an event' })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiResponse({ status: 200, description: 'List retrieved successfully' })
+  getParentsWhoRecommendedEvent(@Param('crowdSourceId') id: string) {
+    return this.crowdSourcingService.getParentsWhoRecommendedEvent(id);
+  }
+
+  @Post('event/:crowdSourceId/recommendation')
+  @ApiOperation({ summary: 'Toggle recommendation for an event' })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiBody({ type: ToggleRecommendationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Recommendation toggled successfully',
+  })
+  toggleEventRecommendation(
+    @Param('crowdSourceId') id: string,
+    @Body() body: ToggleRecommendationDto,
+  ) {
+    return this.crowdSourcingService.toggleEventRecommendation(
+      body.userId,
+      id,
+      body.wouldRecommend,
+    );
+  }
+
+  @Post(':crowdSourceId/attendance')
+  @ApiOperation({
+    summary: 'Set attendance status for a user on a crowdsource',
+  })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiBody({ type: AttendanceStatusDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Attendance status set successfully',
+  })
+  setAttendanceWithStatus(
+    @Param('crowdSourceId') id: string,
+    @Body() body: AttendanceStatusDto,
+  ) {
+    return this.crowdSourcingService.setAttendanceWithStatus(
+      body.userId,
+      id,
+      body.going,
+    );
+  }
+
+  @Get(':crowdSourceId/attendance/stats')
+  @ApiOperation({ summary: 'Get attendance stats for a crowdsource' })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Attendance stats retrieved successfully',
+  })
+  getAttendanceStatsWithStatus(@Param('crowdSourceId') id: string) {
+    return this.crowdSourcingService.getAttendanceStatsWithStatus(id);
   }
 
   // @ApiOperation({

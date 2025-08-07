@@ -18,7 +18,7 @@ import {
   UpdateCrowdSourcingDto,
 } from './dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
-import { CreateReviewDto } from './dto/create-review.dto';
+// import { CreateReviewDto } from './dto/create-review.dto';
 import { CrowdSourceStatus } from '@prisma/client';
 import { CreateCrowdSourceReviewDto } from './dto/create-crowdsource-review.dto';
 
@@ -539,440 +539,83 @@ export class CrowdSourcingService {
     return undefined;
   }
 
-  async setAttendance(userId: string, crowdSourceId: string, isGoing: boolean) {
-    // Verify crowdsource exists
-    const crowdSource = await this.prisma.crowdSource.findFirst({
-      where: {
-        id: crowdSourceId,
-        isDeleted: false,
-      },
-    });
-
-    if (!crowdSource) {
-      throw new NotFoundException('CrowdSource not found');
-    }
-
-    // Upsert attendance record
-    const attendance = await this.prisma.crowdSourceAttendance.upsert({
-      where: {
-        userId_crowdSourceId: {
-          userId,
-          crowdSourceId,
-        },
-      },
-      update: {
-        isGoing,
-        updatedAt: new Date(),
-      },
-      create: {
-        userId,
-        crowdSourceId,
-        isGoing,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            profile_picture: true,
-          },
-        },
-      },
-    });
-
-    return {
-      success: true,
-      message: `Attendance ${isGoing ? 'confirmed' : 'declined'} successfully`,
-      data: attendance,
-    };
-  }
-
-  async getAttendanceStats(crowdSourceId: string) {
-    // Verify crowdsource exists
-    const crowdSource = await this.prisma.crowdSource.findFirst({
-      where: {
-        id: crowdSourceId,
-        isDeleted: false,
-      },
-    });
-
-    if (!crowdSource) {
-      throw new NotFoundException('CrowdSource not found');
-    }
-
-    const attendanceStats = await this.prisma.crowdSourceAttendance.groupBy({
-      by: ['isGoing'],
-      where: {
-        crowdSourceId,
-        user: {
-          isDeleted: false,
-        },
-      },
-      _count: {
-        isGoing: true,
-      },
-    });
-
-    const going =
-      attendanceStats.find((stat) => stat.isGoing === true)?._count?.isGoing ||
-      0;
-    const notGoing =
-      attendanceStats.find((stat) => stat.isGoing === false)?._count?.isGoing ||
-      0;
-    const total = going + notGoing;
-
-    return {
-      success: true,
-      data: {
-        going,
-        notGoing,
-        total,
-        percentageGoing: total > 0 ? Math.round((going / total) * 100) : 0,
-        percentageNotGoing:
-          total > 0 ? Math.round((notGoing / total) * 100) : 0,
-      },
-    };
-  }
-
-  async getParentAttendanceStats(crowdSourceId: string) {
-    // Verify crowdsource exists
-    const crowdSource = await this.prisma.crowdSource.findFirst({
-      where: {
-        id: crowdSourceId,
-        isDeleted: false,
-      },
-    });
-
-    if (!crowdSource) {
-      throw new NotFoundException('CrowdSource not found');
-    }
-
-    const parentAttendanceStats =
-      await this.prisma.crowdSourceAttendance.groupBy({
-        by: ['isGoing'],
-        where: {
-          crowdSourceId,
-          user: {
-            role: 'GUARDIAN',
-            isDeleted: false,
-          },
-        },
-        _count: {
-          isGoing: true,
-        },
-      });
-
-    const going =
-      parentAttendanceStats.find((stat) => stat.isGoing === true)?._count
-        ?.isGoing || 0;
-    const notGoing =
-      parentAttendanceStats.find((stat) => stat.isGoing === false)?._count
-        ?.isGoing || 0;
-    const total = going + notGoing;
-
-    return {
-      success: true,
-      data: {
-        parentsGoing: going,
-        parentsNotGoing: notGoing,
-        totalParentsResponded: total,
-        percentageParentsGoing:
-          total > 0 ? Math.round((going / total) * 100) : 0,
-        percentageParentsNotGoing:
-          total > 0 ? Math.round((notGoing / total) * 100) : 0,
-      },
-    };
-  }
-
-  async getDetailedAttendanceStats(crowdSourceId: string) {
-    // Verify crowdsource exists
-    const crowdSource = await this.prisma.crowdSource.findFirst({
-      where: {
-        id: crowdSourceId,
-        isDeleted: false,
-      },
-    });
-
-    if (!crowdSource) {
-      throw new NotFoundException('CrowdSource not found');
-    }
-
-    const attendanceRecords = await this.prisma.crowdSourceAttendance.findMany({
-      where: {
-        crowdSourceId,
-        user: {
-          isDeleted: false,
-        },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            profile_picture: true,
-            role: true,
-          },
-        },
-      },
-    });
-
-    // Separate by role and attendance
-    const stats = {
-      parents: {
-        going: attendanceRecords.filter(
-          (r) => r.user.role === 'GUARDIAN' && r.isGoing,
-        ).length,
-        notGoing: attendanceRecords.filter(
-          (r) => r.user.role === 'GUARDIAN' && !r.isGoing,
-        ).length,
-      },
-      organisers: {
-        going: attendanceRecords.filter(
-          (r) => r.user.role === 'ORGANISER' && r.isGoing,
-        ).length,
-        notGoing: attendanceRecords.filter(
-          (r) => r.user.role === 'ORGANISER' && !r.isGoing,
-        ).length,
-      },
-      others: {
-        going: attendanceRecords.filter(
-          (r) => !['GUARDIAN', 'ORGANISER'].includes(r.user.role) && r.isGoing,
-        ).length,
-        notGoing: attendanceRecords.filter(
-          (r) => !['GUARDIAN', 'ORGANISER'].includes(r.user.role) && !r.isGoing,
-        ).length,
-      },
-    };
-
-    const totalParents = stats.parents.going + stats.parents.notGoing;
-    const totalAll = attendanceRecords.length;
-    const totalGoing =
-      stats.parents.going + stats.organisers.going + stats.others.going;
-
-    return {
-      success: true,
-      data: {
-        summary: {
-          totalResponses: totalAll,
-          totalGoing,
-          totalNotGoing: totalAll - totalGoing,
-          overallPercentageGoing:
-            totalAll > 0 ? Math.round((totalGoing / totalAll) * 100) : 0,
-        },
-        parents: {
-          going: stats.parents.going,
-          notGoing: stats.parents.notGoing,
-          total: totalParents,
-          percentageGoing:
-            totalParents > 0
-              ? Math.round((stats.parents.going / totalParents) * 100)
-              : 0,
-        },
-        organisers: {
-          going: stats.organisers.going,
-          notGoing: stats.organisers.notGoing,
-          total: stats.organisers.going + stats.organisers.notGoing,
-        },
-        others: {
-          going: stats.others.going,
-          notGoing: stats.others.notGoing,
-          total: stats.others.going + stats.others.notGoing,
-        },
-      },
-    };
-  }
-
-  async getMyAttendanceStatus(userId: string, crowdSourceId: string) {
-    // Verify crowdsource exists
-    const crowdSource = await this.prisma.crowdSource.findFirst({
-      where: {
-        id: crowdSourceId,
-        isDeleted: false,
-      },
-    });
-
-    if (!crowdSource) {
-      throw new NotFoundException('CrowdSource not found');
-    }
-
-    const attendance = await this.prisma.crowdSourceAttendance.findUnique({
-      where: {
-        userId_crowdSourceId: {
-          userId,
-          crowdSourceId,
-        },
-      },
-    });
-
-    return {
-      success: true,
-      data: {
-        hasResponded: !!attendance,
-        isGoing: attendance?.isGoing || null,
-        respondedAt: attendance?.createdAt || null,
-      },
-    };
-  }
-
-  async removeAttendance(userId: string, crowdSourceId: string) {
-    const attendance = await this.prisma.crowdSourceAttendance.findUnique({
-      where: {
-        userId_crowdSourceId: {
-          userId,
-          crowdSourceId,
-        },
-      },
-    });
-
-    if (!attendance) {
-      throw new NotFoundException('Attendance record not found');
-    }
-
-    await this.prisma.crowdSourceAttendance.delete({
-      where: {
-        userId_crowdSourceId: {
-          userId,
-          crowdSourceId,
-        },
-      },
-    });
-
-    return {
-      success: true,
-      message: 'Attendance removed successfully',
-    };
-  }
-
-  async getBulkAttendanceStats(crowdSourceIds: string[]) {
-    const bulkStats = await Promise.all(
-      crowdSourceIds.map(async (id) => {
-        try {
-          const attendanceStats =
-            await this.prisma.crowdSourceAttendance.groupBy({
-              by: ['isGoing'],
-              where: {
-                crowdSourceId: id,
-                user: {
-                  role: 'GUARDIAN',
-                  isDeleted: false,
-                },
-              },
-              _count: {
-                isGoing: true,
-              },
-            });
-
-          const going =
-            attendanceStats.find((stat) => stat.isGoing === true)?._count
-              ?.isGoing || 0;
-          const notGoing =
-            attendanceStats.find((stat) => stat.isGoing === false)?._count
-              ?.isGoing || 0;
-          const total = going + notGoing;
-
-          return {
-            crowdSourceId: id,
-            parentsGoing: going,
-            parentsNotGoing: notGoing,
-            totalParents: total,
-            percentageGoing: total > 0 ? Math.round((going / total) * 100) : 0,
-          };
-        } catch (error: unknown) {
-          console.error(`Error fetching stats for:`, error);
-          return {
-            crowdSourceId: id,
-            error: 'Failed to fetch stats',
-            parentsGoing: 0,
-            parentsNotGoing: 0,
-            totalParents: 0,
-            percentageGoing: 0,
-          };
-        }
-      }),
-    );
-
-    return {
-      success: true,
-      data: { stats: bulkStats },
-    };
-  }
   // End Attendance Methods
 
   // Start Review Methods
-  async createReview(
-    userId: string,
-    crowdSourceId: string,
-    dto: CreateReviewDto,
-  ) {
-    // Verify crowdsource exists
-    const crowdSource = await this.prisma.crowdSource.findFirst({
-      where: {
-        id: crowdSourceId,
-        isDeleted: false,
-        isPublished: true, // Only allow reviews on published crowdsources
-      },
-    });
+  // async createReview(
+  //   userId: string,
+  //   crowdSourceId: string,
+  //   dto: CreateReviewDto,
+  // ) {
+  //   // Verify crowdsource exists
+  //   const crowdSource = await this.prisma.crowdSource.findFirst({
+  //     where: {
+  //       id: crowdSourceId,
+  //       isDeleted: false,
+  //       isPublished: true, // Only allow reviews on published crowdsources
+  //     },
+  //   });
 
-    if (!crowdSource) {
-      throw new NotFoundException('CrowdSource not found or not published');
-    }
+  //   if (!crowdSource) {
+  //     throw new NotFoundException('CrowdSource not found or not published');
+  //   }
 
-    // Check if user already reviewed this crowdsource
-    const existingReview = await this.prisma.crowdSourceReview.findUnique({
-      where: {
-        userId_crowdSourceId: {
-          userId,
-          crowdSourceId,
-        },
-      },
-    });
+  //   // Check if user already reviewed this crowdsource
+  //   const existingReview = await this.prisma.crowdSourceReview.findUnique({
+  //     where: {
+  //       userId_crowdSourceId: {
+  //         userId,
+  //         crowdSourceId,
+  //       },
+  //     },
+  //   });
 
-    if (existingReview) {
-      throw new BadRequestException(
-        'You have already reviewed this crowdsource',
-      );
-    }
+  //   if (existingReview) {
+  //     throw new BadRequestException(
+  //       'You have already reviewed this crowdsource',
+  //     );
+  //   }
 
-    // Check if user attended (optional - for verified reviews)
-    const attendance = await this.prisma.crowdSourceAttendance.findUnique({
-      where: {
-        userId_crowdSourceId: {
-          userId,
-          crowdSourceId,
-        },
-      },
-    });
+  //   // Check if user attended (optional - for verified reviews)
+  //   const attendance = await this.prisma.crowdSourceAttendance.findUnique({
+  //     where: {
+  //       userId_crowdSourceId: {
+  //         userId,
+  //         crowdSourceId,
+  //       },
+  //     },
+  //   });
 
-    const review = await this.prisma.crowdSourceReview.create({
-      data: {
-        userId,
-        crowdSourceId,
-        rating: dto.rating,
-        comment: dto.comment,
-        verified: attendance?.isGoing === true, // Mark as verified if they said they were going
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            profile_picture: true,
-          },
-        },
-        _count: {
-          select: {
-            likes: true,
-          },
-        },
-      },
-    });
+  //   const review = await this.prisma.crowdSourceReview.create({
+  //     data: {
+  //       userId,
+  //       crowdSourceId,
+  //       rating: dto.rating,
+  //       comment: dto.comment,
+  //       verified: attendance?.isGoing === true, // Mark as verified if they said they were going
+  //     },
+  //     include: {
+  //       user: {
+  //         select: {
+  //           id: true,
+  //           name: true,
+  //           profile_picture: true,
+  //         },
+  //       },
+  //       _count: {
+  //         select: {
+  //           likes: true,
+  //         },
+  //       },
+  //     },
+  //   });
 
-    return {
-      success: true,
-      message: 'Review created successfully',
-      data: review,
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: 'Review created successfully',
+  //     data: review,
+  //   };
+  // }
 
   async getReviews(crowdSourceId: string, page: number, pageSize: number) {
     // Verify crowdsource exists
@@ -1345,6 +988,308 @@ export class CrowdSourcingService {
       limit,
       totalPages: Math.ceil(total / limit),
       reviews,
+    };
+  }
+
+  async getParentsWhoRecommendedPlace(crowdSourceId: string) {
+    // Verify crowdsource exists and is a place
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Place',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Place not found');
+    }
+
+    const parentsWhoRecommended = await this.prisma.crowdSourceReview.findMany({
+      where: {
+        crowdSourceId,
+        would_recommend: true,
+        user: {
+          role: 'GUARDIAN',
+          isDeleted: false,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Parents who recommended this place retrieved successfully',
+      data: {
+        totalRecommendations: parentsWhoRecommended.length,
+        parents: parentsWhoRecommended.map((review) => ({
+          reviewId: review.id,
+          user: review.user,
+          comment: review.comment,
+          recommendedAt: review.createdAt,
+        })),
+      },
+    };
+  }
+
+  // Method 2: Get List Of Parents That Have Recommended An Event
+  async getParentsWhoRecommendedEvent(crowdSourceId: string) {
+    // Verify crowdsource exists and is an event
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Event',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const parentsWhoRecommended = await this.prisma.crowdSourceReview.findMany({
+      where: {
+        crowdSourceId,
+        would_recommend: true,
+        user: {
+          role: 'GUARDIAN',
+          isDeleted: false,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Parents who recommended this event retrieved successfully',
+      data: {
+        totalRecommendations: parentsWhoRecommended.length,
+        parents: parentsWhoRecommended.map((review) => ({
+          reviewId: review.id,
+          user: review.user,
+          comment: review.comment,
+          recommendedAt: review.createdAt,
+        })),
+      },
+    };
+  }
+
+  async toggleEventRecommendation(
+    userId: string,
+    crowdSourceId: string,
+    wouldRecommend: boolean,
+  ) {
+    // Verify crowdsource exists and is an event
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Event',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Event not found');
+    }
+
+    // Check if user already has a review for this event
+    const existingReview = await this.prisma.crowdSourceReview.findUnique({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+    });
+
+    let review;
+
+    if (existingReview) {
+      // Update existing review
+      review = await this.prisma.crowdSourceReview.update({
+        where: {
+          userId_crowdSourceId: {
+            userId,
+            crowdSourceId,
+          },
+        },
+        data: {
+          would_recommend: wouldRecommend,
+          updatedAt: new Date(),
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profile_picture: true,
+            },
+          },
+        },
+      });
+    } else {
+      // Create new review with recommendation only
+      review = await this.prisma.crowdSourceReview.create({
+        data: {
+          userId,
+          crowdSourceId,
+          rating: null, // No rating required for recommendation
+          comment: null, // No comment required for recommendation
+          would_recommend: wouldRecommend,
+          verified: false,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profile_picture: true,
+            },
+          },
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: `Event ${wouldRecommend ? 'recommended' : 'recommendation removed'} successfully`,
+      data: {
+        reviewId: review.id,
+        wouldRecommend: review.would_recommend,
+        user: review.user,
+      },
+    };
+  }
+
+  // Method 5: Update attendance with new going enum (YES/NO/PENDING)
+  async setAttendanceWithStatus(
+    userId: string,
+    crowdSourceId: string,
+    going: 'YES' | 'NO' | 'PENDING',
+  ) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    // Validate going status
+    if (!['YES', 'NO', 'PENDING'].includes(going)) {
+      throw new BadRequestException(
+        'Invalid going status. Must be YES, NO, or PENDING',
+      );
+    }
+
+    // Upsert attendance record
+    const attendance = await this.prisma.crowdSourceAttendance.upsert({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+      update: {
+        going,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId,
+        crowdSourceId,
+        going,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: `Attendance status set to ${going} successfully`,
+      data: attendance,
+    };
+  }
+
+  async getAttendanceStatsWithStatus(crowdSourceId: string) {
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    const attendanceStats = await this.prisma.crowdSourceAttendance.groupBy({
+      by: ['going'],
+      where: {
+        crowdSourceId,
+        user: {
+          isDeleted: false,
+        },
+      },
+      _count: {
+        going: true,
+      },
+    });
+
+    const yes =
+      attendanceStats.find((stat) => stat.going === 'YES')?._count?.going || 0;
+    const no =
+      attendanceStats.find((stat) => stat.going === 'NO')?._count?.going || 0;
+    const pending =
+      attendanceStats.find((stat) => stat.going === 'PENDING')?._count?.going ||
+      0;
+    const total = yes + no + pending;
+
+    return {
+      success: true,
+      data: {
+        going: yes,
+        notGoing: no,
+        pending: pending,
+        total,
+        percentageGoing: total > 0 ? Math.round((yes / total) * 100) : 0,
+        percentageNotGoing: total > 0 ? Math.round((no / total) * 100) : 0,
+        percentagePending: total > 0 ? Math.round((pending / total) * 100) : 0,
+      },
     };
   }
 }
