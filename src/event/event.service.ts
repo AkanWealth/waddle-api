@@ -39,7 +39,7 @@ export class EventService {
 
       const date = new Date(dto.date);
       console.log(dto.isPublished, 'This is the published');
-      const isPublished = dto.isPublished ?? false;
+      // const isPublished = dto.isPublished ?? false;
 
       // Transform the DTO to match Prisma schema
       const { instructions, ...restDto } = dto;
@@ -50,7 +50,7 @@ export class EventService {
         date,
         total_ticket: Number(dto.total_ticket),
         images: fileName || null,
-        isPublished: Boolean(isPublished),
+        isPublished: false,
         organiserId: creatorId,
         distance: 0,
         facilities: dto.facilities ?? [],
@@ -661,6 +661,8 @@ export class EventService {
     try {
       const whereClause: any = {
         isPublished: true,
+        status: EventStatus.APPROVED,
+        isDeleted: false,
       };
 
       if (age_range) whereClause.age_range = age_range;

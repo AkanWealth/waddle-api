@@ -36,8 +36,8 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/decorator/role-decorator';
 import { Role } from '../auth/enum';
-import { UpdateReviewDto } from './dto/update-review.dto';
-import { BulkAttendanceStatsDto } from './dto/bulk-attendance-stats.dto';
+// import { UpdateReviewDto } from './dto/update-review.dto';
+// import { BulkAttendanceStatsDto } from './dto/bulk-attendance-stats.dto';
 import { SetAttendanceDto } from './dto/set-attendance.dto';
 
 @ApiBearerAuth()
@@ -310,33 +310,20 @@ export class CrowdSourcingController {
     );
   }
 
-  @ApiOperation({
-    summary: 'update a review for a crowdsourced place',
-    description: 'Update your review for a crowdsourced place',
-  })
-  @ApiAcceptedResponse({ description: 'Review updated successfully' })
-  @ApiBadRequestResponse({ description: 'Bad request' })
-  @ApiNotFoundResponse({ description: 'Review not found' })
-  @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('review/:id')
-  async updateReview(
-    @GetUser('id') userId: string,
-    @Param('id') reviewId: string,
-    @Body() dto: UpdateReviewDto,
-  ) {
-    return this.crowdSourcingService.updateReview(userId, reviewId, dto);
-  }
-
-  @ApiOperation({
-    summary: 'get bulk attendance statistics',
-    description: 'Get attendance statistics for multiple crowdsourced places',
-  })
-  @ApiOkResponse({
-    description: 'Bulk attendance statistics retrieved successfully',
-  })
-  @ApiBadRequestResponse({ description: 'Bad request' })
-  @Post('attendance/bulk-stats')
-  async getBulkAttendanceStats(@Body() dto: BulkAttendanceStatsDto) {
-    return this.crowdSourcingService.getBulkAttendanceStats(dto.crowdSourceIds);
-  }
+  // @ApiOperation({
+  //   summary: 'update a review for a crowdsourced place',
+  //   description: 'Update your review for a crowdsourced place',
+  // })
+  // @ApiAcceptedResponse({ description: 'Review updated successfully' })
+  // @ApiBadRequestResponse({ description: 'Bad request' })
+  // @ApiNotFoundResponse({ description: 'Review not found' })
+  // @HttpCode(HttpStatus.ACCEPTED)
+  // @Patch('review/:id')
+  // async updateReview(
+  //   @GetUser('id') userId: string,
+  //   @Param('id') reviewId: string,
+  //   @Body() dto: UpdateReviewDto,
+  // ) {
+  //   return this.crowdSourcingService.updateReview(userId, reviewId, dto);
+  // }
 }
