@@ -25,6 +25,7 @@ import {
   ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
@@ -39,6 +40,7 @@ import { Role } from '../auth/enum';
 // import { UpdateReviewDto } from './dto/update-review.dto';
 // import { BulkAttendanceStatsDto } from './dto/bulk-attendance-stats.dto';
 import { SetAttendanceDto } from './dto/set-attendance.dto';
+import { CreateCrowdSourceReviewDto } from './dto/create-crowdsource-review.dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -308,6 +310,44 @@ export class CrowdSourcingController {
       crowdSourceId,
       dto.isGoing,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Submit a review for a crowdsourced place',
+    description:
+      'Each parent can review a crowdsourced place. Only one review per user per place is allowed.',
+  })
+  @ApiCreatedResponse({ description: 'Review created successfully' })
+  @ApiConflictResponse({ description: 'You have already reviewed this place' })
+  @ApiBadRequestResponse({ description: 'Invalid request' })
+  @ApiNotFoundResponse({ description: 'CrowdSource not found' })
+  @Post('review/:id')
+  async submitReview(
+    @GetUser('id') userId: string,
+    @Param('id') crowdSourceId: string,
+    @Body() dto: CreateCrowdSourceReviewDto,
+  ) {
+    return this.crowdSourcingService.createPlaceReview(
+      userId,
+      crowdSourceId,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Get recommendation percentage for a crowdsourced place',
+    description:
+      'Returns the percentage of parents that recommended this crowdsourced place',
+  })
+  @ApiOkResponse({ description: 'Percentage calculated successfully' })
+  @ApiNotFoundResponse({ description: 'CrowdSource not found' })
+  @Get('review/:id/recommendation-percentage')
+  async getRecommendationPercentage(@Param('id') crowdSourceId: string) {
+    const percentage =
+      await this.crowdSourcingService.getRecommendationPlacePercentage(
+        crowdSourceId,
+      );
+    return { crowdSourceId, percentage };
   }
 
   // @ApiOperation({

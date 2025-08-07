@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -19,6 +20,7 @@ import {
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { CrowdSourceStatus } from '@prisma/client';
+import { CreateCrowdSourceReviewDto } from './dto/create-crowdsource-review.dto';
 
 @Injectable()
 export class CrowdSourcingService {
@@ -1263,5 +1265,51 @@ export class CrowdSourcingService {
         })),
       },
     };
+  }
+
+  // crowdsource-review.service.ts
+
+  async createPlaceReview(
+    userId: string,
+    crowdSourceId: string,
+    dto: CreateCrowdSourceReviewDto,
+  ) {
+    const existing = await this.prisma.crowdSourceReview.findUnique({
+      where: { userId_crowdSourceId: { userId, crowdSourceId } }, // unique constraint
+    });
+
+    if (existing) {
+      throw new ConflictException('You have already reviewed this place.');
+    }
+
+    return this.prisma.crowdSourceReview.create({
+      data: {
+        userId,
+        crowdSourceId,
+
+        comment: dto.comment,
+        would_recommend: dto.would_recommend,
+      },
+    });
+  }
+
+  // crowdsource-review.service.ts
+
+  async getRecommendationPlacePercentage(
+    crowdSourceId: string,
+  ): Promise<number> {
+    const totalReviews = await this.prisma.crowdSourceReview.count({
+      where: { crowdSourceId },
+    });
+
+    if (totalReviews === 0) return 0;
+
+    const totalRecommendations = await this.prisma.crowdSourceReview.count({
+      where: { crowdSourceId, would_recommend: true },
+    });
+
+    const percentage = (totalRecommendations / totalReviews) * 100;
+
+    return Math.round(percentage);
   }
 }
