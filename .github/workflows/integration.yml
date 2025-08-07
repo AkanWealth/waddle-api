@@ -133,10 +133,11 @@ jobs:
             sleep 1
           done
 
-      - name: Run migration and seed data
-        run: |
-          npx prisma migrate dev --name init
-          npx prisma db seed
+      - name: Push Prisma schema to the database
+        run: npx prisma db push
+
+      - name: Seed the database
+        run: npx prisma db seed
 
       - name: Format Code with Prettier
         run: |
