@@ -1286,7 +1286,7 @@ export class CrowdSourcingService {
       data: {
         userId,
         crowdSourceId,
-
+        rating: 0,
         comment: dto.comment,
         would_recommend: dto.would_recommend,
       },
