@@ -58,7 +58,7 @@ model Organiser {
   business_logo                 String?
   paymentAccountId              String?
   address                       String
-  business_name                 String?        
+  business_name                 String?
   business_category             String?
   registration_number           String
   email_verify                  Boolean        @default(true)
@@ -86,6 +86,7 @@ model Organiser {
   notifications                 Notification[] @relation("OrganiserNotifications")
   attachment                    String?
   description                   String?
+  isProfileCompleted            Boolean        @default(false)
 
   status           String  @default("PENDING")
   suspensionReason String?

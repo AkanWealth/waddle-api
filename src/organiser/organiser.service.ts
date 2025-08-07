@@ -312,10 +312,10 @@ export class OrganiserService {
         );
       }
 
-      let businessLogo = existingOrganiser?.business_logo || undefined;
+      let businessLogo = existingOrganiser.business_logo || undefined;
 
-      // Upload the new logo
-      if (businessLogo !== fileName) {
+      // Upload new logo if changed
+      if (fileName && businessLogo !== fileName) {
         await this.s3Client.send(
           new PutObjectCommand({
             Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
@@ -324,20 +324,20 @@ export class OrganiserService {
           }),
         );
 
-        // Delete the old logo from bucket
-        await this.s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key:
-              `${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${businessLogo}` ||
-              'null',
-          }),
-        );
+        // Delete old logo
+        if (businessLogo) {
+          await this.s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+              Key: `${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${businessLogo}`,
+            }),
+          );
+        }
 
-        // Update the business logo filename
         businessLogo = fileName;
       }
 
+      // Hash password if provided
       if (dto.password) {
         const hashed = await argon.hash(dto.password);
 
@@ -354,22 +354,20 @@ export class OrganiserService {
         return user;
       }
 
-      // if no password is provided, update the user without changing the password
-      // Filter out undefined values from DTO and ensure business_name is included if present
+      // Filter out undefined values from dto
       const data: any = {
         ...Object.fromEntries(
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           Object.entries(dto).filter(([_, value]) => value !== undefined),
         ),
         ...(businessLogo !== undefined && { business_logo: businessLogo }),
       };
 
-      // Check if user is trying to update business_name
+      // Check for unique business_name if updating it
       if ('business_name' in data && data.business_name) {
         const existing = await this.prisma.organiser.findFirst({
           where: {
             business_name: data.business_name,
-            NOT: { id }, // exclude the current user
+            NOT: { id },
           },
         });
 
@@ -378,6 +376,7 @@ export class OrganiserService {
         }
       }
 
+      // Update organiser
       const user = await this.prisma.organiser.update({
         where: { id },
         data,
@@ -385,6 +384,34 @@ export class OrganiserService {
 
       if (!user) {
         throw new NotFoundException('Organiser not found');
+      }
+
+      // Fetch updated organiser to verify completeness
+      const updated = await this.prisma.organiser.findUnique({
+        where: { id },
+      });
+
+      const requiredFields = [
+        'name',
+        'email',
+        'business_name',
+        'phone_number',
+        'address',
+        'description',
+        'attachment',
+      ];
+
+      const isProfileCompleted = requiredFields.every((field) => {
+        return !!updated?.[field];
+      });
+
+      if (updated?.isProfileCompleted !== isProfileCompleted) {
+        await this.prisma.organiser.update({
+          where: { id },
+          data: {
+            isProfileCompleted,
+          },
+        });
       }
 
       delete user.password;
