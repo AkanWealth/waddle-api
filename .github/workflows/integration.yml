@@ -51,7 +51,6 @@ jobs:
           BUCKET_NAME: waddletestbucket
           ACCESS_KEY_ID:  ${{ secrets.ACCESS_KEY_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
-          
           SECRET_ACCESS_KEY: 9db13a6ed03697aa77daf530e53b5ab5df74e059e89693ea12b167a79a9e9fb5
           R2_PUBLIC_ENDPOINT: https://pub-42f91b17061547449f97974510335219.r2.dev
           S3_API: https://81c852930641402981b6a613c8239927.r2.cloudflarestorage.com
@@ -63,7 +62,6 @@ jobs:
           FRESHDESK_DOMAIN: philipoyelegbincom.freshdesk.com
           FRESHDESK_EMAIL: support@philipoyelegbincom.freshdesk.com
           FRESHDESK_API_KEY: nIV3Lubwi6Eo0qWM24Sy
-
         options: >-
           --health-cmd="pg_isready" 
           --health-interval=10s 
@@ -133,24 +131,31 @@ jobs:
             sleep 1
           done
 
-      - name: Push Prisma schema to the database
-        run: npx prisma db push
+      - name: Create custom Postgres functions
+        run: |
+          psql postgresql://postgres:password@localhost:5432/testdb <<'EOF'
+          CREATE OR REPLACE FUNCTION generate_unique_id(prefix TEXT, suffix TEXT)
+          RETURNS TEXT AS $$
+          BEGIN
+            RETURN prefix || '-' || suffix || '-' || floor(random() * 1000000)::TEXT;
+          END;
+          $$ LANGUAGE plpgsql;
+          EOF
+
+      - name: Run Prisma Migrate
+        run: npx prisma migrate deploy
 
       - name: Seed the database
         run: npx prisma db seed
 
       - name: Format Code with Prettier
-        run: |
-          npm run format
+        run: npm run format
 
       - name: Lint Code with ESLint
-        run: |
-          npm run lint
+        run: npm run lint
 
       # - name: Run E2E Tests
-      #   run: |
-      #     npm run test:e2e
+      #   run: npm run test:e2e
 
       - name: Build the Backend Application
-        run: |
-          npm run build
+        run: npm run build
