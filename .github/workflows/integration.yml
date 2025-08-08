@@ -49,9 +49,9 @@ jobs:
           SMTP_USER: test@philipoyelegbin.com.ng
           SMTP_PASSWORD: NXjHG(m2FATc
           BUCKET_NAME: waddletestbucket
-          ACCESS_KEY_ID:  ${{ secrets.ACCESS_KEY_ID }}
+          ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
-          
+
           SECRET_ACCESS_KEY: 9db13a6ed03697aa77daf530e53b5ab5df74e059e89693ea12b167a79a9e9fb5
           R2_PUBLIC_ENDPOINT: https://pub-42f91b17061547449f97974510335219.r2.dev
           S3_API: https://81c852930641402981b6a613c8239927.r2.cloudflarestorage.com
@@ -132,6 +132,40 @@ jobs:
             echo "Waiting for PostgreSQL to be ready..."
             sleep 1
           done
+
+      - name: Create required Postgres functions
+        run: |
+          psql postgresql://postgres:password@localhost:5432/testdb <<'SQL'
+          CREATE OR REPLACE FUNCTION generate_custom_id(prefix TEXT)
+          RETURNS TEXT AS $$
+          DECLARE
+              random_part TEXT;
+              result TEXT;
+          BEGIN
+              random_part := upper(substring(md5(random()::text || clock_timestamp()::text) from 1 for 5));
+              result := prefix || random_part;
+              RETURN result;
+          END;
+          $$ LANGUAGE plpgsql;
+
+          CREATE OR REPLACE FUNCTION generate_unique_id(table_name TEXT, prefix TEXT)
+          RETURNS TEXT AS $$
+          DECLARE
+              new_id TEXT;
+              exists_check INTEGER;
+          BEGIN
+              LOOP
+                  new_id := generate_custom_id(prefix);
+                  EXECUTE format('SELECT COUNT(*) FROM "%I" WHERE id = $1', table_name)
+                  USING new_id INTO exists_check;
+                  IF exists_check = 0 THEN
+                      EXIT;
+                  END IF;
+              END LOOP;
+              RETURN new_id;
+          END;
+          $$ LANGUAGE plpgsql;
+          SQL
 
       - name: Apply migrations
         run: npx prisma migrate deploy
