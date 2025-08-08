@@ -34,16 +34,6 @@ export class OrganiserSignUpDto extends SignInDto {
   business_name: string;
 
   @ApiProperty({
-    description: 'Category',
-    type: String,
-    example: 'Hospitality',
-    required: true,
-  })
-  @IsString({ message: 'Category must be a string' })
-  @IsNotEmpty({ message: 'Category is required' })
-  business_category: string;
-
-  @ApiProperty({
     description: 'Registration number',
     type: String,
     example: 's#kA6uA1LkTt[5P',
