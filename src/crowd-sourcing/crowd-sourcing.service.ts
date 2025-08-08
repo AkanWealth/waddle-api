@@ -1039,7 +1039,7 @@ export class CrowdSourcingService {
           user: {
             ...review.user,
             profile_picture: review.user.profile_picture
-              ? `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${review.user.profile_picture}`
+              ? `${process.env.S3_PUBLIC_URL}/users/${review.user.profile_picture}`
               : null,
           },
           comment: review.comment,
@@ -1098,7 +1098,7 @@ export class CrowdSourcingService {
           user: {
             ...review.user,
             profile_picture: review.user.profile_picture
-              ? `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${review.user.profile_picture}`
+              ? `${process.env.S3_PUBLIC_URL}/users/${review.user.profile_picture}`
               : null,
           },
           comment: review.comment,
