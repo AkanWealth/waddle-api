@@ -8,35 +8,34 @@ datasource db {
 }
 
 model Admin {
-  id                            String            @id @default(dbgenerated("generate_unique_id('admin', 'ADM-')"))
+  id                            String                    @id @default(dbgenerated("generate_unique_id('admin'::text, 'ADM-'::text)"))
   first_name                    String
   last_name                     String
-  email                         String            @unique
+  email                         String                    @unique
   password                      String
-  email_verify                  Boolean           @default(false)
+  email_verify                  Boolean                   @default(false)
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime          @default(now())
-  updatedAt                     DateTime          @updatedAt
+  createdAt                     DateTime                  @default(now())
+  updatedAt                     DateTime                  @updatedAt
   fcmToken                      String?
-  role                          Role              @default(ADMIN)
-  fcmIsOn                       Boolean           @default(false)
-  activationStatus              ActivationStatus  @default(PENDING)
-  isDeleted                     Boolean           @default(false)
+  role                          Role                      @default(ADMIN)
+  fcmIsOn                       Boolean                   @default(false)
+  activationStatus              ActivationStatus          @default(PENDING)
+  isDeleted                     Boolean                   @default(false)
+  avatarUrl                     String?
+  adminNotificationStatuses     AdminNotificationStatus[]
   permissions                   AdminPermission[]
   events                        Event[]
-  avatarUrl                     String?
-
-  adminNotificationStatuses AdminNotificationStatus[]
 
   @@index([email])
   @@map("admin")
 }
 
 model AdminPermission {
-  id        String  @id @default(dbgenerated("generate_unique_id('adminpermission', 'PRM-')"))
+  id        String  @id @default(dbgenerated("generate_unique_id('adminpermission'::text, 'PRM-'::text)"))
   adminId   String
   module    String
   canCreate Boolean @default(false)
@@ -50,7 +49,7 @@ model AdminPermission {
 }
 
 model Organiser {
-  id                            String         @id @default(dbgenerated("generate_unique_id('organiser', 'ORG-')"))
+  id                            String         @id @default(dbgenerated("generate_unique_id('organiser'::text, 'ORG-'::text)"))
   name                          String?
   email                         String         @unique
   password                      String
@@ -77,71 +76,68 @@ model Organiser {
   fcmIsOn                       Boolean        @default(false)
   isApproved                    Boolean        @default(false)
   lastLoginAt                   DateTime?      @db.Timestamp(6)
-  events                        Event[]
-  disputes                      Dispute[]
   stripe_account_id             String?
   is_stripe_connected           Boolean        @default(false)
-  notifications                 Notification[] @relation("OrganiserNotifications")
   attachment                    String?
   description                   String?
   isProfileCompleted            Boolean        @default(false)
-
-  status           String  @default("PENDING")
-  suspensionReason String?
+  status                        String         @default("PENDING")
+  suspensionReason              String?
+  disputes                      Dispute[]
+  events                        Event[]
+  notifications                 Notification[] @relation("OrganiserNotifications")
 
   @@index([email])
   @@map("organiser")
 }
 
 model User {
-  id                            String           @id @default(dbgenerated("generate_unique_id('user', 'USR-')"))
+  id                            String                  @id @default(dbgenerated("generate_unique_id('user'::text, 'USR-'::text)"))
   profile_picture               String?
   name                          String
-  email                         String           @unique
+  email                         String                  @unique
   phone_number                  String?
   address                       String?
   password                      String
   guardian_type                 String?
-  email_verify                  Boolean          @default(false)
-  isLocked                      Boolean          @default(false)
-  isDeleted                     Boolean          @default(false)
-  failedLoginAttempts           Int              @default(0)
+  email_verify                  Boolean                 @default(false)
+  isLocked                      Boolean                 @default(false)
+  isDeleted                     Boolean                 @default(false)
+  failedLoginAttempts           Int                     @default(0)
   verification_token            String?
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime         @default(now())
-  updatedAt                     DateTime         @updatedAt
+  createdAt                     DateTime                @default(now())
+  updatedAt                     DateTime                @updatedAt
   fcmToken                      String?
-  role                          Role             @default(GUARDIAN)
-  fcmIsOn                       Boolean          @default(false)
+  role                          Role                    @default(GUARDIAN)
+  fcmIsOn                       Boolean                 @default(false)
   bookings                      Booking[]
   comment                       Comment[]
   crowdSource                   CrowdSource[]
+  crowdSourceAttendances        CrowdSourceAttendance[]
+  crowdSourceReviews            CrowdSourceReview[]
+  disputes                      Dispute[]               @relation("CustomerDisputes")
   favorites                     Favorite[]
   like                          Like[]
+  notifications                 Notification[]          @relation("UserNotifications")
+  payments                      Payment[]
   recommendation                Recommendation[]
-  notifications                 Notification[]   @relation("UserNotifications")
-
-  disputes Dispute[] @relation("CustomerDisputes")
-  payments Payment[]
-
-  crowdSourceAttendances CrowdSourceAttendance[]
-  crowdSourceReviews     CrowdSourceReview[]
 
   @@index([email])
   @@map("user")
 }
 
 model Event {
-  id              String     @id @default(dbgenerated("generate_unique_id('event', 'EVT-')"))
+  id              String           @id @default(dbgenerated("generate_unique_id('event'::text, 'EVT-'::text)"))
   name            String
   description     String
   address         String
   price           Decimal
   total_ticket    Int?
-  isUnlimited     Boolean    @default(false)
-  ticket_booked   Int        @default(0)
+  isUnlimited     Boolean          @default(false)
+  ticket_booked   Int              @default(0)
   date            DateTime
   time            String
   age_range       String
@@ -151,11 +147,9 @@ model Event {
   facilities      String[]
   tags            String[]
   eventType       EventType?
-  status          String?    @default("PENDING")
+  status          String?          @default("PENDING")
   rejectionReason String?
-
-  files String[]
-
+  files           String[]
   isPublished     Boolean?         @default(false)
   isDeleted       Boolean?         @default(false)
   createdAt       DateTime         @default(now())
@@ -163,90 +157,86 @@ model Event {
   adminId         String?
   organiserId     String?
   bookings        Booking[]
+  disputes        Dispute[]
   admin           Admin?           @relation(fields: [adminId], references: [id])
   organiser       Organiser?       @relation(fields: [organiserId], references: [id])
   favorites       Favorite?
   like            Like[]
+  payments        Payment[]
   recommendations Recommendation[]
   reviews         Review[]
-  disputes        Dispute[]
-  payments        Payment[]
 
   @@index([category, isPublished, age_range])
   @@map("event")
 }
 
 model CrowdSource {
-  id          String            @id @default(dbgenerated("generate_unique_id('crowdsource', 'CRS-')"))
+  id          String                  @id @default(dbgenerated("generate_unique_id('crowdsource'::text, 'CRS-'::text)"))
   name        String
   images      String[]
   description String
   address     String
   creatorId   String
-  isVerified  Boolean           @default(false)
-  isDeleted   Boolean           @default(false)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  isVerified  Boolean                 @default(false)
+  isDeleted   Boolean                 @default(false)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
   date        DateTime?
   fee         Decimal
-  isFree      Boolean           @default(false)
-  tag         Tag               @default(Place)
+  isFree      Boolean                 @default(false)
+  tag         Tag                     @default(Place)
   time        String?
   tips        String?
-  isPublished Boolean           @default(false)
+  isPublished Boolean                 @default(false)
   category    String
   facilities  String[]
+  status      CrowdSourceStatus       @default(PENDING)
   comment     Comment[]
-  creator     User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  like        Like[]
-  status      CrowdSourceStatus @default(PENDING)
-
+  creator     User                    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   attendances CrowdSourceAttendance[]
   reviews     CrowdSourceReview[]
+  like        Like[]
 
   @@index([address, isVerified])
   @@map("crowdsource")
 }
 
 model CrowdSourceAttendance {
-  id            String   @id @default(dbgenerated("generate_unique_id('crowdsource_attendance', 'ATD-')"))
+  id            String      @id @default(dbgenerated("generate_unique_id('crowdsource_attendance'::text, 'ATD-'::text)"))
   userId        String
   crowdSourceId String
-  going         String   @default("PENDING") // YES/NO/PENDING
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  going         String      @default("PENDING")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  crowdSource   CrowdSource @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  crowdSource CrowdSource @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, crowdSourceId]) // One attendance record per user per crowdsource
-  @@index([crowdSourceId, going]) // For quick queries on who's going
+  @@unique([userId, crowdSourceId])
+  @@index([crowdSourceId, going])
   @@map("crowdsource_attendance")
 }
 
 model CrowdSourceReview {
-  id              String  @id @default(dbgenerated("generate_unique_id('crowdsource_review', 'CRV-')"))
+  id              String      @id @default(dbgenerated("generate_unique_id('crowdsource_review'::text, 'CRV-'::text)"))
   userId          String
   crowdSourceId   String
-  rating          Int? // 1-5 star rating
-  comment         String? // Optional review text
-  would_recommend Boolean @default(false)
+  rating          Int?
+  comment         String?
+  would_recommend Boolean     @default(false)
+  verified        Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  crowdSource     CrowdSource @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes           Like[]
 
-  verified  Boolean  @default(false) // If user actually attended
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  crowdSource CrowdSource @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
-  likes       Like[] // Users can like reviews
-
-  @@unique([userId, crowdSourceId]) // One review per user per crowdsource
+  @@unique([userId, crowdSourceId])
   @@index([crowdSourceId, rating])
   @@map("crowdsource_review")
 }
 
 model Booking {
-  id              String        @id @default(dbgenerated("generate_unique_id('booking', 'BKG-')"))
+  id              String        @id @default(dbgenerated("generate_unique_id('booking'::text, 'BKG-'::text)"))
   userId          String
   eventId         String
   ticket_quantity Int
@@ -267,7 +257,7 @@ model Booking {
 }
 
 model Consent {
-  id        String   @id @default(dbgenerated("generate_unique_id('consent', 'CNS-')"))
+  id        String   @id @default(dbgenerated("generate_unique_id('consent'::text, 'CNS-'::text)"))
   name      String
   age       Int
   notes     String
@@ -281,7 +271,7 @@ model Consent {
 }
 
 model Favorite {
-  id        String   @id @default(dbgenerated("generate_unique_id('favorite', 'FAV-')"))
+  id        String   @id @default(dbgenerated("generate_unique_id('favorite'::text, 'FAV-'::text)"))
   userId    String
   eventId   String   @unique
   createdAt DateTime @default(now())
@@ -293,22 +283,21 @@ model Favorite {
 }
 
 model Like {
-  id                  String   @id @default(dbgenerated("generate_unique_id('like', 'LIK-')"))
+  id                  String             @id @default(dbgenerated("generate_unique_id('like'::text, 'LIK-'::text)"))
   userId              String
   eventId             String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
   crowdSourceId       String?
   commentId           String?
   reviewId            String?
   crowdSourceReviewId String?
-
-  comment           Comment?           @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  crowdSource       CrowdSource?       @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
-  event             Event?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  review            Review?            @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  crowdSourceReview CrowdSourceReview? @relation(fields: [crowdSourceReviewId], references: [id], onDelete: Cascade)
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment             Comment?           @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  crowdSource         CrowdSource?       @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+  crowdSourceReview   CrowdSourceReview? @relation(fields: [crowdSourceReviewId], references: [id], onDelete: Cascade)
+  event               Event?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  review              Review?            @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
   @@unique([userId, crowdSourceId])
@@ -319,7 +308,7 @@ model Like {
 }
 
 model Recommendation {
-  id        String   @id @default(dbgenerated("generate_unique_id('recommendation', 'REC-')"))
+  id        String   @id @default(dbgenerated("generate_unique_id('recommendation'::text, 'REC-'::text)"))
   userId    String
   eventId   String
   reason    String
@@ -332,7 +321,7 @@ model Recommendation {
 }
 
 model Comment {
-  id            String       @id @default(dbgenerated("generate_unique_id('comment', 'CMT-')"))
+  id            String       @id @default(dbgenerated("generate_unique_id('comment'::text, 'CMT-'::text)"))
   content       String
   userId        String
   crowdSourceId String?
@@ -350,7 +339,7 @@ model Comment {
 }
 
 model Review {
-  id        String   @id @default(dbgenerated("generate_unique_id('review', 'REV-')"))
+  id        String   @id @default(dbgenerated("generate_unique_id('review'::text, 'REV-'::text)"))
   rating    Int
   comment   String?
   verified  Boolean  @default(false)
@@ -366,7 +355,7 @@ model Review {
 }
 
 model BlacklistedToken {
-  id            String   @id @default(dbgenerated("generate_unique_id('blacklisted_token', 'BLT-')"))
+  id            String   @id @default(dbgenerated("generate_unique_id('blacklisted_token'::text, 'BLT-'::text)"))
   access_token  String
   refresh_token String
   createdAt     DateTime @default(now())
@@ -376,18 +365,17 @@ model BlacklistedToken {
 }
 
 model Notification {
-  id              String   @id @default(dbgenerated("generate_unique_id('notification', 'NOT-')"))
-  title           String
-  body            String
-  userId          String?
-  organiserId     String?
-  isRead          Boolean  @default(false)
-  visibleToAdmins Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  userRecipient      User?      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  id                 String     @id @default(dbgenerated("generate_unique_id('notification'::text, 'NOT-'::text)"))
+  title              String
+  body               String
+  userId             String?
+  organiserId        String?
+  isRead             Boolean    @default(false)
+  visibleToAdmins    Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
   organiserRecipient Organiser? @relation("OrganiserNotifications", fields: [organiserId], references: [id], onDelete: Cascade)
+  userRecipient      User?      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([organiserId])
@@ -395,15 +383,14 @@ model Notification {
 }
 
 model AdminNotification {
-  id        String   @id @default(dbgenerated("generate_unique_id('admin_notification', 'ANT-')"))
-  title     String
-  body      String
-  type      String?
-  data      Json?
-  isDeleted Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id           String                    @id @default(dbgenerated("generate_unique_id('admin_notification'::text, 'ANT-'::text)"))
+  title        String
+  body         String
+  type         String?
+  data         Json?
+  isDeleted    Boolean                   @default(false)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
   readStatuses AdminNotificationStatus[]
 
   @@index([createdAt])
@@ -411,21 +398,20 @@ model AdminNotification {
 }
 
 model AdminNotificationStatus {
-  id                  String    @id @default(dbgenerated("generate_unique_id('admin_notification_status', 'ANS-')"))
+  id                  String            @id @default(dbgenerated("generate_unique_id('admin_notification_status'::text, 'ANS-'::text)"))
   adminId             String
   adminNotificationId String
-  isRead              Boolean   @default(false)
-  isVisible           Boolean   @default(true)
-  isCleared           Boolean   @default(false)
-  isDeleted           Boolean   @default(false)
+  isRead              Boolean           @default(false)
+  isVisible           Boolean           @default(true)
+  isCleared           Boolean           @default(false)
+  isDeleted           Boolean           @default(false)
   readAt              DateTime?
   clearedAt           DateTime?
   deletedAt           DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  admin             Admin             @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  adminNotification AdminNotification @relation(fields: [adminNotificationId], references: [id], onDelete: Cascade)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  admin               Admin             @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminNotification   AdminNotification @relation(fields: [adminNotificationId], references: [id], onDelete: Cascade)
 
   @@unique([adminId, adminNotificationId])
   @@index([adminId, isRead, isCleared, isDeleted])
@@ -433,7 +419,7 @@ model AdminNotificationStatus {
 }
 
 model Dispute {
-  id            String          @id @default(dbgenerated("generate_unique_id('dispute', 'DSP-')"))
+  id            String          @id @default(dbgenerated("generate_unique_id('dispute'::text, 'DSP-'::text)"))
   category      DisputeCategory
   reason        String
   vendorId      String
@@ -446,17 +432,16 @@ model Dispute {
   status        DisputeStatus   @default(PENDING)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-
-  vendor   Organiser @relation(fields: [vendorId], references: [id])
-  customer User      @relation("CustomerDisputes", fields: [customerId], references: [id])
-  event    Event     @relation(fields: [eventId], references: [id])
-  booking  Booking   @relation(fields: [bookingRef], references: [id])
+  booking       Booking         @relation(fields: [bookingRef], references: [id])
+  customer      User            @relation("CustomerDisputes", fields: [customerId], references: [id])
+  event         Event           @relation(fields: [eventId], references: [id])
+  vendor        Organiser       @relation(fields: [vendorId], references: [id])
 
   @@map("dispute")
 }
 
 model Payment {
-  id            String        @id @default(dbgenerated("generate_unique_id('payment', 'PAY-')"))
+  id            String        @id @default(dbgenerated("generate_unique_id('payment'::text, 'PAY-'::text)"))
   transactionId String        @unique
   bookingId     String
   userId        String
@@ -474,8 +459,8 @@ model Payment {
   refundId      String?
   refundStatus  String?
   booking       Booking       @relation(fields: [bookingId], references: [id])
-  user          User          @relation(fields: [userId], references: [id])
   event         Event         @relation(fields: [eventId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
 
   @@map("payment")
 }

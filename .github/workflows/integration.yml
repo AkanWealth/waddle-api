@@ -133,8 +133,8 @@ jobs:
             sleep 1
           done
 
-      - name: Push Prisma schema to the database
-        run: npx prisma db push
+      - name: Apply migrations
+        run: npx prisma migrate deploy
 
       - name: Seed the database
         run: npx prisma db seed
