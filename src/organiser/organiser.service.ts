@@ -245,7 +245,7 @@ export class OrganiserService {
       const eventsWithExtras = organiser.events.map((event) => {
         const event_logo = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow(
           'S3_EVENT_FOLDER',
-        )}/${event.images}`;
+        )}/${event.files[0]}`;
 
         const isUpcoming = event.date > now;
         if (isUpcoming) upcomingEvents++;

@@ -120,33 +120,8 @@ export class EventController {
   draftsEventByAdmin(
     @GetUser() user: { id: string },
     @Body() dto: CreateEventDto,
-    @UploadedFile() file?: Express.Multer.File,
   ) {
-    if (file) {
-      try {
-        new ParseFilePipe({
-          validators: [
-            new MaxFileSizeValidator({ maxSize: 5000000 }),
-            new FileTypeValidator({ fileType: 'image/*' }),
-          ],
-        }).transform(file);
-      } catch (error) {
-        throw error;
-      }
-      return this.eventService.draftsEventByAdmin(
-        user.id,
-        dto,
-        file.originalname,
-        file.buffer,
-      );
-    } else {
-      return this.eventService.draftsEventByAdmin(
-        user.id,
-        dto,
-        file?.originalname,
-        file?.buffer,
-      );
-    }
+    return this.eventService.draftsEventByAdmin(user.id, dto);
   }
 
   @Patch('host/:id/approve')

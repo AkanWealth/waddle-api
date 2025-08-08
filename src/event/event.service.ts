@@ -105,7 +105,6 @@ export class EventService {
           ? { isUnlimited: true }
           : { total_ticket: parsedTotalTicket }),
 
-        images: fileName || null,
         isPublished: true,
         status: EventStatus.APPROVED,
         admin: {
@@ -130,27 +129,8 @@ export class EventService {
     }
   }
 
-  async draftsEventByAdmin(
-    creatorId: string,
-    dto: CreateEventDto,
-    fileName?: string,
-    file?: Buffer,
-  ) {
+  async draftsEventByAdmin(creatorId: string, dto: CreateEventDto) {
     try {
-      console.log('Creating event by admin:', {
-        creatorId,
-        fileName,
-        fileSize: file?.length,
-        dtoKeys: Object.keys(dto),
-        dtoData: dto,
-      });
-
-      if (file) {
-        console.log('Uploading file to S3...');
-        await this.uploadEventImages(fileName, file);
-        console.log('File uploaded successfully');
-      }
-
       const date = new Date(dto.date);
       const isPublished = dto.isPublished ?? false;
 
@@ -165,7 +145,6 @@ export class EventService {
         ...(isNaN(parsedTotalTicket) || parsedTotalTicket === 0
           ? { isUnlimited: true }
           : { total_ticket: parsedTotalTicket }), // Now this won't be overridden
-        images: fileName || null,
         isPublished,
         status: EventStatus.DRAFT,
         admin: {
@@ -282,49 +261,6 @@ export class EventService {
       throw error;
     }
   }
-  // async createEvent(
-  //   creatorId: string,
-  //   creatorType: string,
-  //   dto: CreateEventDto,
-  //   files?: Array<{ filename: string; buffer: Buffer }>, // Changed to handle multiple files
-  // ) {
-  //   try {
-  //     let imageNames: string[] = []; // Array to store uploaded image names
-  //     if (files && files.length > 0) {
-  //       // Iterate through the files array and upload each image
-  //       for (const file of files) {
-  //         const fileName = file.filename; // Use the filename from the file object
-  //         await this.s3Client.send(
-  //           new PutObjectCommand({
-  //             Bucket: this.config.getOrThrow('BUCKET_NAME'),
-  //             Key: fileName, // Use the generated filename
-  //             Body: file.buffer,
-  //           }),
-  //         );
-  //         imageNames.push(fileName); // Add the filename to the array
-  //       }
-  //     }
-
-  //     const date = new Date(dto.date);
-  //     const isPublished = this.stringToBoolean(dto.isPublished);
-
-  //     const event = await this.prisma.event.create({
-  //       data: {
-  //         ...dto,
-  //         date,
-  //         total_ticket: Number(dto.total_ticket),
-  //         images: imageNames.join(',') || null, // Store the image names as a comma-separated string, or null if no images
-  //         isPublished,
-  //         creatorId,
-  //         creatorType,
-  //       },
-  //     });
-
-  //     return { message: 'Event created', event };
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
 
   async viewAllEvent(page: number, pageSize: number) {
     try {
@@ -366,7 +302,7 @@ export class EventService {
       }
 
       const eventsWithImages = events.map((event) => {
-        const imageUrl = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.images}`;
+        const imageUrl = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.files}`;
         return {
           ...event,
           images: imageUrl,
@@ -414,8 +350,8 @@ export class EventService {
       }
 
       const eventsWithImages = events.map((event) => {
-        const imageUrl = event.images
-          ? `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.images}`
+        const imageUrl = event.files
+          ? `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.files}`
           : null;
         return {
           ...event,
@@ -482,7 +418,7 @@ export class EventService {
         throw new NotFoundException('No event found');
 
       const eventWithImage = event.map((list) => {
-        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.images}`;
+        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.files[0]}`;
         return {
           ...list,
           images,
@@ -513,7 +449,7 @@ export class EventService {
         throw new NotFoundException('No event found');
 
       const eventWithImage = event.map((list) => {
-        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.images}`;
+        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.files[0]}`;
         return {
           ...list,
           images,
@@ -568,7 +504,7 @@ export class EventService {
           'Event with the provdied ID does not exist.',
         );
 
-      const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.images}`;
+      const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${event.files[0]}`;
 
       return { message: 'Event found', event: { ...event, images } };
     } catch (error) {
@@ -638,7 +574,7 @@ export class EventService {
         );
 
       const eventWithImage = event.map((list) => {
-        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.images}`;
+        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.files[0]}`;
         return {
           ...list,
           images,
@@ -691,7 +627,7 @@ export class EventService {
       }
 
       const eventWithImage = events.map((list) => {
-        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.images}`;
+        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.files[0]}`;
         return { ...list, images };
       });
 
@@ -728,7 +664,7 @@ export class EventService {
       if (new Date(existingEvent.date) <= new Date())
         throw new ForbiddenException('Past event can not be updated');
 
-      let image = existingEvent?.images || undefined;
+      let image = existingEvent?.files[0] || undefined;
 
       // Upload the new image
       if (image !== fileName) {
@@ -750,7 +686,6 @@ export class EventService {
         // instruction:
         //   instructions && instructions.length > 0 ? instructions[0] : undefined,
         date: dto.date ? new Date(dto.date) : undefined,
-        images: image || null,
         total_ticket: Number(dto.total_ticket) || undefined,
         isPublished,
         distance: 0,
@@ -791,7 +726,7 @@ export class EventService {
       if (new Date(existingEvent.date) <= new Date())
         throw new ForbiddenException('Past event can not be updated');
 
-      let image = existingEvent?.images || undefined;
+      let image = existingEvent?.files[0] || undefined;
 
       // Upload the new image
       if (image !== fileName) {
@@ -917,8 +852,8 @@ export class EventService {
         );
 
       // Optional: delete associated images if any
-      if (existingEvent.images) {
-        await this.deleteEventImages(existingEvent.images);
+      if (existingEvent.files && existingEvent.files.length > 0) {
+        await this.deleteEventImages(existingEvent.files[0]);
       }
 
       // Soft delete by setting isDeleted to true and isPublished to false
@@ -947,8 +882,8 @@ export class EventService {
           'Event with the provided ID does not exist.',
         );
 
-      if (existingEvent?.images) {
-        await this.deleteEventImages(existingEvent.images);
+      if (existingEvent?.files && existingEvent.files.length > 0) {
+        await this.deleteEventImages(existingEvent.files[0]);
       }
 
       await this.prisma.$transaction([

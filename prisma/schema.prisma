@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Admin {
-  id                            String            @id @default(cuid())
+  id                            String            @id @default(dbgenerated("generate_unique_id('admin', 'ADM-')"))
   first_name                    String
   last_name                     String
   email                         String            @unique
@@ -36,7 +36,7 @@ model Admin {
 }
 
 model AdminPermission {
-  id        String  @id @default(cuid())
+  id        String  @id @default(dbgenerated("generate_unique_id('adminpermission', 'PRM-')"))
   adminId   String
   module    String
   canCreate Boolean @default(false)
@@ -50,7 +50,7 @@ model AdminPermission {
 }
 
 model Organiser {
-  id                            String         @id @default(cuid())
+  id                            String         @id @default(dbgenerated("generate_unique_id('organiser', 'ORG-')"))
   name                          String?
   email                         String         @unique
   password                      String
@@ -58,7 +58,7 @@ model Organiser {
   business_logo                 String?
   address                       String
   business_name                 String?
-  registration_number           String 
+  registration_number           String
   email_verify                  Boolean        @default(true)
   isLocked                      Boolean        @default(false)
   isDeleted                     Boolean        @default(false)
@@ -94,7 +94,7 @@ model Organiser {
 }
 
 model User {
-  id                            String           @id @default(cuid())
+  id                            String           @id @default(dbgenerated("generate_unique_id('user', 'USR-')"))
   profile_picture               String?
   name                          String
   email                         String           @unique
@@ -134,11 +134,10 @@ model User {
 }
 
 model Event {
-  id              String     @id @default(cuid())
+  id              String     @id @default(dbgenerated("generate_unique_id('event', 'EVT-')"))
   name            String
   description     String
   address         String
-  images          String?
   price           Decimal
   total_ticket    Int?
   isUnlimited     Boolean    @default(false)
@@ -146,7 +145,7 @@ model Event {
   date            DateTime
   time            String
   age_range       String
-  instruction     String?
+  instruction     String[]
   category        String
   distance        Int?
   facilities      String[]
@@ -178,7 +177,7 @@ model Event {
 }
 
 model CrowdSource {
-  id          String            @id @default(cuid())
+  id          String            @id @default(dbgenerated("generate_unique_id('crowdsource', 'CRS-')"))
   name        String
   images      String[]
   description String
@@ -210,7 +209,7 @@ model CrowdSource {
 }
 
 model CrowdSourceAttendance {
-  id            String   @id @default(cuid())
+  id            String   @id @default(dbgenerated("generate_unique_id('crowdsource_attendance', 'ATD-')"))
   userId        String
   crowdSourceId String
   going         String   @default("PENDING") // YES/NO/PENDING
@@ -226,12 +225,12 @@ model CrowdSourceAttendance {
 }
 
 model CrowdSourceReview {
-  id              String  @id @default(cuid())
+  id              String  @id @default(dbgenerated("generate_unique_id('crowdsource_review', 'CRV-')"))
   userId          String
   crowdSourceId   String
   rating          Int? // 1-5 star rating
   comment         String? // Optional review text
-  would_recommend Boolean @default(false) // <-- Add this line
+  would_recommend Boolean @default(false)
 
   verified  Boolean  @default(false) // If user actually attended
   createdAt DateTime @default(now())
@@ -247,7 +246,7 @@ model CrowdSourceReview {
 }
 
 model Booking {
-  id              String        @id @default(cuid())
+  id              String        @id @default(dbgenerated("generate_unique_id('booking', 'BKG-')"))
   userId          String
   eventId         String
   ticket_quantity Int
@@ -268,7 +267,7 @@ model Booking {
 }
 
 model Consent {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("generate_unique_id('consent', 'CNS-')"))
   name      String
   age       Int
   notes     String
@@ -282,7 +281,7 @@ model Consent {
 }
 
 model Favorite {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("generate_unique_id('favorite', 'FAV-')"))
   userId    String
   eventId   String   @unique
   createdAt DateTime @default(now())
@@ -294,7 +293,7 @@ model Favorite {
 }
 
 model Like {
-  id                  String   @id @default(cuid())
+  id                  String   @id @default(dbgenerated("generate_unique_id('like', 'LIK-')"))
   userId              String
   eventId             String?
   createdAt           DateTime @default(now())
@@ -302,7 +301,7 @@ model Like {
   crowdSourceId       String?
   commentId           String?
   reviewId            String?
-  crowdSourceReviewId String? // Add this new field
+  crowdSourceReviewId String?
 
   comment           Comment?           @relation(fields: [commentId], references: [id], onDelete: Cascade)
   crowdSource       CrowdSource?       @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
@@ -315,12 +314,12 @@ model Like {
   @@unique([userId, crowdSourceId])
   @@unique([userId, commentId])
   @@unique([userId, reviewId])
-  @@unique([userId, crowdSourceReviewId]) // Add this unique constraint
+  @@unique([userId, crowdSourceReviewId])
   @@map("like")
 }
 
 model Recommendation {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("generate_unique_id('recommendation', 'REC-')"))
   userId    String
   eventId   String
   reason    String
@@ -333,7 +332,7 @@ model Recommendation {
 }
 
 model Comment {
-  id            String       @id @default(cuid())
+  id            String       @id @default(dbgenerated("generate_unique_id('comment', 'CMT-')"))
   content       String
   userId        String
   crowdSourceId String?
@@ -351,7 +350,7 @@ model Comment {
 }
 
 model Review {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("generate_unique_id('review', 'REV-')"))
   rating    Int
   comment   String?
   verified  Boolean  @default(false)
@@ -367,7 +366,7 @@ model Review {
 }
 
 model BlacklistedToken {
-  id            String   @id @default(cuid())
+  id            String   @id @default(dbgenerated("generate_unique_id('blacklisted_token', 'BLT-')"))
   access_token  String
   refresh_token String
   createdAt     DateTime @default(now())
@@ -377,7 +376,7 @@ model BlacklistedToken {
 }
 
 model Notification {
-  id              String   @id @default(cuid())
+  id              String   @id @default(dbgenerated("generate_unique_id('notification', 'NOT-')"))
   title           String
   body            String
   userId          String?
@@ -396,16 +395,15 @@ model Notification {
 }
 
 model AdminNotification {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("generate_unique_id('admin_notification', 'ANT-')"))
   title     String
   body      String
-  type      String? // e.g., "ORGANISER_SUSPENSION", "PAYMENT_DISPUTE", etc.
-  data      Json? // Store additional structured data if needed
+  type      String?
+  data      Json?
   isDeleted Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations to track individual admin read status
   readStatuses AdminNotificationStatus[]
 
   @@index([createdAt])
@@ -413,7 +411,7 @@ model AdminNotification {
 }
 
 model AdminNotificationStatus {
-  id                  String    @id @default(cuid())
+  id                  String    @id @default(dbgenerated("generate_unique_id('admin_notification_status', 'ANS-')"))
   adminId             String
   adminNotificationId String
   isRead              Boolean   @default(false)
@@ -435,16 +433,16 @@ model AdminNotificationStatus {
 }
 
 model Dispute {
-  id            String          @id @default(cuid())
+  id            String          @id @default(dbgenerated("generate_unique_id('dispute', 'DSP-')"))
   category      DisputeCategory
   reason        String
   vendorId      String
   customerId    String
   eventId       String
   bookingRef    String
-  refundRequest String? // Optional refund request
+  refundRequest String?
   description   String
-  file          String? // File path or URL
+  file          String?
   status        DisputeStatus   @default(PENDING)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -458,7 +456,7 @@ model Dispute {
 }
 
 model Payment {
-  id            String        @id @default(cuid())
+  id            String        @id @default(dbgenerated("generate_unique_id('payment', 'PAY-')"))
   transactionId String        @unique
   bookingId     String
   userId        String
@@ -473,8 +471,8 @@ model Payment {
   amountPaid    Decimal
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  refundId      String? // Stripe refund ID, nullable
-  refundStatus  String? // Stripe refund status, nullable
+  refundId      String?
+  refundStatus  String?
   booking       Booking       @relation(fields: [bookingId], references: [id])
   user          User          @relation(fields: [userId], references: [id])
   event         Event         @relation(fields: [eventId], references: [id])

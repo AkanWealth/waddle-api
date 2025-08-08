@@ -299,9 +299,22 @@ export class AdminService {
         orderBy: {
           createdAt: 'desc',
         },
+        include: {
+          permissions: {
+            select: {
+              module: true,
+              canCreate: true,
+              canView: true,
+              canManage: true,
+              canDelete: true,
+            },
+          },
+        },
       });
-      if (!admin || admin.length <= 0)
+
+      if (!admin || admin.length <= 0) {
         throw new NotFoundException('No admin found');
+      }
 
       return { message: 'All admin found', admin };
     } catch (error) {
@@ -313,7 +326,11 @@ export class AdminService {
     try {
       const admin = await this.prisma.admin.findUnique({
         where: { id: authAdmin },
+        include: {
+          permissions: true, // This will fetch all related permissions
+        },
       });
+
       if (!admin) throw new NotFoundException('No admin found');
 
       return { message: 'Profile found', admin };

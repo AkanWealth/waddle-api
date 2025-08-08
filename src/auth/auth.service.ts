@@ -579,6 +579,7 @@ export class AuthService {
       await this.prisma.admin.update({
         where: { id: admin.id },
         data: {
+          activationStatus: 'ACTIVE',
           email_verify: true,
           verification_token: null,
           verification_token_expiration: null,
