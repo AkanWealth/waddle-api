@@ -675,7 +675,7 @@ export class AuthService {
           reset_expiration: resetToken.expiration.toString(),
         },
       });
-      const resetUrl = `http://localhost:3000/reset-password?token=${resetToken.token}`;
+      const resetUrl = `https://waddle-admn.vercel.app/reset-password?token=${resetToken.token}`;
 
       // send reset token to the user
       const subject = `Password Reset Request`;

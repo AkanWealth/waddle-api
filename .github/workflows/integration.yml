@@ -56,6 +56,7 @@ jobs:
           R2_PUBLIC_ENDPOINT: https://pub-42f91b17061547449f97974510335219.r2.dev
           S3_API: https://81c852930641402981b6a613c8239927.r2.cloudflarestorage.com
           BASE_URL: https://waddleapi.vercel.app
+          FRONTEND_URL: https://waddle-admn.vercel.app
           BASE_URL_STRIPE_REFRESH: https://api.waddleapp.io/api/v1/organisers/refresh
           BASE_URL_STRIPE_RETURN: https://api.waddleapp.io/api/v1/organisers/return
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
@@ -114,6 +115,7 @@ jobs:
           echo "SMTP_USER=test@philipoyelegbin.com.ng" >> $GITHUB_ENV
           echo "SMTP_PASSWORD=NXjHG(m2FATc" >> $GITHUB_ENV
           echo "BUCKET_NAME=waddletestbucket" >> $GITHUB_ENV
+          echo "FRONTEND_URL=https://waddle-admn.vercel.app" >> $GITHUB_ENV
           echo "ACCESS_KEY_ID=6e30f43a6e34bb6db106299fc0480d7e" >> $GITHUB_ENV
           echo "AWS_REGION=eu-north-1"  >> $GITHUB_ENV
           echo "SECRET_ACCESS_KEY=9db13a6ed03697aa77daf530e53b5ab5df74e059e89693ea12b167a79a9e9fb5" >> $GITHUB_ENV
