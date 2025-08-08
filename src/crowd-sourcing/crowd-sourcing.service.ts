@@ -1036,7 +1036,12 @@ export class CrowdSourcingService {
         totalRecommendations: parentsWhoRecommended.length,
         parents: parentsWhoRecommended.map((review) => ({
           reviewId: review.id,
-          user: review.user,
+          user: {
+            ...review.user,
+            profile_picture: review.user.profile_picture
+              ? `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${review.user.profile_picture}`
+              : null,
+          },
           comment: review.comment,
           recommendedAt: review.createdAt,
         })),
@@ -1090,7 +1095,12 @@ export class CrowdSourcingService {
         totalRecommendations: parentsWhoRecommended.length,
         parents: parentsWhoRecommended.map((review) => ({
           reviewId: review.id,
-          user: review.user,
+          user: {
+            ...review.user,
+            profile_picture: review.user.profile_picture
+              ? `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_VENDOR_FOLDER')}/${review.user.profile_picture}`
+              : null,
+          },
           comment: review.comment,
           recommendedAt: review.createdAt,
         })),
