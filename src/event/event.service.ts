@@ -42,11 +42,11 @@ export class EventService {
       // const isPublished = dto.isPublished ?? false;
 
       // Transform the DTO to match Prisma schema
-      const { instructions, ...restDto } = dto;
+      const { ...restDto } = dto;
       const eventData = {
         ...restDto,
-        instruction:
-          instructions && instructions.length > 0 ? instructions[0] : null,
+        // instruction:
+        //   instructions && instructions.length > 0 ? instructions[0] : null,
         date,
         total_ticket: Number(dto.total_ticket),
         images: fileName || null,
@@ -92,13 +92,13 @@ export class EventService {
       // const isPublished = dto.isPublished ?? false;
 
       // Transform the DTO to match Prisma schema
-      const { instructions, total_ticket, ...restDto } = dto;
+      const { total_ticket, ...restDto } = dto;
       const parsedTotalTicket = Number(total_ticket);
 
       const eventData = {
         ...restDto,
-        instruction:
-          instructions && instructions.length > 0 ? instructions[0] : null,
+        // instruction:
+        //   instructions && instructions.length > 0 ? instructions[0] : null,
         date,
 
         ...(isNaN(parsedTotalTicket) || parsedTotalTicket === 0
@@ -155,12 +155,12 @@ export class EventService {
       const isPublished = dto.isPublished ?? false;
 
       // Transform the DTO to match Prisma schema
-      const { instructions, total_ticket, ...restDto } = dto; // Extract total_ticket from restDto
+      const { total_ticket, ...restDto } = dto; // Extract total_ticket from restDto
       const parsedTotalTicket = Number(total_ticket);
 
       const eventData = {
         ...restDto,
-        instruction: instructions?.[0] ?? null,
+        // instruction: instructions?.[0] ?? null,
         date,
         ...(isNaN(parsedTotalTicket) || parsedTotalTicket === 0
           ? { isUnlimited: true }
@@ -744,11 +744,11 @@ export class EventService {
       const isPublished = this.stringToBoolean(dto.isPublished);
 
       // Transform the DTO to match Prisma schema
-      const { instructions, ...restDto } = dto;
+      const { ...restDto } = dto;
       const updateData = {
         ...restDto,
-        instruction:
-          instructions && instructions.length > 0 ? instructions[0] : undefined,
+        // instruction:
+        //   instructions && instructions.length > 0 ? instructions[0] : undefined,
         date: dto.date ? new Date(dto.date) : undefined,
         images: image || null,
         total_ticket: Number(dto.total_ticket) || undefined,
@@ -807,11 +807,11 @@ export class EventService {
       const isPublished = this.stringToBoolean(dto.isPublished);
 
       // Transform the DTO to match Prisma schema
-      const { instructions, ...restDto } = dto;
+      const { ...restDto } = dto;
       const updateData = {
         ...restDto,
-        instruction:
-          instructions && instructions.length > 0 ? instructions[0] : undefined,
+        // instruction:
+        //   instructions && instructions.length > 0 ? instructions[0] : undefined,
         date: dto.date ? new Date(dto.date) : undefined,
         images: image || null,
         total_ticket: Number(dto.total_ticket) || undefined,

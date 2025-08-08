@@ -184,9 +184,9 @@ export class OrganiserService {
   async viewAllOrganiser() {
     try {
       const organiser = await this.prisma.organiser.findMany({
-        // where: {
-        //   isProfileCompleted: true,
-        // },
+        where: {
+          isProfileCompleted: true,
+        },
         orderBy: {
           createdAt: 'desc',
         },

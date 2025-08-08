@@ -300,6 +300,7 @@ export class CrowdSourcingController {
     return this.crowdSourcingService.viewRepliesForComment(id);
   }
 
+  //Working Fine And Used
   @ApiOperation({
     summary: 'Submit a review for a crowdsourced place',
     description:
@@ -322,6 +323,7 @@ export class CrowdSourcingController {
     );
   }
 
+  // Working Fine And Used
   @ApiOperation({
     summary: 'Get recommendation percentage for a crowdsourced place',
     description:
@@ -338,6 +340,7 @@ export class CrowdSourcingController {
     return { crowdSourceId, percentage };
   }
 
+  //Working Fine And Used
   @ApiOperation({
     summary: 'Fetch paginated reviews for a crowdsourced place',
     description:
@@ -395,7 +398,7 @@ export class CrowdSourcingController {
 
   @Post(':crowdSourceId/attendance')
   @ApiOperation({
-    summary: 'Set attendance status for a user on a crowdsource',
+    summary: 'Set attendance status for a user on a crowdsourcexx',
   })
   @ApiParam({ name: 'crowdSourceId', type: String })
   @ApiBody({ type: AttendanceStatusDto })
