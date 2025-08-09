@@ -1,40 +1,26 @@
 import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsOptional } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { OrganiserSignUpDto } from '../../auth/dto';
 
 export class UpdateOrganiserDto extends PartialType(OrganiserSignUpDto) {
-  @ApiPropertyOptional({ description: 'Name' })
+  @ApiPropertyOptional({ description: 'Business name' })
   @IsOptional()
-  name: string;
-
-  @ApiPropertyOptional({ description: 'Email' })
-  @IsOptional()
-  email: string;
-
-  @ApiPropertyOptional({ description: 'Password' })
-  @IsOptional()
-  password: string;
+  business_name: string;
 
   @ApiPropertyOptional({
-    description: 'Email verification',
-    example: true,
+    description: 'Business address',
+    example: '12B Cresent Maryland',
   })
   @IsOptional()
-  email_verify: boolean;
+  @IsString({ message: 'Business address must be a string' })
+  address: string;
 
   @ApiPropertyOptional({
-    description: 'Busness verification',
-    example: true,
+    description: 'Business phone number',
+    example: '123-456-7890',
   })
   @IsOptional()
-  isVerified: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Business attachment link',
-    example: 'https://waddle.aws.link',
-  })
-  @IsOptional()
-  attachment: string;
+  phone_number: string;
 
   @ApiPropertyOptional({
     description: 'Business description',
@@ -42,4 +28,19 @@ export class UpdateOrganiserDto extends PartialType(OrganiserSignUpDto) {
   })
   @IsOptional()
   description: string;
+
+  @ApiPropertyOptional({
+    description: 'Business website link',
+    example: 'https://waddle.aws',
+  })
+  @IsOptional()
+  @IsString({ message: 'Business website must be a string' })
+  website_url: string;
+
+  @ApiPropertyOptional({
+    description: 'Business attachment link',
+    example: 'https://waddle.aws.link',
+  })
+  @IsOptional()
+  attachment: string;
 }

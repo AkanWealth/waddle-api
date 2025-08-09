@@ -347,6 +347,7 @@ export class OrganiserService {
         const user = await this.prisma.organiser.update({
           where: { id },
           data: {
+            website_url: dto.website_url,
             ...dto,
             business_logo: businessLogo || null,
             password: hashed,
