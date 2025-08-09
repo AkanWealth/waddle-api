@@ -53,11 +53,11 @@ model Organiser {
   name                          String?
   email                         String         @unique
   password                      String
-  phone_number                  String
+  phone_number                  String?
   business_logo                 String?
   address                       String?
   business_name                 String?
-  registration_number           String
+  registration_number           String?
   email_verify                  Boolean        @default(false)
   isLocked                      Boolean        @default(false)
   isDeleted                     Boolean        @default(false)
