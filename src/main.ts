@@ -3,94 +3,36 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { setupRedoc } from './middleware';
-import { Express } from 'express';
-import * as express from 'express';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    rawBody: true,
-    bodyParser: false, // Disable built-in body parser to configure custom limits
-  });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Get Express instance
-  const expressApp = app.getHttpAdapter().getInstance() as Express;
-
-  // Configure body parser with larger limits FIRST (before CORS)
-  expressApp.use('/api/v1/uploads', express.json({ limit: '50mb' }));
-  expressApp.use(
-    '/api/v1/uploads',
-    express.urlencoded({ limit: '50mb', extended: true }),
-  );
-  expressApp.use('/api/v1/uploads', express.raw({ limit: '50mb' }));
-
-  // Configure general body parser for other routes
-  expressApp.use(express.json({ limit: '10mb' }));
-  expressApp.use(express.urlencoded({ limit: '10mb', extended: true }));
-
-  // Set timeout for large file uploads
-  expressApp.use('/api/v1/uploads', (req, res, next) => {
-    req.setTimeout(600000); // 10 minutes timeout for uploads
-    res.setTimeout(600000);
-    next();
-  });
-
-  // Enhanced CORS middleware - MUST be before routes
-  expressApp.use((req, res, next) => {
-    const origin = req.headers.origin;
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:5173',
-      'http://localhost:3030',
-      'https://waddle-admin.vercel.app',
-      'https://waddle-admn.vercel.app',
-      'https://waddleapp.io',
-      'https://www.waddleapp.io',
-    ];
-
-    // Always set CORS headers
-    if (origin && allowedOrigins.includes(origin)) {
-      res.header('Access-Control-Allow-Origin', origin);
-    } else if (origin) {
-      // For debugging - log unrecognized origins
-      console.log('Unrecognized origin:', origin);
-      res.header('Access-Control-Allow-Origin', origin); // Allow it anyway for debugging
-    } else {
-      res.header('Access-Control-Allow-Origin', '*');
-    }
-
-    res.header(
-      'Access-Control-Allow-Methods',
-      'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    );
-    res.header(
-      'Access-Control-Allow-Headers',
-      'Origin,X-Requested-With,Content-Type,Accept,Authorization',
-    );
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Max-Age', '86400'); // 24 hours
-
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-      return;
-    }
-
-    next();
-  });
-
-  // Apply NestJS built-in CORS as backup
+  // Configure CORS FIRST - before any other middleware
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:5173',
-      'http://localhost:3030',
-      'https://waddle-admin.vercel.app',
-      'https://waddle-admn.vercel.app',
-      'https://waddleapp.io',
-      'https://www.waddleapp.io',
-    ],
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:5173',
+        'http://localhost:3030',
+        'https://waddle-admin.vercel.app',
+        'https://waddle-admn.vercel.app',
+        'https://waddleapp.io',
+        'https://www.waddleapp.io',
+      ];
+
+      // Allow requests with no origin (mobile apps, postman, etc.)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.log('CORS blocked origin:', origin);
+      return callback(null, false);
+    },
+    credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Origin',
@@ -98,9 +40,19 @@ async function bootstrap() {
       'Content-Type',
       'Accept',
       'Authorization',
+      'Cache-Control',
+      'Pragma',
     ],
-    credentials: true,
+    exposedHeaders: ['Content-Length', 'Content-Type'],
+    maxAge: 86400, // 24 hours
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
+
+  // Configure Express settings for large file uploads
+  app.useBodyParser('json', { limit: '50mb' });
+  app.useBodyParser('urlencoded', { limit: '50mb', extended: true });
+  app.useBodyParser('raw', { limit: '50mb' });
 
   // Set global prefix
   app.setGlobalPrefix('/api/v1');
@@ -110,9 +62,26 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: true,
     }),
   );
+
+  // Add debugging middleware to log all requests
+  app.use((req: any, res: any, next: any) => {
+    console.log(`${req.method} ${req.url}`, {
+      origin: req.headers.origin,
+      contentType: req.headers['content-type'],
+      contentLength: req.headers['content-length'],
+      userAgent: req.headers['user-agent']?.substring(0, 50),
+    });
+
+    // Set timeout for upload requests
+    if (req.url.includes('/uploads')) {
+      req.setTimeout(300000); // 5 minutes
+      res.setTimeout(300000);
+    }
+
+    next();
+  });
 
   // Swagger documentation setup
   const config = new DocumentBuilder()
@@ -159,12 +128,12 @@ async function bootstrap() {
     ],
   });
 
-  // Expose Swagger JSON at `/api-json`
-  expressApp.get('/api-json', (req, res) => {
+  // Expose Swagger JSON
+  app.use('/api-json', (req: any, res: any) => {
     res.json(document);
   });
 
-  // Set up ReDoc at `/docs`
+  // Set up ReDoc
   setupRedoc(app as any);
 
   const port = process.env.PORT || 3000;
@@ -174,4 +143,5 @@ async function bootstrap() {
 
 bootstrap().catch((error) => {
   console.error('Failed to start application:', error);
+  process.exit(1);
 });
