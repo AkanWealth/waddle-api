@@ -575,7 +575,7 @@ export class BookingService {
         email: organiser?.email,
         phone: organiser?.phone_number,
         address: organiser?.address,
-        website: organiser?.website_url,
+        website: organiser?.business_url,
       },
       stats: {
         totalBookings,

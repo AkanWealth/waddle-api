@@ -30,12 +30,12 @@ export class UpdateOrganiserDto extends PartialType(OrganiserSignUpDto) {
   description: string;
 
   @ApiPropertyOptional({
-    description: 'Business website link',
+    description: 'Business URL link',
     example: 'https://waddle.aws',
   })
   @IsOptional()
-  @IsString({ message: 'Business website must be a string' })
-  website_url: string;
+  @IsString({ message: 'Business url must be a string' })
+  business_url: string;
 
   @ApiPropertyOptional({
     description: 'Business attachment link',
