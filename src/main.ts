@@ -4,102 +4,37 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { setupRedoc } from './middleware';
 import { Express } from 'express';
+import * as express from 'express';
 
-// import { PrismaClient } from '@prisma/client';
-
-// const prisma = new PrismaClient();
-
-// async function createFunctions() {
-//   try {
-//     // Create the functions
-//     await prisma.$executeRaw`
-//       CREATE OR REPLACE FUNCTION generate_custom_id(prefix TEXT)
-//       RETURNS TEXT AS $$
-//       DECLARE
-//           random_part TEXT;
-//           result TEXT;
-//       BEGIN
-//           -- Generate 5 random alphanumeric characters (uppercase)
-//           random_part := upper(substring(md5(random()::text || clock_timestamp()::text) from 1 for 5));
-//           result := prefix || random_part;
-//           RETURN result;
-//       END;
-//       $$ LANGUAGE plpgsql;
-//     `;
-
-//     await prisma.$executeRaw`
-//       CREATE OR REPLACE FUNCTION generate_unique_id(table_name TEXT, prefix TEXT)
-//       RETURNS TEXT AS $$
-//       DECLARE
-//           new_id TEXT;
-//           exists_check INTEGER;
-//       BEGIN
-//           LOOP
-//               new_id := generate_custom_id(prefix);
-
-//               -- Check if ID already exists in the specified table
-//               EXECUTE format('SELECT COUNT(*) FROM "%I" WHERE id = $1', table_name)
-//               USING new_id INTO exists_check;
-
-//               -- If ID doesn't exist, we can use it
-//               IF exists_check = 0 THEN
-//                   EXIT;
-//               END IF;
-//           END LOOP;
-
-//           RETURN new_id;
-//       END;
-//       $$ LANGUAGE plpgsql;
-//     `;
-
-//     console.log('✅ Functions created successfully!');
-
-//     // Test the functions
-//     const testResult =
-//       await prisma.$queryRaw`SELECT generate_unique_id(${'user'}, ${'USR-'}) as test_id`;
-//     console.log('🧪 Test ID generated:', testResult);
-//   } catch (error) {
-//     console.error('❌ Error creating functions:', error);
-//   } finally {
-//     await prisma.$disconnect();
-//   }
-// }
-
-// createFunctions();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
-    bodyParser: true,
-    cors: {
-      origin: [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:5173',
-        'http://localhost:3030',
-        'https://waddle-admin.vercel.app',
-        'https://waddle-admn.vercel.app',
-        'https://waddleapp.io',
-        'https://www.waddleapp.io',
-      ],
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-      credentials: true,
-      preflightContinue: false,
-      optionsSuccessStatus: 204,
-    },
+    bodyParser: false, // Disable built-in body parser to configure custom limits
   });
 
-  // Configure Express body parser with larger limits for file uploads
+  // Get Express instance
   const expressApp = app.getHttpAdapter().getInstance() as Express;
 
-  // Configure body parser limits for large file uploads
-  expressApp.use((req, res, next) => {
-    // Set larger limits for file uploads
-    req.setTimeout(300000); // 5 minutes timeout
+  // Configure body parser with larger limits FIRST (before CORS)
+  expressApp.use('/api/v1/uploads', express.json({ limit: '50mb' }));
+  expressApp.use(
+    '/api/v1/uploads',
+    express.urlencoded({ limit: '50mb', extended: true }),
+  );
+  expressApp.use('/api/v1/uploads', express.raw({ limit: '50mb' }));
+
+  // Configure general body parser for other routes
+  expressApp.use(express.json({ limit: '10mb' }));
+  expressApp.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+  // Set timeout for large file uploads
+  expressApp.use('/api/v1/uploads', (req, res, next) => {
+    req.setTimeout(600000); // 10 minutes timeout for uploads
+    res.setTimeout(600000);
     next();
   });
 
-  // Enhanced CORS handling with better debugging
+  // Enhanced CORS middleware - MUST be before routes
   expressApp.use((req, res, next) => {
     const origin = req.headers.origin;
     const allowedOrigins = [
@@ -113,61 +48,73 @@ async function bootstrap() {
       'https://www.waddleapp.io',
     ];
 
-    // Log CORS requests for debugging
-    console.log('CORS Request:', {
-      method: req.method,
-      origin: origin,
-      url: req.url,
-      headers: req.headers,
-    });
-
+    // Always set CORS headers
     if (origin && allowedOrigins.includes(origin)) {
-      res.set('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Origin', origin);
+    } else if (origin) {
+      // For debugging - log unrecognized origins
+      console.log('Unrecognized origin:', origin);
+      res.header('Access-Control-Allow-Origin', origin); // Allow it anyway for debugging
     } else {
-      res.set('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Origin', '*');
     }
 
-    res.set(
+    res.header(
       'Access-Control-Allow-Methods',
       'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     );
-    res.set(
+    res.header(
       'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, Accept',
+      'Origin,X-Requested-With,Content-Type,Accept,Authorization',
     );
-    res.set('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
 
+    // Handle preflight requests
     if (req.method === 'OPTIONS') {
-      res.status(204).end();
+      res.sendStatus(200);
       return;
     }
+
     next();
   });
 
-  // Configure body parser with larger limits
-  expressApp.use((req, res, next) => {
-    // Increase payload size limit to 50MB for file uploads
-    const originalSend = res.send;
-    res.send = function (data) {
-      res.set('Access-Control-Allow-Origin', req.headers.origin || '*');
-      res.set(
-        'Access-Control-Allow-Methods',
-        'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      );
-      res.set(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, Accept',
-      );
-      res.set('Access-Control-Allow-Credentials', 'true');
-      return originalSend.call(this, data);
-    };
-    next();
+  // Apply NestJS built-in CORS as backup
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173',
+      'http://localhost:3030',
+      'https://waddle-admin.vercel.app',
+      'https://waddle-admn.vercel.app',
+      'https://waddleapp.io',
+      'https://www.waddleapp.io',
+    ],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+    ],
+    credentials: true,
   });
 
+  // Set global prefix
   app.setGlobalPrefix('/api/v1');
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  // setting up swagger ui documentation
+  // Global validation pipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+  // Swagger documentation setup
   const config = new DocumentBuilder()
     .setTitle('Waddle App API')
     .setDescription(
@@ -183,7 +130,7 @@ async function bootstrap() {
       
       - Booking Management: Organisers, organiser staffs, and admin can view bookings, with guardians able to book for a published event.`,
     )
-    .setExternalDoc('Redoc Documenation', '/docs')
+    .setExternalDoc('Redoc Documentation', '/docs')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -191,10 +138,10 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config, {
     deepScanRoutes: true,
   });
+
   SwaggerModule.setup('/', app, document, {
     swaggerOptions: {
       docExpansion: 'none',
-      // defaultModelsExpandDepth: -1,
       persistAuthorization: true,
       filter: true,
       showExtensions: true,
@@ -213,14 +160,18 @@ async function bootstrap() {
   });
 
   // Expose Swagger JSON at `/api-json`
-  app.use('/api-json', (req: any, res: any) => {
+  expressApp.get('/api-json', (req, res) => {
     res.json(document);
   });
 
   // Set up ReDoc at `/docs`
   setupRedoc(app as any);
 
-  await app.listen(process.env.PORT ?? 3000);
-  console.log(`Application is running...`);
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Application is running on port ${port}...`);
 }
-bootstrap();
+
+bootstrap().catch((error) => {
+  console.error('Failed to start application:', error);
+});
