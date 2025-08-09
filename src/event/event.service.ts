@@ -12,6 +12,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { EventStatus } from 'src/utils/constants/eventTypes';
+import { DraftEventDto } from './dto/draft-event.dto';
 
 @Injectable()
 export class EventService {
@@ -129,7 +130,7 @@ export class EventService {
     }
   }
 
-  async draftsEventByAdmin(creatorId: string, dto: CreateEventDto) {
+  async draftsEventByAdmin(creatorId: string, dto: DraftEventDto) {
     try {
       const date = new Date(dto.date);
       const isPublished = dto.isPublished ?? false;

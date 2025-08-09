@@ -39,6 +39,7 @@ import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { Role } from '../auth/enum';
 import { EventStatus } from 'src/utils/constants/eventTypes';
+import { DraftEventDto } from './dto/draft-event.dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -119,7 +120,7 @@ export class EventController {
   @UseInterceptors(FileInterceptor('images'))
   draftsEventByAdmin(
     @GetUser() user: { id: string },
-    @Body() dto: CreateEventDto,
+    @Body() dto: DraftEventDto,
   ) {
     return this.eventService.draftsEventByAdmin(user.id, dto);
   }
