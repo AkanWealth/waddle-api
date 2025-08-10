@@ -100,14 +100,9 @@ export class EventController {
   createEventByAdmin(
     @GetUser() user: { id: string },
     @Body() dto: CreateEventDto,
-    @UploadedFile() file?: Express.Multer.File,
+    //@UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.eventService.createEventByAdmin(
-      user.id,
-      dto,
-      file?.originalname,
-      file?.buffer,
-    );
+    return this.eventService.createEventByAdmin(user.id, dto);
   }
 
   @ApiOperation({

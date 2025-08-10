@@ -50,7 +50,6 @@ export class EventService {
         //   instructions && instructions.length > 0 ? instructions[0] : null,
         date,
         total_ticket: Number(dto.total_ticket),
-        images: fileName || null,
         isPublished: false,
         organiserId: creatorId,
         distance: 0,
@@ -68,27 +67,8 @@ export class EventService {
     }
   }
 
-  async createEventByAdmin(
-    creatorId: string,
-    dto: CreateEventDto,
-    fileName?: string,
-    file?: Buffer,
-  ) {
+  async createEventByAdmin(creatorId: string, dto: CreateEventDto) {
     try {
-      console.log('Creating event by admin:', {
-        creatorId,
-        fileName,
-        fileSize: file?.length,
-        dtoKeys: Object.keys(dto),
-        dtoData: dto,
-      });
-
-      if (file) {
-        console.log('Uploading file to S3...');
-        await this.uploadEventImages(fileName, file);
-        console.log('File uploaded successfully');
-      }
-
       const date = new Date(dto.date);
       // const isPublished = dto.isPublished ?? false;
 
@@ -117,12 +97,10 @@ export class EventService {
         files: dto.files,
       };
 
-      console.log('Creating event in database with data:', eventData);
       const event = await this.prisma.event.create({
         data: eventData,
       });
 
-      console.log('Event created successfully:', event.id);
       return { message: 'Event created', event };
     } catch (error) {
       console.error('Error creating event by admin:', error);
