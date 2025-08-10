@@ -17,6 +17,7 @@ import { UpdatePasswordDto } from '../user/dto';
 import { NotificationService } from '../notification/notification.service';
 import { OrganiserStatus } from 'src/utils/constants/organiserTypes';
 import { NotificationHelper } from 'src/notification/notification.helper';
+import { Mailer } from 'src/helper';
 
 @Injectable()
 export class OrganiserService {
@@ -34,6 +35,7 @@ export class OrganiserService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private mailer: Mailer,
     private notificationService: NotificationService,
     private notificationHelper: NotificationHelper,
   ) {}
@@ -517,6 +519,51 @@ export class OrganiserService {
             : OrganiserStatus.REJECTED,
         },
       });
+
+      // Prepare email details
+      let subject: string;
+      let message: string;
+
+      if (isApproved) {
+        subject = 'Your Waddle Vendor Account Has Been Approved 🎉';
+        message = `
+        <p>Hello ${updated.name},</p>
+        <p>Good news! Your vendor account has been successfully verified and approved. You can now start creating and managing your events on Waddle.</p>
+
+        <p><b>Next Steps:</b></p>
+        <ul>
+          <li>Log in to your account</li>
+          <li>Set up your event listings</li>
+          <li>Start receiving bookings from parents</li>
+        </ul>
+
+        <p>We’re excited to have you on board. Let’s make great events happen!</p>
+
+        <p>Best regards,<br> The Waddle Team</p>
+      `;
+      } else {
+        subject = 'Your Waddle Vendor Verification Status';
+        message = `
+        <p>Hello ${updated.name},</p>
+        <p>After reviewing your vendor application, we’re unable to approve your account at this time due to verification requirements not being met.</p>
+
+        <p><b>What to do next:</b></p>
+        <ul>
+          <li>Review your submitted information</li>
+          <li>Ensure all required documents are clear and valid</li>
+          <li>Re-submit your application for verification</li>
+        </ul>
+
+        <p>We’d be happy to verify you once the necessary details are provided.</p>
+
+        <p>Best regards,<br> Waddle Team</p>
+      `;
+      }
+
+      // Send email
+      await this.mailer.sendMail(updated.email, subject, message);
+
+      // Send any in-app notification if needed
       await this.notificationHelper.sendAccountApprovalStatusAlert(
         id,
         updated.name,
