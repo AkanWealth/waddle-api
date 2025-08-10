@@ -142,7 +142,7 @@ model Event {
   date            DateTime?
   time            String?
   age_range       String?
-  instruction     String[]
+  instructions     String[]
   category        String?
   distance        Int?
   facilities      String[]
