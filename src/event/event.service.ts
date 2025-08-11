@@ -727,8 +727,6 @@ export class EventService {
     id: string,
     creatorId: string,
     dto: UpdateEventDto,
-    fileName?: string,
-    file?: Buffer,
   ) {
     try {
       const existingEvent = await this.prisma.event.findUnique({
@@ -743,18 +741,18 @@ export class EventService {
       if (new Date(existingEvent.date) <= new Date())
         throw new ForbiddenException('Past event can not be updated');
 
-      let image = existingEvent?.files[0] || undefined;
+      // let image = existingEvent?.files[0] || undefined;
 
-      // Upload the new image
-      if (image !== fileName) {
-        await this.uploadEventImages(fileName, file);
+      // // Upload the new image
+      // if (image !== fileName) {
+      //   await this.uploadEventImages(fileName, file);
 
-        // Delete the old image from bucket
-        await this.deleteEventImages(image);
+      //   // Delete the old image from bucket
+      //   await this.deleteEventImages(image);
 
-        // Update the profile image filename
-        image = fileName;
-      }
+      //   // Update the profile image filename
+      //   image = fileName;
+      // }
 
       const isPublished = this.stringToBoolean(dto.isPublished);
 
@@ -765,7 +763,7 @@ export class EventService {
         // instruction:
         //   instructions && instructions.length > 0 ? instructions[0] : undefined,
         date: dto.date ? new Date(dto.date) : undefined,
-        images: image || null,
+        // images: image || null,
         total_ticket: Number(dto.total_ticket) || undefined,
         isPublished,
         distance: 0,

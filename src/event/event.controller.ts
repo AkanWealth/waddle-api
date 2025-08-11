@@ -356,34 +356,13 @@ export class EventController {
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('organiser/:id')
   @Roles(Role.Organiser)
-  @UseInterceptors(FileInterceptor('images'))
+  // @UseInterceptors(FileInterceptor('images'))
   updateEventAsOrganiser(
     @Param('id') id: string,
     @GetUser() user: User,
     @Body() dto: UpdateEventDto,
-    @UploadedFile() file?: Express.Multer.File,
   ) {
-    if (file) {
-      try {
-        new ParseFilePipe({
-          validators: [
-            new MaxFileSizeValidator({ maxSize: 5000000 }),
-            new FileTypeValidator({ fileType: 'image/*' }),
-          ],
-        }).transform(file);
-      } catch (error) {
-        throw error;
-      }
-      return this.eventService.updateEventAsOrganiser(
-        id,
-        user.id,
-        dto,
-        file.originalname,
-        file.buffer,
-      );
-    } else {
-      return this.eventService.updateEventAsOrganiser(id, user.id, dto);
-    }
+    return this.eventService.updateEventAsOrganiser(id, user.id, dto);
   }
 
   @ApiOperation({

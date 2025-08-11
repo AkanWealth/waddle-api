@@ -753,16 +753,21 @@ export class AuthService {
     const blacklistToken = await this.prisma.blacklistedToken.findFirst({
       where: { refresh_token: token },
     });
+    console.log(blacklistToken);
     if (blacklistToken) {
       throw new ForbiddenException('Login, token has been blacklisted!');
     }
-
+    console.log(token, 'This is the token');
+    console.log('Try stuff here');
+    console.log(this.config.get<string>('JWT_REFRESH_SECRET_KEY'));
     const decoded = await this.jwt.verifyAsync(token, {
-      secret: process.env.JWT_REFRESH_SECRET_KEY,
+      secret: this.config.get<string>('JWT_REFRESH_SECRET_KEY'),
     });
+    console.log('Decoded token:', decoded);
     if (!decoded) {
       throw new UnauthorizedException('Token is invalid');
     }
+    console.log('We are gonna test');
 
     const payload = {
       sub: decoded.sub,
