@@ -67,6 +67,44 @@ export class EventService {
     }
   }
 
+  async draftsEventByOrganiser(creatorId: string, dto: DraftEventDto) {
+    try {
+      const date = new Date(dto.date);
+      const isPublished = dto.isPublished ?? false;
+
+      // Transform the DTO to match Prisma schema
+      const { total_ticket, ...restDto } = dto; // Extract total_ticket from restDto
+      const parsedTotalTicket = Number(total_ticket);
+
+      const eventData = {
+        ...restDto,
+        // instruction: instructions?.[0] ?? null,
+        date,
+        ...(isNaN(parsedTotalTicket) || parsedTotalTicket === 0
+          ? { isUnlimited: true }
+          : { total_ticket: parsedTotalTicket }), // Now this won't be overridden
+        isPublished,
+        status: EventStatus.DRAFT,
+        organiserId: creatorId,
+        distance: 0,
+        facilities: dto.facilities ?? [],
+        tags: dto.tags ?? [],
+        files: dto.files,
+      };
+
+      console.log('Creating event in database with data:', eventData);
+      const event = await this.prisma.event.create({
+        data: eventData,
+      });
+
+      console.log('Event created successfully:', event.id);
+      return { message: 'Event created' };
+    } catch (error) {
+      console.error('Error creating event by organiser:', error);
+      throw error;
+    }
+  }
+
   async createEventByAdmin(creatorId: string, dto: CreateEventDto) {
     try {
       const date = new Date(dto.date);

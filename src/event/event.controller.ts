@@ -90,6 +90,20 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary: 'Draft an event by organiser',
+    description: 'Draft by the organiser',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('organiser/draft')
+  @Roles(Role.Organiser)
+  draftsEventByOrganiser(
+    @GetUser() user: { id: string },
+    @Body() dto: DraftEventDto,
+  ) {
+    return this.eventService.draftsEventByOrganiser(user.id, dto);
+  }
+
+  @ApiOperation({
     summary: 'create an event by admin',
     description: 'Create an event by the admin',
   })
