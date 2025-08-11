@@ -56,11 +56,23 @@ export class AuthService {
 
       // generate token and expiration time
       const verificatonToken = this.otp.generateBasicOTP();
+      console.log(verificatonToken, 'This is the verification token');
+      console.log(dto, 'This is the dto');
+      const payload = {
+        name: dto.name,
+        email: dto.email,
+        password: hash,
+        verification_token: verificatonToken.token,
+        verification_token_expiration: verificatonToken.expiration.toString(),
+      };
+      console.log('Insert payload:', payload);
 
       const customer = await this.prisma.user.create({
         data: {
-          ...dto,
-          profile_picture: fileName || null,
+          name: dto.name,
+          email: dto.email,
+          role: 'GUARDIAN',
+          // profile_picture: fileName || null,
           password: hash,
           verification_token: verificatonToken.token,
           verification_token_expiration: verificatonToken.expiration.toString(),
@@ -563,7 +575,7 @@ export class AuthService {
   // End Organiser
 
   // Start Admin
-  async verifyAdminEmail(token: string) {
+  async verifyAdminEmail(token: string, password: string) {
     try {
       const admin = await this.prisma.admin.findFirst({
         where: {
@@ -576,9 +588,13 @@ export class AuthService {
 
       if (!admin) throw new BadRequestException('Invalid or expired token');
 
+      const hashed = await argon.hash(password);
+
+      // save new password to database
       await this.prisma.admin.update({
         where: { id: admin.id },
         data: {
+          password: hashed,
           activationStatus: 'ACTIVE',
           email_verify: true,
           verification_token: null,

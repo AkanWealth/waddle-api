@@ -93,7 +93,7 @@ model Organiser {
 }
 
 model User {
-  id                            String                  @id @default(dbgenerated("generate_unique_id('user'::text, 'USR-'::text)"))
+  id                            String                  @id @default(cuid())
   profile_picture               String?
   name                          String
   email                         String                  @unique
@@ -142,7 +142,7 @@ model Event {
   date            DateTime?
   time            String?
   age_range       String?
-  instructions     String[]
+  instructions    String[]
   category        String?
   distance        Int?
   facilities      String[]
@@ -284,7 +284,7 @@ model Favorite {
 }
 
 model Like {
-  id                  String             @id @default(dbgenerated("generate_unique_id('like'::text, 'LIK-'::text)"))
+  id                  String             @id @default(cuid())
   userId              String
   eventId             String?
   createdAt           DateTime           @default(now())

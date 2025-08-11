@@ -327,7 +327,7 @@ export class AuthController {
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('verification/host')
   verfiyAdminEmail(@Body() dto: VerifyDto) {
-    return this.authService.verifyAdminEmail(dto.token);
+    return this.authService.verifyAdminEmail(dto.token, dto.password);
   }
 
   @ApiOperation({

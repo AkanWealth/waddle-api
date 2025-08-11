@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as argon from 'argon2';
 import {
   DeleteObjectCommand,
-  PutObjectCommand,
+  // PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
@@ -157,12 +157,7 @@ export class UserService {
   }
 
   // function to update the loggedin user
-  async update(
-    id: string,
-    dto: UpdateUserDto,
-    fileName?: string,
-    file?: Buffer,
-  ) {
+  async update(id: string, dto: UpdateUserDto) {
     try {
       const existingUser = await this.prisma.user.findUnique({
         where: { id },
@@ -174,52 +169,28 @@ export class UserService {
         );
       }
 
-      let profileImage = existingUser?.profile_picture || undefined;
-
       // Upload the new image
-      if (profileImage !== fileName) {
-        await this.s3Client.send(
-          new PutObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key: `${this.config.getOrThrow('S3_USER_FOLDER')}/${fileName}`,
-            Body: file,
-          }),
-        );
 
-        // Delete the old image from bucket
-        await this.s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-            Key:
-              `${this.config.getOrThrow('S3_USER_FOLDER')}/${profileImage}` ||
-              'null',
-          }),
-        );
+      // if (dto.password) {
+      //   const hashed = await argon.hash(dto.password);
 
-        // Update the profile image filename
-        profileImage = fileName;
-      }
+      //   const user = await this.prisma.user.update({
+      //     where: { id },
+      //     data: {
+      //       ...dto,
+      //       profile_picture: profileImage || null,
+      //       password: hashed,
+      //     },
+      //   });
 
-      if (dto.password) {
-        const hashed = await argon.hash(dto.password);
-
-        const user = await this.prisma.user.update({
-          where: { id },
-          data: {
-            ...dto,
-            profile_picture: profileImage || null,
-            password: hashed,
-          },
-        });
-
-        delete user.password;
-        return user;
-      }
+      //   delete user.password;
+      //   return user;
+      // }
 
       // if no password is provided, update the user without changing the password
       const user = await this.prisma.user.update({
         where: { id },
-        data: { ...dto, profile_picture: profileImage || null },
+        data: { profile_picture: dto.profile_picture },
       });
 
       delete user.password;

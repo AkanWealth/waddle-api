@@ -153,6 +153,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { setupRedoc } from './middleware';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as express from 'express';
+import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -161,6 +162,18 @@ async function bootstrap() {
   app.use(express.json({ limit: '100mb' }));
   app.use(express.urlencoded({ limit: '100mb', extended: true }));
   app.use(express.raw({ limit: '100mb' }));
+
+  const prisma = app.get(PrismaService);
+
+  // Run the query to inspect columns
+  const columns = await prisma.$queryRawUnsafe(`
+    SELECT column_name, is_nullable, column_default
+    FROM information_schema.columns
+    WHERE table_name = 'user'
+    ORDER BY ordinal_position
+  `);
+
+  console.log('User table columns:', columns);
 
   // Configure CORS after body parser
   app.enableCors({

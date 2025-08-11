@@ -661,16 +661,16 @@ export class EventService {
         this.prisma.event.count({ where: whereClause }),
       ]);
 
-      if (!events || events.length === 0) {
-        throw new NotFoundException(
-          'No Event found with the provided criteria.',
-        );
-      }
+      // if (!events || events.length === 0) {
+      //   throw new NotFoundException(
+      //     'No Event found with the provided criteria.',
+      //   );
+      // }
 
-      const eventWithImage = events.map((list) => {
-        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.files[0]}`;
-        return { ...list, images };
-      });
+      // const eventWithImage = events.map((list) => {
+      //   const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.files[0]}`;
+      //   return { ...list, images };
+      // });
 
       return {
         message: 'Event found',
@@ -678,7 +678,7 @@ export class EventService {
         page,
         limit,
         totalPages: Math.ceil(total / limit),
-        event: eventWithImage,
+        event: events,
       };
     } catch (error) {
       throw error;

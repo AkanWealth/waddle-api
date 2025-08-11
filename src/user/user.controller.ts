@@ -9,10 +9,10 @@ import {
   HttpCode,
   HttpStatus,
   UseInterceptors,
-  UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
+  // UploadedFile,
+  // ParseFilePipe,
+  // MaxFileSizeValidator,
+  // FileTypeValidator,
   Post,
 } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -127,26 +127,8 @@ export class UserController {
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
   @UseInterceptors(FileInterceptor('profile_picture'))
-  update(
-    @GetUser('id') id: string,
-    @Body() dto: UpdateUserDto,
-    @UploadedFile() file?: Express.Multer.File,
-  ) {
-    if (file) {
-      try {
-        new ParseFilePipe({
-          validators: [
-            new MaxFileSizeValidator({ maxSize: 5000000 }),
-            new FileTypeValidator({ fileType: 'image/*' }),
-          ],
-        }).transform(file);
-      } catch (error) {
-        throw error;
-      }
-      return this.userService.update(id, dto, file.originalname, file.buffer);
-    } else {
-      return this.userService.update(id, dto);
-    }
+  update(@GetUser('id') id: string, @Body() dto: UpdateUserDto) {
+    return this.userService.update(id, dto);
   }
 
   // update the loggedin user password
