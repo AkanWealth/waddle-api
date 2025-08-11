@@ -105,6 +105,30 @@ export class EventService {
     }
   }
 
+  async publishDraftedEventByOrganiser(eventId: string, creatorId: string) {
+    try {
+      const event = await this.prisma.event.update({
+        where: { id: eventId, organiserId: creatorId },
+        data: {
+          status: EventStatus.PENDING,
+          isPublished: false,
+        },
+      });
+      if (!event) {
+        throw new Error('Failed to move event from draft');
+      }
+
+      return {
+        success: true,
+        message: 'Your drafted event is now pending',
+        data: event,
+      };
+    } catch (error) {
+      console.error('Error publishing drafted event by organiser:', error);
+      throw error;
+    }
+  }
+
   async createEventByAdmin(creatorId: string, dto: CreateEventDto) {
     try {
       const date = new Date(dto.date);

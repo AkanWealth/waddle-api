@@ -104,6 +104,20 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary: 'Publish a drafted event by organiser',
+    description: 'Publish a drafted event by the organiser',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Patch('organiser/:id/publish')
+  @Roles(Role.Organiser)
+  publishDraftedEventByOrganiser(
+    @GetUser() user: { id: string },
+    @Param('id') eventId: string,
+  ) {
+    return this.eventService.publishDraftedEventByOrganiser(eventId, user.id);
+  }
+
+  @ApiOperation({
     summary: 'create an event by admin',
     description: 'Create an event by the admin',
   })
