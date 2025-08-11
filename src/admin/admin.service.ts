@@ -747,148 +747,148 @@ export class AdminService {
   //   };
   // }
 
-  async getUserActivity(startDate: Date, endDate: Date) {
-    const rangeInMs = endDate.getTime() - startDate.getTime();
-    const previousStartDate = new Date(startDate.getTime() - rangeInMs);
-    const previousEndDate = startDate;
+  // async getUserActivity(startDate: Date, endDate: Date) {
+  //   const rangeInMs = endDate.getTime() - startDate.getTime();
+  //   const previousStartDate = new Date(startDate.getTime() - rangeInMs);
+  //   const previousEndDate = startDate;
 
-    const [userStats, organizerStats, rawMonthlyData] = await Promise.all([
-      this.prisma.user.groupBy({
-        by: ['role', 'isLocked'],
-        where: {
-          isDeleted: false,
-          createdAt: { gte: previousStartDate, lt: endDate },
-        },
-        _count: { id: true },
-        _min: { createdAt: true },
-      }),
-      this.prisma.organiser.groupBy({
-        by: ['isDeleted'],
-        where: {
-          isDeleted: false,
-          createdAt: { gte: previousStartDate, lt: endDate },
-        },
-        _count: { id: true },
-        _min: { createdAt: true },
-      }),
-      this.prisma.$queryRaw<
-        Array<{
-          year: number;
-          month: number;
-          parents_count: bigint;
-          organizers_count: bigint;
-        }>
-      >`
-        SELECT 
-          EXTRACT(YEAR FROM u."createdAt") AS year,
-          EXTRACT(MONTH FROM u."createdAt") AS month,
-          COUNT(CASE WHEN u.role = 'GUARDIAN' AND u."isDeleted" = false THEN 1 END) AS parents_count,
-          0 AS organizers_count
-        FROM "user" u
-        WHERE u."createdAt" >= ${startDate} AND u."createdAt" < ${endDate}
-        GROUP BY year, month
-  
-        UNION ALL
-  
-        SELECT 
-          EXTRACT(YEAR FROM o."createdAt") AS year,
-          EXTRACT(MONTH FROM o."createdAt") AS month,
-          0 AS parents_count,
-          COUNT(CASE WHEN o."isDeleted" = false THEN 1 END) AS organizers_count
-        FROM "organiser" o
-        WHERE o."createdAt" >= ${startDate} AND o."createdAt" < ${endDate}
-        GROUP BY year, month
-      `,
-    ]);
+  //   const [userStats, organizerStats, rawMonthlyData] = await Promise.all([
+  //     this.prisma.user.groupBy({
+  //       by: ['role', 'isLocked'],
+  //       where: {
+  //         isDeleted: false,
+  //         createdAt: { gte: previousStartDate, lt: endDate },
+  //       },
+  //       _count: { id: true },
+  //       _min: { createdAt: true },
+  //     }),
+  //     this.prisma.organiser.groupBy({
+  //       by: ['isDeleted'],
+  //       where: {
+  //         isDeleted: false,
+  //         createdAt: { gte: previousStartDate, lt: endDate },
+  //       },
+  //       _count: { id: true },
+  //       _min: { createdAt: true },
+  //     }),
+  //     this.prisma.$queryRaw<
+  //       Array<{
+  //         year: number;
+  //         month: number;
+  //         parents_count: bigint;
+  //         organizers_count: bigint;
+  //       }>
+  //     >`
+  //       SELECT
+  //         EXTRACT(YEAR FROM u."createdAt") AS year,
+  //         EXTRACT(MONTH FROM u."createdAt") AS month,
+  //         COUNT(CASE WHEN u.role = 'GUARDIAN' AND u."isDeleted" = false THEN 1 END) AS parents_count,
+  //         0 AS organizers_count
+  //       FROM "user" u
+  //       WHERE u."createdAt" >= ${startDate} AND u."createdAt" < ${endDate}
+  //       GROUP BY year, month
 
-    const aggregateCount = (
-      data: typeof userStats,
-      filterFn: (item: (typeof userStats)[number]) => boolean,
-    ) => data.filter(filterFn).reduce((sum, item) => sum + item._count.id, 0);
+  //       UNION ALL
 
-    const isCurrent = (date: Date) => date >= startDate && date < endDate;
-    const isPrevious = (date: Date) =>
-      date >= previousStartDate && date < previousEndDate;
+  //       SELECT
+  //         EXTRACT(YEAR FROM o."createdAt") AS year,
+  //         EXTRACT(MONTH FROM o."createdAt") AS month,
+  //         0 AS parents_count,
+  //         COUNT(CASE WHEN o."isDeleted" = false THEN 1 END) AS organizers_count
+  //       FROM "organiser" o
+  //       WHERE o."createdAt" >= ${startDate} AND o."createdAt" < ${endDate}
+  //       GROUP BY year, month
+  //     `,
+  //   ]);
 
-    const currentTotalUsers = aggregateCount(userStats, (s) =>
-      isCurrent(s._min.createdAt),
-    );
-    const previousTotalUsers = aggregateCount(userStats, (s) =>
-      isPrevious(s._min.createdAt),
-    );
+  //   const aggregateCount = (
+  //     data: typeof userStats,
+  //     filterFn: (item: (typeof userStats)[number]) => boolean,
+  //   ) => data.filter(filterFn).reduce((sum, item) => sum + item._count.id, 0);
 
-    const currentParents = aggregateCount(
-      userStats,
-      (s) => isCurrent(s._min.createdAt) && s.role === 'GUARDIAN',
-    );
-    const previousParents = aggregateCount(
-      userStats,
-      (s) => isPrevious(s._min.createdAt) && s.role === 'GUARDIAN',
-    );
+  //   const isCurrent = (date: Date) => date >= startDate && date < endDate;
+  //   const isPrevious = (date: Date) =>
+  //     date >= previousStartDate && date < previousEndDate;
 
-    const currentInactive = aggregateCount(
-      userStats,
-      (s) => isCurrent(s._min.createdAt) && s.isLocked === true,
-    );
-    const previousInactive = aggregateCount(
-      userStats,
-      (s) => isPrevious(s._min.createdAt) && s.isLocked === true,
-    );
+  //   const currentTotalUsers = aggregateCount(userStats, (s) =>
+  //     isCurrent(s._min.createdAt),
+  //   );
+  //   const previousTotalUsers = aggregateCount(userStats, (s) =>
+  //     isPrevious(s._min.createdAt),
+  //   );
 
-    const currentOrganizers = organizerStats
-      .filter((s) => isCurrent(s._min.createdAt))
-      .reduce((sum, s) => sum + s._count.id, 0);
-    const previousOrganizers = organizerStats
-      .filter((s) => isPrevious(s._min.createdAt))
-      .reduce((sum, s) => sum + s._count.id, 0);
+  //   const currentParents = aggregateCount(
+  //     userStats,
+  //     (s) => isCurrent(s._min.createdAt) && s.role === 'GUARDIAN',
+  //   );
+  //   const previousParents = aggregateCount(
+  //     userStats,
+  //     (s) => isPrevious(s._min.createdAt) && s.role === 'GUARDIAN',
+  //   );
 
-    const calculateChange = (current: number, previous: number) => {
-      if (previous === 0) {
-        return {
-          change: current > 0 ? '+100%' : '0%',
-          isPositive: current >= 0,
-        };
-      }
-      const delta = ((current - previous) / previous) * 100;
-      return {
-        change: `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`,
-        isPositive: delta >= 0,
-      };
-    };
+  //   const currentInactive = aggregateCount(
+  //     userStats,
+  //     (s) => isCurrent(s._min.createdAt) && s.isLocked === true,
+  //   );
+  //   const previousInactive = aggregateCount(
+  //     userStats,
+  //     (s) => isPrevious(s._min.createdAt) && s.isLocked === true,
+  //   );
 
-    const userStatsResponse = [
-      {
-        type: 'total_users',
-        title: 'Total Users',
-        count: currentTotalUsers,
-        ...calculateChange(currentTotalUsers, previousTotalUsers),
-      },
-      {
-        type: 'parents',
-        title: 'Parents',
-        count: currentParents,
-        ...calculateChange(currentParents, previousParents),
-      },
-      {
-        type: 'organisers',
-        title: 'Event Organisers',
-        count: currentOrganizers,
-        ...calculateChange(currentOrganizers, previousOrganizers),
-      },
-      {
-        type: 'inactive',
-        title: 'Inactive Users',
-        count: currentInactive,
-        ...calculateChange(currentInactive, previousInactive),
-      },
-    ];
+  //   const currentOrganizers = organizerStats
+  //     .filter((s) => isCurrent(s._min.createdAt))
+  //     .reduce((sum, s) => sum + s._count.id, 0);
+  //   const previousOrganizers = organizerStats
+  //     .filter((s) => isPrevious(s._min.createdAt))
+  //     .reduce((sum, s) => sum + s._count.id, 0);
 
-    return {
-      userStats: userStatsResponse,
-      monthlyData: this.processMonthlyGrowthData(rawMonthlyData),
-      hasData: currentTotalUsers > 0 || currentOrganizers > 0,
-    };
-  }
+  //   const calculateChange = (current: number, previous: number) => {
+  //     if (previous === 0) {
+  //       return {
+  //         change: current > 0 ? '+100%' : '0%',
+  //         isPositive: current >= 0,
+  //       };
+  //     }
+  //     const delta = ((current - previous) / previous) * 100;
+  //     return {
+  //       change: `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`,
+  //       isPositive: delta >= 0,
+  //     };
+  //   };
+
+  // const userStatsResponse = [
+  //   {
+  //     type: 'total_users',
+  //     title: 'Total Users',
+  //     count: currentTotalUsers,
+  //     ...calculateChange(currentTotalUsers, previousTotalUsers),
+  //   },
+  //   {
+  //     type: 'parents',
+  //     title: 'Parents',
+  //     count: currentParents,
+  //     ...calculateChange(currentParents, previousParents),
+  //   },
+  //   {
+  //     type: 'organisers',
+  //     title: 'Event Organisers',
+  //     count: currentOrganizers,
+  //     ...calculateChange(currentOrganizers, previousOrganizers),
+  //   },
+  //   {
+  //     type: 'inactive',
+  //     title: 'Inactive Users',
+  //     count: currentInactive,
+  //     ...calculateChange(currentInactive, previousInactive),
+  //   },
+  // ];
+
+  //   return {
+  //     userStats: userStatsResponse,
+  //     monthlyData: this.processMonthlyGrowthData(rawMonthlyData),
+  //     hasData: currentTotalUsers > 0 || currentOrganizers > 0,
+  //   };
+  // }
 
   private processMonthlyGrowthData(
     rawData: Array<{
@@ -934,6 +934,198 @@ export class AdminService {
         organizers,
       };
     });
+  }
+
+  async getUserActivity(startDate: Date, endDate: Date) {
+    const rangeInMs = endDate.getTime() - startDate.getTime();
+    const previousStartDate = new Date(startDate.getTime() - rangeInMs);
+    const previousEndDate = startDate;
+
+    // If you want "today only" behaviour
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    // const now = new Date();
+
+    const [userStats, organizerStats, rawMonthlyData] = await Promise.all([
+      this.prisma.user.groupBy({
+        by: ['role', 'isLocked'],
+        where: {
+          isDeleted: false,
+          createdAt: { gte: previousStartDate, lt: endDate },
+        },
+        _count: { id: true },
+        _min: { createdAt: true },
+      }),
+      this.prisma.organiser.groupBy({
+        by: ['isDeleted', 'isProfileCompleted'],
+        where: {
+          isDeleted: false,
+          isProfileCompleted: true, // ✅ Only completed profiles
+          createdAt: { gte: previousStartDate, lt: endDate },
+        },
+        _count: { id: true },
+        _min: { createdAt: true },
+      }),
+      this.prisma.$queryRaw<
+        Array<{
+          year: number;
+          month: number;
+          parents_count: bigint;
+          organizers_count: bigint;
+        }>
+      >`
+      SELECT 
+        EXTRACT(YEAR FROM u."createdAt") AS year,
+        EXTRACT(MONTH FROM u."createdAt") AS month,
+        COUNT(CASE WHEN u.role = 'GUARDIAN' AND u."isDeleted" = false THEN 1 END) AS parents_count,
+        0 AS organizers_count
+      FROM "user" u
+      WHERE u."createdAt" >= ${startDate} AND u."createdAt" < ${endDate}
+      GROUP BY year, month
+
+      UNION ALL
+
+      SELECT 
+        EXTRACT(YEAR FROM o."createdAt") AS year,
+        EXTRACT(MONTH FROM o."createdAt") AS month,
+        0 AS parents_count,
+        COUNT(CASE WHEN o."isDeleted" = false AND o."isProfileCompleted" = true THEN 1 END) AS organizers_count
+      FROM "organiser" o
+      WHERE o."createdAt" >= ${startDate} AND o."createdAt" < ${endDate}
+      GROUP BY year, month
+    `,
+    ]);
+
+    const aggregateCount = (
+      data: typeof userStats,
+      filterFn: (item: (typeof userStats)[number]) => boolean,
+    ) => data.filter(filterFn).reduce((sum, item) => sum + item._count.id, 0);
+
+    const isCurrent = (date: Date) => date >= startDate && date < endDate;
+    const isPrevious = (date: Date) =>
+      date >= previousStartDate && date < previousEndDate;
+    //const isToday = (date: Date) => date >= todayStart && date <= now;
+
+    const currentTotalUsers = aggregateCount(userStats, (s) =>
+      isCurrent(s._min.createdAt),
+    );
+    const previousTotalUsers = aggregateCount(userStats, (s) =>
+      isPrevious(s._min.createdAt),
+    );
+
+    const currentParents = aggregateCount(
+      userStats,
+      (s) => isCurrent(s._min.createdAt) && s.role === 'GUARDIAN',
+    );
+    const previousParents = aggregateCount(
+      userStats,
+      (s) => isPrevious(s._min.createdAt) && s.role === 'GUARDIAN',
+    );
+
+    const currentInactive = aggregateCount(
+      userStats,
+      (s) => isCurrent(s._min.createdAt) && s.isLocked === true,
+    );
+    const previousInactive = aggregateCount(
+      userStats,
+      (s) => isPrevious(s._min.createdAt) && s.isLocked === true,
+    );
+
+    const currentOrganizers = organizerStats
+      .filter(
+        (s) => isCurrent(s._min.createdAt) && s.isProfileCompleted === true,
+      )
+      .reduce((sum, s) => sum + s._count.id, 0);
+    const previousOrganizers = organizerStats
+      .filter(
+        (s) => isPrevious(s._min.createdAt) && s.isProfileCompleted === true,
+      )
+      .reduce((sum, s) => sum + s._count.id, 0);
+
+    // Count organisers created today with completed profiles
+    // const todayOrganizers = organizerStats
+    //   .filter((s) => isToday(s._min.createdAt) && s.isProfileCompleted === true)
+    //   .reduce((sum, s) => sum + s._count.id, 0);
+
+    const calculateChange = (current: number, previous: number) => {
+      if (previous === 0) {
+        return {
+          change: current > 0 ? '+100%' : '0%',
+          isPositive: current >= 0,
+        };
+      }
+      const delta = ((current - previous) / previous) * 100;
+      return {
+        change: `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`,
+        isPositive: delta >= 0,
+      };
+    };
+
+    // const userStatsResponse = [
+    //   {
+    //     type: 'total_users',
+    //     title: 'Total Users',
+    //     count: currentTotalUsers,
+    //     ...calculateChange(currentTotalUsers, previousTotalUsers),
+    //   },
+    //   {
+    //     type: 'parents',
+    //     title: 'Parents',
+    //     count: currentParents,
+    //     ...calculateChange(currentParents, previousParents),
+    //   },
+    //   {
+    //     type: 'organisers',
+    //     title: 'Event Organisers (Completed Profile)',
+    //     count: currentOrganizers,
+    //     ...calculateChange(currentOrganizers, previousOrganizers),
+    //   },
+    //   {
+    //     type: 'today_organisers',
+    //     title: 'Organisers Registered Today (Completed Profile)',
+    //     count: todayOrganizers,
+    //     change: 'N/A',
+    //     isPositive: true,
+    //   },
+    //   {
+    //     type: 'inactive',
+    //     title: 'Inactive Users',
+    //     count: currentInactive,
+    //     ...calculateChange(currentInactive, previousInactive),
+    //   },
+    // ];
+
+    const userStatsResponse = [
+      {
+        type: 'total_users',
+        title: 'Total Users',
+        count: currentTotalUsers,
+        ...calculateChange(currentTotalUsers, previousTotalUsers),
+      },
+      {
+        type: 'parents',
+        title: 'Parents',
+        count: currentParents,
+        ...calculateChange(currentParents, previousParents),
+      },
+      {
+        type: 'organisers',
+        title: 'Event Organisers',
+        count: currentOrganizers,
+        ...calculateChange(currentOrganizers, previousOrganizers),
+      },
+      {
+        type: 'inactive',
+        title: 'Inactive Users',
+        count: currentInactive,
+        ...calculateChange(currentInactive, previousInactive),
+      },
+    ];
+    return {
+      userStats: userStatsResponse,
+      monthlyData: this.processMonthlyGrowthData(rawMonthlyData),
+      hasData: currentTotalUsers > 0 || currentOrganizers > 0,
+    };
   }
 
   async getEventActivity(startDate: Date, endDate: Date) {
