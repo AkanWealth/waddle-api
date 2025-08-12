@@ -91,21 +91,21 @@ export class CrowdSourcingService {
         };
       }
 
-      const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
-      const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
-      const url = `${baseUrl}/${folder}`;
+      // const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+      // const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+      // const url = `${baseUrl}/${folder}`;
 
-      const eventsWithImage = events.map((event) => {
-        const imageUrls = event.images.map((image) => `${url}/${image}`);
-        return {
-          ...event,
-          images: imageUrls,
-        };
-      });
+      // const eventsWithImage = events.map((event) => {
+      //   const imageUrls = event.images.map((image) => `${url}/${image}`);
+      //   return {
+      //     ...event,
+      //     images: imageUrls,
+      //   };
+      // });
 
       return {
         message: 'Events found',
-        events: eventsWithImage,
+        events,
         totalEvents: totalEvents,
         currentPage: page,
         pageSize: pageSize,
@@ -198,21 +198,21 @@ export class CrowdSourcingService {
       };
     }
 
-    const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
-    const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
-    const url = `${baseUrl}/${folder}`;
+    // const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+    // const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+    // const url = `${baseUrl}/${folder}`;
 
-    const placesWithImage = places.map((place) => {
-      const imageUrls = place.images.map((image) => `${url}/${image}`);
-      return {
-        ...place,
-        images: imageUrls,
-      };
-    });
+    // const placesWithImage = places.map((place) => {
+    //   const imageUrls = place.images.map((image) => `${url}/${image}`);
+    //   return {
+    //     ...place,
+    //     images: imageUrls,
+    //   };
+    // });
 
     return {
       message: 'Places found',
-      places: placesWithImage,
+      places,
       totalPlaces: totalPlaces,
     };
   }
