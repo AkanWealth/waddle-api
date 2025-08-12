@@ -160,15 +160,30 @@ export class CrowdSourcingController {
     return this.crowdSourcingService.findMySourcedEvent(id);
   }
 
+  // @ApiOperation({
+  //   summary: 'view loggedin user crowdsourced place',
+  //   description: 'View loggedin user crowdsourced place',
+  // })
+  // @ApiOkResponse({ description: 'Ok' })
+  // @ApiNotFoundResponse({ description: 'Not found' })
+  // @Get('me/places')
+  // findMySourcedPlace(@GetUser('id') id: string) {
+  //   return this.crowdSourcingService.findMySourcedPlace(id);
+  // }
+
   @ApiOperation({
-    summary: 'view loggedin user crowdsourced place',
-    description: 'View loggedin user crowdsourced place',
+    summary: 'view logged-in user crowdsourced place',
+    description: 'View logged-in user crowdsourced place with pagination',
   })
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get('me/places')
-  findMySourcedPlace(@GetUser('id') id: string) {
-    return this.crowdSourcingService.findMySourcedPlace(id);
+  findMySourcedPlace(
+    @GetUser('id') id: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.crowdSourcingService.findMySourcedPlace(id, page, limit);
   }
 
   @ApiOperation({

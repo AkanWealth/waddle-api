@@ -241,28 +241,69 @@ export class CrowdSourcingService {
     return { message: 'Events found', events: eventsWithFullImageUrls };
   }
 
-  async findMySourcedPlace(id: string) {
-    const places = await this.prisma.crowdSource.findMany({
-      where: { creatorId: id, isDeleted: false, tag: 'Place' },
-      include: { like: true },
-    });
-    if (!places || places.length === 0) {
-      throw new NotFoundException('No places found');
-    }
+  // async findMySourcedPlace(id: string) {
+  //   const places = await this.prisma.crowdSource.findMany({
+  //     where: { creatorId: id, isDeleted: false, tag: 'Place' },
+  //     include: { like: true },
+  //   });
+  //   if (!places || places.length === 0) {
+  //     throw new NotFoundException('No places found');
+  //   }
 
-    const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
-    const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
-    const url = `${baseUrl}/${folder}`;
+  //   const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+  //   const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+  //   const url = `${baseUrl}/${folder}`;
 
-    const placesWithFullImageUrls = places.map((place) => {
-      const fullImageUrls = place.images.map((image) => `${url}/${image}`);
-      return {
-        ...place,
-        images: fullImageUrls,
-      };
-    });
+  //   const placesWithFullImageUrls = places.map((place) => {
+  //     const fullImageUrls = place.images.map((image) => `${url}/${image}`);
+  //     return {
+  //       ...place,
+  //       images: fullImageUrls,
+  //     };
+  //   });
 
-    return { message: 'Places found', places: placesWithFullImageUrls };
+  //   return { message: 'Places found', places: placesWithFullImageUrls };
+  // }
+
+  async findMySourcedPlace(id: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+
+    const [places, total] = await this.prisma.$transaction([
+      this.prisma.crowdSource.findMany({
+        where: { creatorId: id, isDeleted: false, tag: 'Place' },
+        include: { like: true },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' }, // newest first
+      }),
+      this.prisma.crowdSource.count({
+        where: { creatorId: id, isDeleted: false, tag: 'Place' },
+      }),
+    ]);
+
+    // if (places.length === 0) {
+    //   throw new NotFoundException('No places found');
+    // }
+
+    // const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+    // const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+    // const url = `${baseUrl}/${folder}`;
+
+    // const placesWithFullImageUrls = places.map((place) => ({
+    //   ...place,
+    //   images: place.images.map((image) => `${url}/${image}`),
+    // }));
+
+    return {
+      message: 'Places found',
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+      places,
+    };
   }
 
   async findOneSourcedEvent(id: string) {
