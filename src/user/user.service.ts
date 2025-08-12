@@ -148,15 +148,58 @@ export class UserService {
       });
       delete user.password;
 
-      const profile_picture = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_USER_FOLDER')}/${user.profile_picture}`;
+      // const profile_picture = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_USER_FOLDER')}/${user.profile_picture}`;
 
-      return { ...user, profile_picture };
+      return { ...user };
     } catch (error) {
       throw error;
     }
   }
 
   // function to update the loggedin user
+  // async update(id: string, dto: UpdateUserDto) {
+  //   try {
+  //     const existingUser = await this.prisma.user.findUnique({
+  //       where: { id },
+  //     });
+
+  //     if (!existingUser) {
+  //       throw new NotFoundException(
+  //         'User with the provided ID does not exist.',
+  //       );
+  //     }
+
+  //     // Prepare the update data object
+  //     const updateData: any = {};
+
+  //     if (dto.profile_picture !== undefined) {
+  //       updateData.profile_picture = dto.profile_picture;
+  //     }
+
+  //     if (dto.email !== undefined) {
+  //       updateData.email = dto.email;
+  //     }
+
+  //     if (dto.password !== undefined) {
+  //       updateData.password = await argon.hash(dto.password);
+  //     }
+
+  //     if (dto.name !== undefined) {
+  //       updateData.name = dto.name;
+  //     }
+
+  //     const updatedUser = await this.prisma.user.update({
+  //       where: { id },
+  //       data: updateData,
+  //     });
+
+  //     delete updatedUser.password;
+  //     return updatedUser;
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
   async update(id: string, dto: UpdateUserDto) {
     try {
       const existingUser = await this.prisma.user.findUnique({
@@ -169,32 +212,24 @@ export class UserService {
         );
       }
 
-      // Upload the new image
+      // Filter only defined fields
+      const updateData: any = Object.fromEntries(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        Object.entries(dto).filter(([_, value]) => value !== undefined),
+      );
 
-      // if (dto.password) {
-      //   const hashed = await argon.hash(dto.password);
+      // If password is being updated, hash it
+      if (updateData.password) {
+        updateData.password = await argon.hash(updateData.password);
+      }
 
-      //   const user = await this.prisma.user.update({
-      //     where: { id },
-      //     data: {
-      //       ...dto,
-      //       profile_picture: profileImage || null,
-      //       password: hashed,
-      //     },
-      //   });
-
-      //   delete user.password;
-      //   return user;
-      // }
-
-      // if no password is provided, update the user without changing the password
-      const user = await this.prisma.user.update({
+      const updatedUser = await this.prisma.user.update({
         where: { id },
-        data: { profile_picture: dto.profile_picture },
+        data: updateData,
       });
 
-      delete user.password;
-      return user;
+      delete updatedUser.password;
+      return updatedUser;
     } catch (error) {
       throw error;
     }

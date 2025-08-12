@@ -8,7 +8,7 @@ import {
   Param,
   HttpCode,
   HttpStatus,
-  UseInterceptors,
+  // UseInterceptors,
   // UploadedFile,
   // ParseFilePipe,
   // MaxFileSizeValidator,
@@ -31,7 +31,7 @@ import {
 import { User } from '@prisma/client';
 import { JwtGuard } from '../auth/guard';
 import { GetUser } from '../auth/decorator';
-import { FileInterceptor } from '@nestjs/platform-express';
+// import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Roles } from '../auth/decorator/role-decorator';
 import { Role } from '../auth/enum';
@@ -126,7 +126,6 @@ export class UserController {
   @ApiAcceptedResponse({ description: 'Accepted' })
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('me')
-  @UseInterceptors(FileInterceptor('profile_picture'))
   update(@GetUser('id') id: string, @Body() dto: UpdateUserDto) {
     return this.userService.update(id, dto);
   }

@@ -70,17 +70,8 @@ export class CrowdSourcingController {
   async createSourcedEvent(
     @GetUser() user: User,
     @Body() dto: CreateCrowdSourcingDto,
-    @UploadedFiles() files: Express.Multer.File[],
   ) {
-    const fileBuffers = files?.map((file) => file.buffer) || [];
-    const fileNames = files?.map((file) => file.originalname) || [];
-
-    return this.crowdSourcingService.createSourcedEvent(
-      user.id,
-      dto,
-      fileNames,
-      fileBuffers,
-    );
+    return this.crowdSourcingService.createSourcedEvent(user.id, dto);
   }
 
   @ApiOperation({

@@ -37,22 +37,13 @@ export class CrowdSourcingService {
     private config: ConfigService,
   ) {}
 
-  async createSourcedEvent(
-    creatorId: string,
-    _dto: CreateCrowdSourcingDto,
-    fileNames?: string[],
-    files?: Buffer[],
-  ) {
+  async createSourcedEvent(creatorId: string, _dto: CreateCrowdSourcingDto) {
     try {
-      if (files && fileNames && files.length === fileNames.length) {
-        await this.uploadEventImagesMultiple(fileNames, files);
-      }
-
       const date = new Date(_dto.date);
       const event = await this.prisma.crowdSource.create({
         data: <any>{
           ..._dto,
-          images: fileNames || [],
+          images: _dto.images,
           date,
           creatorId,
           isPublished: this.stringToBoolean(_dto.isPublished),
