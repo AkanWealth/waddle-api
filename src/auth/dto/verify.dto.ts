@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsOptional,
@@ -8,11 +8,12 @@ import {
 } from 'class-validator';
 
 export class VerifyDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Token',
     required: true,
     example: '8rs4syl53gd',
   })
+  @IsOptional()
   @IsString({ message: 'Invalid token format' })
   @IsNotEmpty({ message: 'Token can not be empty' })
   token: string;

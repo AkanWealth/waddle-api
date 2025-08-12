@@ -325,9 +325,9 @@ export class AuthController {
   @ApiAcceptedResponse({ description: 'Accepted' })
   @ApiBadRequestResponse({ description: 'Bad request' })
   @HttpCode(HttpStatus.ACCEPTED)
-  @Patch('verification/host')
-  verfiyAdminEmail(@Body() dto: VerifyDto) {
-    return this.authService.verifyAdminEmail(dto.token, dto.password);
+  @Patch('verification/host/:token')
+  verfiyAdminEmail(@Param('token') token: string, @Body() dto: VerifyDto) {
+    return this.authService.verifyAdminEmail(token, dto.password);
   }
 
   @ApiOperation({
