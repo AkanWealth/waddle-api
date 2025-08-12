@@ -149,15 +149,29 @@ export class CrowdSourcingController {
     );
   }
 
+  // @ApiOperation({
+  //   summary: 'view loggedin user crowdsourced event',
+  //   description: 'View loggedin user crowdsourced event',
+  // })
+  // @ApiOkResponse({ description: 'Ok' })
+  // @ApiNotFoundResponse({ description: 'Not found' })
+  // @Get('me/events')
+  // findMySourcedEvent(@GetUser('id') id: string) {
+  //   return this.crowdSourcingService.findMySourcedEvent(id);
+  // }
   @ApiOperation({
-    summary: 'view loggedin user crowdsourced event',
-    description: 'View loggedin user crowdsourced event',
+    summary: 'view logged-in user crowdsourced event',
+    description: 'View logged-in user crowdsourced event with pagination',
   })
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get('me/events')
-  findMySourcedEvent(@GetUser('id') id: string) {
-    return this.crowdSourcingService.findMySourcedEvent(id);
+  findMySourcedEvent(
+    @GetUser('id') id: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.crowdSourcingService.findMySourcedEvent(id, page, limit);
   }
 
   // @ApiOperation({

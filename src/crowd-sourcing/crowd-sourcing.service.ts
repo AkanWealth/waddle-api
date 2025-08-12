@@ -217,29 +217,70 @@ export class CrowdSourcingService {
     };
   }
 
-  async findMySourcedEvent(id: string) {
-    const events = await this.prisma.crowdSource.findMany({
-      where: { creatorId: id, isDeleted: false, tag: 'Event' },
-      include: { like: true },
-    });
-    if (!events || events.length === 0) {
-      throw new NotFoundException('No events found');
-    }
+  async findMySourcedEvent(id: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
 
-    const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
-    const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
-    const url = `${baseUrl}/${folder}`;
+    const [events, total] = await this.prisma.$transaction([
+      this.prisma.crowdSource.findMany({
+        where: { creatorId: id, isDeleted: false, tag: 'Event' },
+        include: { like: true },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' }, // newest first
+      }),
+      this.prisma.crowdSource.count({
+        where: { creatorId: id, isDeleted: false, tag: 'Event' },
+      }),
+    ]);
 
-    const eventsWithFullImageUrls = events.map((event) => {
-      const fullImageUrls = event.images.map((image) => `${url}/${image}`);
-      return {
-        ...event,
-        images: fullImageUrls,
-      };
-    });
+    // if (events.length === 0) {
+    //   throw new NotFoundException('No events found');
+    // }
 
-    return { message: 'Events found', events: eventsWithFullImageUrls };
+    // const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+    // const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+    // const url = `${baseUrl}/${folder}`;
+
+    // const eventsWithFullImageUrls = events.map((event) => ({
+    //   ...event,
+    //   images: event.images.map((image) => `${url}/${image}`),
+    // }));
+
+    return {
+      message: 'Events found',
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+      events,
+    };
   }
+
+  // async findMySourcedEvent(id: string) {
+  //   const events = await this.prisma.crowdSource.findMany({
+  //     where: { creatorId: id, isDeleted: false, tag: 'Event' },
+  //     include: { like: true },
+  //   });
+  //   if (!events || events.length === 0) {
+  //     throw new NotFoundException('No events found');
+  //   }
+
+  //   const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+  //   const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+  //   const url = `${baseUrl}/${folder}`;
+
+  //   const eventsWithFullImageUrls = events.map((event) => {
+  //     const fullImageUrls = event.images.map((image) => `${url}/${image}`);
+  //     return {
+  //       ...event,
+  //       images: fullImageUrls,
+  //     };
+  //   });
+
+  //   return { message: 'Events found', events: eventsWithFullImageUrls };
+  // }
 
   // async findMySourcedPlace(id: string) {
   //   const places = await this.prisma.crowdSource.findMany({
