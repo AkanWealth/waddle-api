@@ -577,11 +577,13 @@ export class AuthService {
   // Start Admin
   async verifyAdminEmail(token: string, password: string) {
     try {
+      const oneHourAgo = Date.now() - 60 * 60 * 1000;
+
       const admin = await this.prisma.admin.findFirst({
         where: {
-          verification_token: token,
-          verification_token_expiration: {
-            gte: Date.now().toString(),
+          reset_token: token,
+          reset_expiration: {
+            gte: oneHourAgo.toString(),
           },
         },
       });
@@ -597,8 +599,8 @@ export class AuthService {
           password: hashed,
           activationStatus: 'ACTIVE',
           email_verify: true,
-          verification_token: null,
-          verification_token_expiration: null,
+          reset_token: null,
+          reset_expiration: null,
         },
       });
 

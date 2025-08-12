@@ -685,66 +685,100 @@ export class EventService {
     }
   }
 
-  async updateEventAsAdmin(
-    id: string,
-    creatorId: string,
-    dto: UpdateEventDto,
-    fileName?: string,
-    file?: Buffer,
-  ) {
-    try {
-      const existingEvent = await this.prisma.event.findUnique({
-        where: { id, adminId: creatorId },
-      });
+  // async updateEventAsAdmin(
+  //   id: string,
+  //   creatorId: string,
+  //   dto: UpdateEventDto,
+  //   fileName?: string,
+  //   file?: Buffer,
+  // ) {
+  //   try {
+  //     const existingEvent = await this.prisma.event.findUnique({
+  //       where: { id, adminId: creatorId },
+  //     });
 
-      if (!existingEvent)
-        throw new NotFoundException(
-          'Event with the provided ID does not exist.',
-        );
+  //     if (!existingEvent)
+  //       throw new NotFoundException(
+  //         'Event with the provided ID does not exist.',
+  //       );
 
-      if (new Date(existingEvent.date) <= new Date())
-        throw new ForbiddenException('Past event can not be updated');
+  //     if (new Date(existingEvent.date) <= new Date())
+  //       throw new ForbiddenException('Past event can not be updated');
 
-      let image = existingEvent?.files[0] || undefined;
+  //     let image = existingEvent?.files[0] || undefined;
 
-      // Upload the new image
-      if (image !== fileName) {
-        await this.uploadEventImages(fileName, file);
+  //     // Upload the new image
+  //     if (image !== fileName) {
+  //       await this.uploadEventImages(fileName, file);
 
-        // Delete the old image from bucket
-        await this.deleteEventImages(image);
+  //       // Delete the old image from bucket
+  //       await this.deleteEventImages(image);
 
-        // Update the profile image filename
-        image = fileName;
-      }
+  //       // Update the profile image filename
+  //       image = fileName;
+  //     }
 
-      const isPublished = this.stringToBoolean(dto.isPublished);
+  //     const isPublished = this.stringToBoolean(dto.isPublished);
 
-      // Transform the DTO to match Prisma schema
-      const { ...restDto } = dto;
-      const updateData = {
-        ...restDto,
-        // instruction:
-        //   instructions && instructions.length > 0 ? instructions[0] : undefined,
-        date: dto.date ? new Date(dto.date) : undefined,
-        total_ticket: Number(dto.total_ticket) || undefined,
-        isPublished,
-        distance: 0,
-        facilities: dto.facilities ?? [],
-        tags: dto.tags ?? [],
-      };
+  //     // Transform the DTO to match Prisma schema
+  //     const { ...restDto } = dto;
+  //     const updateData = {
+  //       ...restDto,
+  //       // instruction:
+  //       //   instructions && instructions.length > 0 ? instructions[0] : undefined,
+  //       date: dto.date ? new Date(dto.date) : undefined,
+  //       total_ticket: Number(dto.total_ticket) || undefined,
+  //       isPublished,
+  //       distance: 0,
+  //       facilities: dto.facilities ?? [],
+  //       tags: dto.tags ?? [],
+  //     };
 
-      const event = await this.prisma.event.update({
-        where: {
-          id: existingEvent.id,
-        },
-        data: updateData,
-      });
+  //     const event = await this.prisma.event.update({
+  //       where: {
+  //         id: existingEvent.id,
+  //       },
+  //       data: updateData,
+  //     });
 
-      return { message: 'Event updated', event };
-    } catch (error) {
-      throw error;
+  //     return { message: 'Event updated', event };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
+  async updateEventAsAdmin(id: string, creatorId: string, dto: UpdateEventDto) {
+    // Find event owned by this admin
+    const existingEvent = await this.prisma.event.findFirst({
+      where: { id, adminId: creatorId },
+    });
+
+    if (!existingEvent) {
+      throw new NotFoundException('Event with the provided ID does not exist.');
     }
+
+    // Prevent updates to past events
+
+    // Ensure type conversions where necessary
+    const updateData: any = {
+      ...dto,
+      date: dto.date ? new Date(dto.date) : undefined,
+      total_ticket: dto.total_ticket ? Number(dto.total_ticket) : undefined,
+      distance: dto.distance !== undefined ? dto.distance : undefined,
+    };
+
+    // Remove undefined fields so Prisma doesn't overwrite them
+    Object.keys(updateData).forEach(
+      (key) => updateData[key] === undefined && delete updateData[key],
+    );
+
+    // Update event
+    const event = await this.prisma.event.update({
+      where: { id: existingEvent.id },
+      data: updateData,
+    });
+
+    return { message: 'Event updated', event };
   }
 
   async updateEventAsOrganiser(

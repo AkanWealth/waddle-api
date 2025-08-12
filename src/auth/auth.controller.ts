@@ -297,8 +297,8 @@ export class AuthController {
       await this.prisma.admin.update({
         where: { email: dto.email },
         data: {
-          verification_token: verificatonToken,
-          verification_token_expiration: verificationTokenExpiration.toString(),
+          reset_token: verificatonToken,
+          reset_expiration: verificationTokenExpiration.toString(),
         },
       });
 

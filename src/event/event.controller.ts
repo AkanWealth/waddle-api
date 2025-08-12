@@ -331,34 +331,12 @@ export class EventController {
   @HttpCode(HttpStatus.ACCEPTED)
   @Patch('host/:id')
   @Roles(Role.Admin)
-  @UseInterceptors(FileInterceptor('images'))
   updateEventAsAdmin(
     @Param('id') id: string,
     @GetUser() user: User,
     @Body() dto: UpdateEventDto,
-    @UploadedFile() file?: Express.Multer.File,
   ) {
-    if (file) {
-      try {
-        new ParseFilePipe({
-          validators: [
-            new MaxFileSizeValidator({ maxSize: 5000000 }),
-            new FileTypeValidator({ fileType: 'image/*' }),
-          ],
-        }).transform(file);
-      } catch (error) {
-        throw error;
-      }
-      return this.eventService.updateEventAsAdmin(
-        id,
-        user.id,
-        dto,
-        file.originalname,
-        file.buffer,
-      );
-    } else {
-      return this.eventService.updateEventAsAdmin(id, user.id, dto);
-    }
+    return this.eventService.updateEventAsAdmin(id, user.id, dto);
   }
 
   @ApiOperation({

@@ -230,7 +230,7 @@ export class AdminService {
           <p>Kindly follow the steps below to reset your passowrd.</p>
   
           <ul>
-            <li>Click the link to reset the password: <a href="${process.env.FRONTEND_URL}/set-password/${resetToken}">${process.env.FRONTEND_URL}/set-password/${resetToken}</a></li>
+            <li>Click the link to reset the password: <a href="${process.env.FRONTEND_URL}/set-password?token=${resetToken}">${process.env.FRONTEND_URL}/set-password?token= ${resetToken}</a></li>
           </ul>
     
           <p>Warm regards,</p>
@@ -271,9 +271,8 @@ export class AdminService {
       const message = `<p>Hello ${subAdmin.first_name},</p>
     <
           <p>I hope this mail finds you well. Pleae note that you have been invited to manage the waddle app.</p>
-  
-          <p>Kindly follow the steps below to set up your passowrd.</p>
-  
+          <p>Kindly follow the steps below to set up your password.</p>
+
           <p><a href="${setUpPasswordUrl}" target="_blank">${setUpPasswordUrl}</a></p>
           <p>This link will expire within an hour. If you did not request this, please ignore this email.</p>
     
