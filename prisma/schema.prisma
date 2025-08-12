@@ -183,7 +183,6 @@ model CrowdSource {
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
   date        DateTime?
-  fee         Decimal
   isFree      Boolean                 @default(false)
   tag         Tag                     @default(Place)
   time        String?

@@ -77,16 +77,6 @@ export class CreateCrowdSourcingDto {
   @IsNotEmpty()
   tag: string;
 
-  @ApiProperty({
-    description: 'Entry Fee',
-    type: String,
-    example: '200',
-    required: true,
-  })
-  @IsString()
-  @IsNotEmpty()
-  fee: number;
-
   @ApiPropertyOptional({
     description: 'Tips',
     type: String,
