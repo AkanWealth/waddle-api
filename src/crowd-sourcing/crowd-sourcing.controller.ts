@@ -66,7 +66,7 @@ export class CrowdSourcingController {
   })
   @ApiCreatedResponse({ description: 'Created' })
   @Post()
-  @UseInterceptors(FilesInterceptor('images'))
+  // @UseInterceptors(FilesInterceptor('images'))
   async createSourcedEvent(
     @GetUser() user: User,
     @Body() dto: CreateCrowdSourcingDto,

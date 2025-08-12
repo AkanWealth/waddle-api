@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
   IsNotEmpty,
   IsOptional,
@@ -16,6 +17,15 @@ export class CreateCrowdSourcingDto {
   @IsArray()
   @IsOptional()
   images: [string];
+
+  @ApiPropertyOptional({
+    description: 'Is Free',
+    type: Boolean,
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFree: boolean;
 
   @ApiProperty({
     description: 'Name',

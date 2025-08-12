@@ -46,7 +46,7 @@ export class CrowdSourcingService {
           images: _dto.images,
           date,
           creatorId,
-          isPublished: this.stringToBoolean(_dto.isPublished),
+          isPublished: false,
         },
       });
 

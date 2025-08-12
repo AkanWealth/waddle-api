@@ -172,7 +172,7 @@ model Event {
 }
 
 model CrowdSource {
-  id          String                  @id @default(dbgenerated("generate_unique_id('crowdsource'::text, 'CRS-'::text)"))
+  id          String                  @id @default(cuid())
   name        String
   images      String[]
   description String
