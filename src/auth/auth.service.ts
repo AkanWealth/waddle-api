@@ -736,6 +736,7 @@ export class AuthService {
       await this.prisma.admin.update({
         where: { id: admin.id },
         data: {
+          email_verify: true,
           password: hashed,
           reset_token: null,
           reset_expiration: null,

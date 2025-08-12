@@ -230,8 +230,7 @@ export class AdminService {
           <p>Kindly follow the steps below to reset your passowrd.</p>
   
           <ul>
-            <li>Click the link to reset the password: https://waddleapp.io/host/reset-password</li>
-            <li>Use the token <b>${resetToken}</b> to reset your password.</li>
+            <li>Click the link to reset the password: <a href="https://waddleapp.io/host/reset-password/${resetToken}">https://waddleapp.io/host/reset-password/${resetToken}</a></li>
           </ul>
     
           <p>Warm regards,</p>
