@@ -16,7 +16,7 @@ export class CreateCrowdSourcingDto {
   })
   @IsArray()
   @IsOptional()
-  images: [string];
+  images: string[];
 
   @ApiPropertyOptional({
     description: 'Is Free',
@@ -114,7 +114,7 @@ export class CreateCrowdSourcingDto {
   })
   @IsString({ each: true, message: 'Each item in the array must be a string.' })
   @IsOptional()
-  facilities?: [string];
+  facilities?: string[];
 
   @ApiPropertyOptional({
     description: 'Published',

@@ -37,15 +37,16 @@ export class CrowdSourcingService {
     private config: ConfigService,
   ) {}
 
-  async createSourcedEvent(creatorId: string, _dto: CreateCrowdSourcingDto) {
+  async createSourcedEvent(creatorId: string, dto: CreateCrowdSourcingDto) {
     try {
-      const date = new Date(_dto.date);
+      const date = new Date(dto.date);
       const event = await this.prisma.crowdSource.create({
         data: <any>{
-          ..._dto,
-          images: _dto.images,
+          ...dto,
+          images: dto.images,
           date,
           creatorId,
+          isVerified: false,
           isPublished: false,
         },
       });

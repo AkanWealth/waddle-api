@@ -36,6 +36,71 @@ export class BookingService {
   }
 
   // create a new booking for an event
+  // async createBookingAndCheckoutSession(userId: string, dto: CreateBookingDto) {
+  //   try {
+  //     const createBooking = await this.prisma.booking.create({
+  //       data: { ...dto, userId },
+  //     });
+
+  //     const booking = await this.prisma.booking.findUnique({
+  //       where: { id: createBooking.id },
+  //       include: { user: true, event: true },
+  //     });
+
+  //     // Create a payment record with status PENDING (transactionId = booking.id for now)
+  //     await this.paymentService.createPayment({
+  //       transactionId: booking.id,
+  //       bookingId: booking.id,
+  //       userId: booking.userId,
+  //       eventId: booking.eventId,
+  //       username: booking.user.name,
+  //       eventName: booking.event.name,
+  //       amount: Number(booking.event.price) * booking.ticket_quantity,
+  //       status: PaymentStatus.PENDING,
+  //       method: 'stripe',
+  //       processingFee: 0, // Set actual fee if available
+  //       netAmount: 0, // Set actual net if available
+  //       amountPaid: 0, // Set actual paid if available
+  //     });
+
+  //     const session = await this.stripe.checkout.sessions.create({
+  //       payment_method_types: ['card'],
+  //       line_items: [
+  //         {
+  //           price_data: {
+  //             currency: 'usd',
+  //             product_data: {
+  //               name: booking.event.name,
+  //               description: booking.event.description,
+  //             },
+  //             unit_amount: Number(booking.event.price) * 100,
+  //           },
+  //           quantity: dto.ticket_quantity,
+  //         },
+  //       ],
+  //       mode: 'payment',
+  //       success_url: `${this.config.getOrThrow('BASE_URL')}/confirmaion?session_id={CHECKOUT_SESSION_ID}`,
+  //       cancel_url: `${this.config.getOrThrow('BASE_URL')}`,
+  //     });
+
+  //     await this.prisma.booking.update({
+  //       where: { id: booking.id },
+  //       data: {
+  //         sessionId: session.id,
+  //       },
+  //     });
+
+  //     // Update the payment record with the Stripe session ID as transactionId
+  //     await this.paymentService.updatePaymentByBookingId(booking.id, {
+  //       transactionId: session.id,
+  //     });
+
+  //     return { checkout_url: session.url, bookingId: booking.id };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
   async createBookingAndCheckoutSession(userId: string, dto: CreateBookingDto) {
     try {
       const createBooking = await this.prisma.booking.create({
@@ -44,10 +109,24 @@ export class BookingService {
 
       const booking = await this.prisma.booking.findUnique({
         where: { id: createBooking.id },
-        include: { user: true, event: true },
+        include: {
+          user: true,
+          event: {
+            include: {
+              organiser: true,
+            },
+          },
+        },
       });
 
-      // Create a payment record with status PENDING (transactionId = booking.id for now)
+      if (!booking.event.organiser?.stripe_account_id) {
+        throw new Error('Organiser has not connected their Stripe account');
+      }
+
+      const eventPrice = Number(booking.event.price);
+      const amount = eventPrice * booking.ticket_quantity;
+
+      // Record pending payment
       await this.paymentService.createPayment({
         transactionId: booking.id,
         bookingId: booking.id,
@@ -55,42 +134,51 @@ export class BookingService {
         eventId: booking.eventId,
         username: booking.user.name,
         eventName: booking.event.name,
-        amount: Number(booking.event.price) * booking.ticket_quantity,
+        amount,
         status: PaymentStatus.PENDING,
         method: 'stripe',
-        processingFee: 0, // Set actual fee if available
-        netAmount: 0, // Set actual net if available
-        amountPaid: 0, // Set actual paid if available
+        processingFee: 0,
+        netAmount: 0,
+        amountPaid: 0,
       });
 
+      // Your platform fee (example: 15% commission)
+      const platformFee = Math.round(amount * 0.15 * 100); // in pence
+
+      // Create Checkout Session
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
           {
             price_data: {
-              currency: 'usd',
+              currency: 'gbp',
               product_data: {
                 name: booking.event.name,
-                description: booking.event.description,
+                description: booking.event.description || '',
               },
-              unit_amount: Number(booking.event.price) * 100,
+              unit_amount: Math.round(eventPrice * 100), // pence
             },
             quantity: dto.ticket_quantity,
           },
         ],
         mode: 'payment',
-        success_url: `${this.config.getOrThrow('BASE_URL')}/confirmaion?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${this.config.getOrThrow('BASE_URL')}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${this.config.getOrThrow('BASE_URL')}`,
-      });
-
-      await this.prisma.booking.update({
-        where: { id: booking.id },
-        data: {
-          sessionId: session.id,
+        payment_intent_data: {
+          application_fee_amount: platformFee, // your cut in pence
+          transfer_data: {
+            destination: booking.event.organiser.stripe_account_id, // send rest to organiser
+          },
         },
       });
 
-      // Update the payment record with the Stripe session ID as transactionId
+      // Save Stripe session ID to booking
+      await this.prisma.booking.update({
+        where: { id: booking.id },
+        data: { sessionId: session.id },
+      });
+
+      // Update payment record with Stripe session ID
       await this.paymentService.updatePaymentByBookingId(booking.id, {
         transactionId: session.id,
       });
