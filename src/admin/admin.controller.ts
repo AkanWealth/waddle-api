@@ -92,6 +92,16 @@ export class AdminController {
   }
 
   @ApiOperation({
+    summary: 'view all soft deleted admins as an admin',
+    description: 'Admin with admin role can view all soft deleted admins',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('all/soft-deleted')
+  @Roles(Role.Admin)
+  viewAllSoftDeletedAdmin(@GetUser() admin: User) {
+    if (admin) return this.adminService.viewAllSoftDeletedAdmin();
+  }
+  @ApiOperation({
     summary: 'view my details as a loggedin admin',
     description: 'Admin can view their details',
   })

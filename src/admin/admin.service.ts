@@ -320,6 +320,38 @@ export class AdminService {
     }
   }
 
+  async viewAllSoftDeletedAdmin() {
+    try {
+      const admin = await this.prisma.admin.findMany({
+        where: {
+          isDeleted: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          permissions: {
+            select: {
+              module: true,
+              canCreate: true,
+              canView: true,
+              canManage: true,
+              canDelete: true,
+            },
+          },
+        },
+      });
+
+      if (!admin || admin.length <= 0) {
+        throw new NotFoundException('No admin found');
+      }
+
+      return { message: 'All admin found', admin };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async viewMe(authAdmin: string) {
     try {
       const admin = await this.prisma.admin.findUnique({

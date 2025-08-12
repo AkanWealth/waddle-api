@@ -357,15 +357,15 @@ export class CrowdSourcingService {
       throw new NotFoundException('Event not found');
     }
 
-    const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
-    const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
-    const url = `${baseUrl}/${folder}`;
+    // const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+    // const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+    // const url = `${baseUrl}/${folder}`;
 
-    const fullImageUrls = event.images.map((image) => `${url}/${image}`);
+    // const fullImageUrls = event.images.map((image) => `${url}/${image}`);
 
     return {
       message: 'Event found',
-      event: { ...event, images: fullImageUrls },
+      event,
     };
   }
 
