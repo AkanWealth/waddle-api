@@ -632,9 +632,17 @@ export class EventService {
     address?: string,
     page = 1,
     limit = 10,
+    eventType?: string,
   ) {
     try {
-      const whereClause: any = {
+      const whereClause: Record<
+        string,
+        | string
+        | number
+        | boolean
+        | string[]
+        | { contains: string; mode: string }
+      > = {
         isPublished: true,
         status: EventStatus.APPROVED,
         isDeleted: false,
@@ -644,8 +652,8 @@ export class EventService {
       if (address)
         whereClause.address = { contains: address, mode: 'insensitive' };
       if (category)
-        whereClause.category = { equals: category, mode: 'insensitive' };
-
+        whereClause.category = { contains: category, mode: 'insensitive' };
+      if (eventType) whereClause.eventType = eventType;
       const skip = (page - 1) * limit;
 
       const [events, total] = await this.prisma.$transaction([

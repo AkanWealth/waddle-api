@@ -32,7 +32,7 @@ import {
   ApiResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { User } from '@prisma/client';
+import { EventType, User } from '@prisma/client';
 import { JwtGuard } from '../auth/guard/auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { RolesGuard } from '../auth/guard/role.guard';
@@ -299,6 +299,12 @@ export class EventController {
   @ApiQuery({ name: 'address', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({
+    name: 'eventType',
+    required: false,
+    type: String,
+    enum: EventType,
+  })
   @Get('filter')
   filterByCriteria(
     @Query('age') age: string,
@@ -306,8 +312,16 @@ export class EventController {
     @Query('address') address: string,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
+    @Query('eventType') eventType: string,
   ) {
-    return this.eventService.filterEvent(age, category, address, page, limit);
+    return this.eventService.filterEvent(
+      age,
+      category,
+      address,
+      page,
+      limit,
+      eventType,
+    );
   }
 
   @ApiOperation({
