@@ -720,6 +720,7 @@ export class BookingService {
           createdAt: 'desc',
         },
       });
+      console.log('bookings', bookings);
 
       if (!bookings || bookings.length <= 0)
         throw new NotFoundException('No booking found');
@@ -750,10 +751,23 @@ export class BookingService {
   // find all my bookings as the admin
   async viewBookingsAsAdmin(userId: string) {
     try {
+      // const bookings = await this.prisma.booking.findMany({
+      //   where: { event: { adminId: userId } },
+      //   include: { event: true, user: true },
+      // });
+
       const bookings = await this.prisma.booking.findMany({
-        where: { event: { adminId: userId } },
-        include: { event: true, user: true },
+        include: {
+          event: true,
+          user: true,
+          payments: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
+      console.log('userId', userId);
+      console.log('bookings for admin', bookings);
 
       if (!bookings || bookings.length <= 0)
         throw new NotFoundException('No booking found');
@@ -1239,6 +1253,25 @@ export class BookingService {
         booking.userId,
         booking.event.name,
       );
+      const subject = 'Booking Confirmation';
+      const message = `
+      <p>Hello ${booking.user.name},</p>
+      <p>Thank you for booking the event <strong>${booking.event.name}</strong>!</p>
+      <p>Your booking ID is: <strong>${booking.id}</strong></p>
+      <p>Event Details:</p>
+      <ul>
+        <li>Event: ${booking.event.name}</li>
+        <li>Date: ${booking.event.date ? new Date(booking.event.date).toLocaleDateString() : 'TBA'}</li>
+        <li>Time: ${booking.event.time || 'TBA'}</li>
+        <li>Tickets: ${booking.ticket_quantity}</li>
+        <li>Total Paid: £${paymentAmount.toFixed(2)}</li>
+      </ul>
+      <p>We look forward to seeing you at the event!</p>
+      <p>Warm regards,</p>
+      <p>Waddle Team</p>
+    `;
+
+      await this.mailer.sendMail(booking.user.email, subject, message);
 
       return {
         message: 'Payment successful and booking confirmed',
@@ -1270,6 +1303,9 @@ export class BookingService {
         where: {
           payment_intent: dto.payment_intent_id,
           userId: userId,
+        },
+        include: {
+          event: true,
         },
       });
 
@@ -1304,6 +1340,36 @@ export class BookingService {
           recipientType: 'USER',
         });
       }
+
+      const subject = 'Payment Failed – Booking Not Confirmed';
+      const message = `
+        <p>Hello ${user.name || 'Customer'},</p>
+        <p>Unfortunately, your payment for the event 
+        <strong>${existingBooking?.event?.name || 'Unknown Event'}</strong> 
+        could not be processed.</p>
+        
+        ${
+          existingBooking
+            ? `
+        <p>Booking ID: <strong>${existingBooking.id}</strong></p>
+        <p>Event Details:</p>
+        <ul>
+          <li>Event: ${existingBooking.event.name}</li>
+          <li>Date: ${existingBooking.event.date ? new Date(existingBooking.event.date).toLocaleDateString() : 'TBA'}</li>
+          <li>Time: ${existingBooking.event.time || 'TBA'}</li>
+          <li>Tickets: ${existingBooking.ticket_quantity}</li>
+        </ul>`
+            : ''
+        }
+
+        <p>Error message: ${dto.error_message || 'Payment was not completed successfully'}.</p>
+        
+        <p>If you believe this was a mistake or wish to try again, please visit your bookings page.</p>
+        <p>Warm regards,</p>
+        <p>Waddle Team</p>
+      `;
+
+      await this.mailer.sendMail(user.email, subject, message);
 
       return {
         message: 'Payment failure recorded',
