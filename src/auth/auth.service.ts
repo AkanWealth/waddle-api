@@ -621,6 +621,11 @@ export class AuthService {
       if (!isValidPassword)
         throw new UnauthorizedException('Invalid Credential');
 
+      if (admin.activationStatus === 'INACTIVE')
+        throw new ForbiddenException('Your account is not active.');
+      if (admin.isDeleted)
+        throw new ForbiddenException('Sorry, you can not log in this account');
+
       // Check if the admin is verified
       if (!admin.email_verify)
         throw new ForbiddenException('Your acount is not verified.');
