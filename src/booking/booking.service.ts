@@ -1120,6 +1120,42 @@ export class BookingService {
         },
       });
 
+      // Get user details for payment record
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Create a temporary booking record to associate with payment
+      const tempBooking = await this.prisma.booking.create({
+        data: {
+          userId: userId,
+          eventId: dto.eventId,
+          ticket_quantity: dto.ticket_quantity,
+          status: 'Pending',
+          payment_intent: paymentIntent.id,
+        },
+      });
+
+      // Create payment record in database
+      await this.paymentService.createPayment({
+        transactionId: paymentIntent.id, // Use payment intent ID as transaction ID
+        bookingId: tempBooking.id,
+        userId: userId,
+        eventId: dto.eventId,
+        username: user.name,
+        eventName: event.name,
+        amount: amount,
+        status: PaymentStatus.PENDING,
+        method: 'stripe',
+        processingFee: amount * 0.15, // 15% platform fee
+        netAmount: amount * 0.85, // 85% goes to organiser
+        amountPaid: 0, // Will be updated when payment succeeds
+      });
+
       return {
         client_secret: paymentIntent.client_secret,
         payment_intent_id: paymentIntent.id,
@@ -1127,6 +1163,7 @@ export class BookingService {
         currency: 'gbp',
         event_name: event.name,
         ticket_quantity: dto.ticket_quantity,
+        booking_id: tempBooking.id,
       };
     } catch (error) {
       throw error;
@@ -1146,40 +1183,11 @@ export class BookingService {
         );
       }
 
-      // Check if booking already exists for this payment intent
+      // Find the existing booking for this payment intent
       const existingBooking = await this.prisma.booking.findFirst({
         where: {
-          sessionId: dto.payment_intent_id,
+          payment_intent: dto.payment_intent_id,
           userId: userId,
-        },
-      });
-
-      if (existingBooking) {
-        throw new BadRequestException(
-          'Booking already exists for this payment',
-        );
-      }
-
-      // Get event details
-      const event = await this.prisma.event.findUnique({
-        where: { id: dto.eventId },
-        include: {
-          organiser: true,
-        },
-      });
-
-      if (!event) {
-        throw new NotFoundException('Event not found');
-      }
-
-      // Create the booking
-      const booking = await this.prisma.booking.create({
-        data: {
-          userId: userId,
-          eventId: dto.eventId,
-          ticket_quantity: dto.ticket_quantity,
-          status: 'Confirmed',
-          sessionId: dto.payment_intent_id,
         },
         include: {
           user: true,
@@ -1187,11 +1195,44 @@ export class BookingService {
         },
       });
 
-      // Update payment record
+      if (!existingBooking) {
+        throw new NotFoundException('No booking found for this payment intent');
+      }
+
+      // Update the booking status to confirmed
+      const booking = await this.prisma.booking.update({
+        where: { id: existingBooking.id },
+        data: {
+          status: 'Confirmed',
+        },
+        include: {
+          user: true,
+          event: true,
+        },
+      });
+
+      // Update payment record with final amounts
+      const paymentAmount = Number(paymentIntent.amount) / 100;
       await this.paymentService.updatePaymentStatusByTransactionId(
         dto.payment_intent_id,
         { status: PaymentStatus.SUCCESSFUL },
       );
+
+      // Also update the payment record with the final amounts
+      const payment = await this.prisma.payment.findFirst({
+        where: { transactionId: dto.payment_intent_id },
+      });
+
+      if (payment) {
+        await this.prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            amountPaid: paymentAmount,
+            netAmount: paymentAmount * 0.85, // 85% to organiser
+            processingFee: paymentAmount * 0.15, // 15% platform fee
+          },
+        });
+      }
 
       // Send confirmation notification
       await this.notificationHelper.sendBookingConfirmation(
@@ -1209,7 +1250,7 @@ export class BookingService {
           event_date: booking.event.date,
         },
         payment: {
-          amount: Number(paymentIntent.amount) / 100,
+          amount: paymentAmount,
           currency: paymentIntent.currency,
           status: paymentIntent.status,
         },
@@ -1223,6 +1264,24 @@ export class BookingService {
     try {
       // Verify the payment intent with Stripe
       await this.stripe.paymentIntents.retrieve(dto.payment_intent_id);
+
+      // Find the existing booking for this payment intent
+      const existingBooking = await this.prisma.booking.findFirst({
+        where: {
+          payment_intent: dto.payment_intent_id,
+          userId: userId,
+        },
+      });
+
+      // Update booking status to failed if it exists
+      if (existingBooking) {
+        await this.prisma.booking.update({
+          where: { id: existingBooking.id },
+          data: {
+            status: 'Failed',
+          },
+        });
+      }
 
       // Update payment record to failed status
       await this.paymentService.updatePaymentStatusByTransactionId(
