@@ -31,7 +31,14 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Role } from '../auth/enum';
-import { BookingConsentDto, CreateRefundDto, PayoutBookingDto } from './dto';
+import {
+  BookingConsentDto,
+  CreateRefundDto,
+  PayoutBookingDto,
+  CreateBookingIntentDto,
+  PaymentSuccessDto,
+  PaymentFailureDto,
+} from './dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -52,6 +59,40 @@ export class BookingController {
     @Body() dto: CreateBookingDto,
   ) {
     return this.bookingService.createBookingAndCheckoutSession(user.id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'create a booking intent for Flutter app',
+    description:
+      'Creates a payment intent and returns client_secret for Flutter app integration',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('intent')
+  createBookingIntent(
+    @GetUser() user: User,
+    @Body() dto: CreateBookingIntentDto,
+  ) {
+    return this.bookingService.createBookingIntent(user.id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'handle payment success for Flutter app',
+    description: 'Handles successful payment completion and creates booking',
+  })
+  @ApiOkResponse({ description: 'Payment successful' })
+  @Post('payment/success')
+  handlePaymentSuccess(@GetUser() user: User, @Body() dto: PaymentSuccessDto) {
+    return this.bookingService.handlePaymentSuccess(user.id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'handle payment failure for Flutter app',
+    description: 'Handles failed payment and records the failure',
+  })
+  @ApiOkResponse({ description: 'Payment failure recorded' })
+  @Post('payment/failure')
+  handlePaymentFailure(@GetUser() user: User, @Body() dto: PaymentFailureDto) {
+    return this.bookingService.handlePaymentFailure(user.id, dto);
   }
 
   @ApiOperation({

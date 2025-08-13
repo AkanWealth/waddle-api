@@ -2,9 +2,11 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  RawBodyRequest,
+  // RawBodyRequest,
 } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreateBookingIntentDto } from './dto/create-booking-intent.dto';
+import { PaymentSuccessDto, PaymentFailureDto } from './dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
@@ -205,44 +207,199 @@ export class BookingService {
   }
 
   // checkout fulfillment confirmation function
-  private async fulfillCheckout(sessionId: string) {
+  // private async fulfillCheckout(sessionId: string) {
+  //   try {
+  //     const checkoutSession = await this.stripe.checkout.sessions.retrieve(
+  //       sessionId,
+  //       {
+  //         expand: ['line_items'],
+  //       },
+  //     );
+  //     console.log('checkoutSession', checkoutSession);
+
+  //     // condition for payment status
+  //     if (checkoutSession.payment_status === 'paid') {
+  //       const paymentIntent = await this.stripe.paymentIntents.retrieve(
+  //         checkoutSession.payment_intent as string,
+  //         {
+  //           expand: ['charges.data.balance_transaction'],
+  //         },
+  //       );
+
+  //       const booking = await this.prisma.booking.findFirst({
+  //         where: { sessionId: checkoutSession.id },
+  //         include: { event: true, user: true },
+  //       });
+
+  //       if (!booking) throw new NotFoundException('Booking not found');
+
+  //       if (booking.status !== 'Confirmed') {
+  //         await this.prisma.booking.update({
+  //           where: { id: booking.id, payment_intent: paymentIntent.id },
+  //           data: { status: 'Confirmed' },
+  //         });
+
+  //         // Update payment status to SUCCESSFUL
+  //         await this.paymentService.updatePaymentStatusByTransactionId(
+  //           sessionId,
+  //           { status: PaymentStatus.SUCCESSFUL },
+  //         );
+
+  //         if (booking.user.fcmIsOn) {
+  //           await this.notificationHelper.sendBookingConfirmation(
+  //             booking.userId,
+  //             booking.event.name,
+  //           );
+  //         }
+
+  //         await this.prisma.event.update({
+  //           where: { id: booking.event.id },
+  //           data: {
+  //             ticket_booked: ++booking.ticket_quantity,
+  //           },
+  //         });
+
+  //         const subject = 'Booking Confirmation';
+  //         const message = `<p>Hello,</p>
+
+  //         <p>Thank you for booking the event <b>${booking.event.name}</b>, your booking id is <b>${booking.id}</b> to verify your email account.</p>
+
+  //         <p>Warm regards,</p>
+
+  //         <p>Waddle Team</p>
+  //         `;
+
+  //         await this.mailer.sendMail(booking.user.email, subject, message);
+
+  //         return { message: `Booking ${checkoutSession.id} confirmed` };
+  //       } else {
+  //         return {
+  //           message: `Duplicate fulfillment attempt for booking ${checkoutSession.id}`,
+  //         };
+  //       }
+  //     } else {
+  //       const booking = await this.prisma.booking.findFirst({
+  //         where: { sessionId: checkoutSession.id },
+  //       });
+
+  //       if (!booking) throw new NotFoundException('Booking not found');
+
+  //       if (booking.status !== 'Failed') {
+  //         await this.prisma.booking.update({
+  //           where: { id: booking.id },
+  //           data: { status: 'Failed' },
+  //         });
+
+  //         // Update payment status to FAILED
+  //         await this.paymentService.updatePaymentStatusByTransactionId(
+  //           sessionId,
+  //           { status: PaymentStatus.FAILED },
+  //         );
+
+  //         return { message: `Booking ${checkoutSession.id} failed` };
+  //       } else {
+  //         return {
+  //           message: `Duplicate fulfillment attempt for booking ${checkoutSession.id}`,
+  //         };
+  //       }
+  //     }
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+  async fulfillCheckout(sessionId: string) {
     try {
       const checkoutSession = await this.stripe.checkout.sessions.retrieve(
         sessionId,
         {
-          expand: ['line_items'],
+          expand: ['line_items', 'payment_intent'],
         },
       );
-      console.log('checkoutSession', checkoutSession);
 
-      // condition for payment status
-      if (checkoutSession.payment_status === 'paid') {
-        const paymentIntent = await this.stripe.paymentIntents.retrieve(
-          checkoutSession.payment_intent as string,
-          {
-            expand: ['charges.data.balance_transaction'],
+      console.log('Checkout session retrieved:', checkoutSession.id);
+
+      // Find the booking associated with this session
+      const booking = await this.prisma.booking.findFirst({
+        where: { sessionId: checkoutSession.id },
+        include: {
+          event: {
+            include: {
+              organiser: true,
+            },
           },
-        );
+          user: true,
+        },
+      });
 
-        const booking = await this.prisma.booking.findFirst({
-          where: { sessionId: checkoutSession.id },
-          include: { event: true, user: true },
-        });
+      if (!booking) {
+        console.error(`No booking found for session ${sessionId}`);
+        throw new NotFoundException('Booking not found');
+      }
 
-        if (!booking) throw new NotFoundException('Booking not found');
+      // Handle successful payment
+      if (checkoutSession.payment_status === 'paid') {
+        const paymentIntent = checkoutSession.payment_intent as any;
 
+        // Calculate amounts
+        const totalAmount =
+          Number(booking.event.price) * booking.ticket_quantity;
+        const platformFeeRate = 0.15; // 15%
+        const platformFee = totalAmount * platformFeeRate;
+        const organiserAmount = totalAmount - platformFee;
+
+        // Get Stripe fees (if available from expanded payment intent)
+        let stripeFee = 0;
+        if (
+          paymentIntent &&
+          paymentIntent.charges &&
+          paymentIntent.charges.data.length > 0
+        ) {
+          const charge = paymentIntent.charges.data[0];
+          if (charge.balance_transaction) {
+            stripeFee = charge.balance_transaction.fee / 100; // Convert from cents
+          }
+        }
+
+        const netAmount = organiserAmount - stripeFee;
+
+        // Only update if booking is not already confirmed (prevent duplicate processing)
         if (booking.status !== 'Confirmed') {
+          // Update booking status
           await this.prisma.booking.update({
-            where: { id: booking.id, payment_intent: paymentIntent.id },
-            data: { status: 'Confirmed' },
+            where: { id: booking.id },
+            data: {
+              status: 'Confirmed',
+              payment_intent: paymentIntent.id,
+            },
           });
 
-          // Update payment status to SUCCESSFUL
+          // Update payment record with detailed information
           await this.paymentService.updatePaymentStatusByTransactionId(
             sessionId,
             { status: PaymentStatus.SUCCESSFUL },
           );
 
+          // Update payment with detailed fee and amount information
+          await this.prisma.payment.updateMany({
+            where: { transactionId: sessionId },
+            data: {
+              processingFee: stripeFee,
+              netAmount: netAmount,
+              amountPaid: totalAmount,
+            },
+          });
+
+          // Update event ticket count
+          await this.prisma.event.update({
+            where: { id: booking.event.id },
+            data: {
+              ticket_booked: {
+                increment: booking.ticket_quantity,
+              },
+            },
+          });
+
+          // Send notification if user has FCM enabled
           if (booking.user.fcmIsOn) {
             await this.notificationHelper.sendBookingConfirmation(
               booking.userId,
@@ -250,38 +407,37 @@ export class BookingService {
             );
           }
 
-          await this.prisma.event.update({
-            where: { id: booking.event.id },
-            data: {
-              ticket_booked: ++booking.ticket_quantity,
-            },
-          });
-
+          // Send confirmation email
           const subject = 'Booking Confirmation';
-          const message = `<p>Hello,</p>
-
-          <p>Thank you for booking the event <b>${booking.event.name}</b>, your booking id is <b>${booking.id}</b> to verify your email account.</p>
-
+          const message = `
+          <p>Hello ${booking.user.name},</p>
+          <p>Thank you for booking the event <strong>${booking.event.name}</strong>!</p>
+          <p>Your booking ID is: <strong>${booking.id}</strong></p>
+          <p>Event Details:</p>
+          <ul>
+            <li>Event: ${booking.event.name}</li>
+            <li>Date: ${booking.event.date ? new Date(booking.event.date).toLocaleDateString() : 'TBA'}</li>
+            <li>Time: ${booking.event.time || 'TBA'}</li>
+            <li>Tickets: ${booking.ticket_quantity}</li>
+            <li>Total Paid: £${totalAmount.toFixed(2)}</li>
+          </ul>
+          <p>We look forward to seeing you at the event!</p>
           <p>Warm regards,</p>
-
           <p>Waddle Team</p>
-          `;
+        `;
 
           await this.mailer.sendMail(booking.user.email, subject, message);
 
-          return { message: `Booking ${checkoutSession.id} confirmed` };
+          console.log(`Booking ${booking.id} confirmed successfully`);
+          return { message: `Booking ${sessionId} confirmed` };
         } else {
+          console.log(`Duplicate fulfillment attempt for booking ${sessionId}`);
           return {
-            message: `Duplicate fulfillment attempt for booking ${checkoutSession.id}`,
+            message: `Duplicate fulfillment attempt for booking ${sessionId}`,
           };
         }
       } else {
-        const booking = await this.prisma.booking.findFirst({
-          where: { sessionId: checkoutSession.id },
-        });
-
-        if (!booking) throw new NotFoundException('Booking not found');
-
+        // Handle failed/unpaid checkout
         if (booking.status !== 'Failed') {
           await this.prisma.booking.update({
             where: { id: booking.id },
@@ -294,42 +450,255 @@ export class BookingService {
             { status: PaymentStatus.FAILED },
           );
 
-          return { message: `Booking ${checkoutSession.id} failed` };
+          console.log(`Booking ${booking.id} marked as failed`);
+          return { message: `Booking ${sessionId} failed` };
         } else {
           return {
-            message: `Duplicate fulfillment attempt for booking ${checkoutSession.id}`,
+            message: `Duplicate failure handling for booking ${sessionId}`,
           };
         }
       }
     } catch (error) {
+      console.error('Error in fulfillCheckout:', error);
       throw error;
     }
   }
 
-  // stripe webhook
-  async createStripeHook(payload: RawBodyRequest<Request>, signature: string) {
-    const endpointSecret = this.config.getOrThrow('STRIPE_ENDPOINT_SECRET');
-    let event: any;
+  private async handlePaymentFailed(paymentIntentId: string) {
+    try {
+      // Find booking by payment intent ID
+      const booking = await this.prisma.booking.findFirst({
+        where: { payment_intent: paymentIntentId },
+        include: { user: true, event: true },
+      });
 
+      if (!booking) {
+        console.log(
+          `No booking found for failed payment intent ${paymentIntentId}`,
+        );
+        return;
+      }
+
+      if (booking.status !== 'Failed') {
+        await this.prisma.booking.update({
+          where: { id: booking.id },
+          data: { status: 'Failed' },
+        });
+
+        // Update payment status
+        await this.prisma.payment.updateMany({
+          where: { bookingId: booking.id },
+          data: { status: PaymentStatus.FAILED },
+        });
+
+        // Optionally send failure notification
+        if (booking.user.fcmIsOn) {
+          await this.notificationHelper.sendBookingCancel(
+            booking.userId,
+            booking.user.name,
+            booking.event.name,
+          );
+        }
+
+        console.log(
+          `Booking ${booking.id} marked as failed due to payment failure`,
+        );
+      }
+    } catch (error) {
+      console.error('Error handling payment failure:', error);
+    }
+  }
+
+  private async handleCheckoutExpired(sessionId: string) {
+    try {
+      const booking = await this.prisma.booking.findFirst({
+        where: { sessionId: sessionId },
+      });
+
+      if (!booking) {
+        console.log(`No booking found for expired session ${sessionId}`);
+        return;
+      }
+
+      if (booking.status === 'Pending') {
+        await this.prisma.booking.update({
+          where: { id: booking.id },
+          data: { status: 'Cancelled' },
+        });
+
+        // Update payment status
+        await this.prisma.payment.updateMany({
+          where: { bookingId: booking.id },
+          data: { status: PaymentStatus.CANCELLED },
+        });
+
+        console.log(
+          `Booking ${booking.id} cancelled due to session expiration`,
+        );
+      }
+    } catch (error) {
+      console.error('Error handling checkout expiration:', error);
+    }
+  }
+
+  // stripe webhook
+  // async createStripeHook(payload: RawBodyRequest<Request>, signature: string) {
+  //   const endpointSecret = this.config.getOrThrow('STRIPE_ENDPOINT_SECRET');
+  //   let event: any;
+
+  //   try {
+  //     event = this.stripe.webhooks.constructEvent(
+  //       payload.rawBody,
+  //       signature,
+  //       endpointSecret,
+  //     );
+  //     console.log('Webhook verified');
+  //   } catch (error) {
+  //     console.log('Webhook error', error.message);
+  //     throw error;
+  //   }
+
+  //   const data = event.data.object;
+  //   const eventType = event.type;
+
+  //   console.log('Event type:', eventType);
+  //   console.log('Testinnnnnnnnnnnng');
+  //   console.log('Data:', data);
+  //   try {
+  //     switch (eventType) {
+  //       case 'checkout.session.completed':
+  //       case 'checkout.session.async_payment_succeeded':
+  //         console.log('Fulfilling checkout');
+  //         await this.fulfillCheckout(data.id);
+  //         break;
+
+  //       case 'payment_intent.payment_failed':
+  //         console.log('Handling payment failed');
+  //         await this.handlePaymentFailed(data.id);
+  //         break;
+
+  //       case 'checkout.session.expired':
+  //         console.log('Handling checkout expired');
+  //         await this.handleCheckoutExpired(data.id);
+  //         break;
+
+  //       default:
+  //         console.log(`Unhandled event type: ${eventType}`);
+  //     }
+  //   } catch (error) {
+  //     console.error(`Error processing webhook event ${eventType}:`, error);
+  //     // Don't throw here - we want to return 200 to Stripe even if processing fails
+  //     // to avoid webhook retries for unrecoverable errors
+  //   }
+
+  //   return { received: true };
+  // }
+  // async createStripeHook(payload: Buffer, signature: string) {
+  //   const endpointSecret = this.config.getOrThrow('STRIPE_ENDPOINT_SECRET');
+
+  //   let event;
+  //   try {
+  //     event = this.stripe.webhooks.constructEvent(
+  //       payload, // must be raw Buffer
+  //       signature,
+  //       endpointSecret,
+  //     );
+  //     console.log('Webhook verified:', event.type);
+  //   } catch (err) {
+  //     console.error('Webhook signature verification failed:', err.message);
+  //     throw err;
+  //   }
+
+  //   const data = event.data.object;
+  //   const eventType = event.type;
+
+  //   console.log('Event type:', eventType);
+  //   console.log('Data:', data);
+
+  //   switch (eventType) {
+  //     case 'checkout.session.completed':
+  //     case 'checkout.session.async_payment_succeeded':
+  //       console.log('Fulfilling checkout');
+  //       await this.fulfillCheckout(data.id);
+  //       break;
+  //     case 'payment_intent.payment_failed':
+  //       console.log('Handling payment failed');
+  //       await this.handlePaymentFailed(data.id);
+  //       break;
+  //     case 'checkout.session.expired':
+  //       console.log('Handling checkout expired');
+  //       await this.handleCheckoutExpired(data.id);
+  //       break;
+  //     default:
+  //       console.log(`Unhandled event type: ${eventType}`);
+  //   }
+
+  //   return { received: true };
+  // }
+
+  async createStripeHook(payload: Buffer, signature: string) {
+    const endpointSecret = this.config.getOrThrow('STRIPE_ENDPOINT_SECRET');
+
+    // Debug information
+    console.log('=== Stripe Webhook Debug Info ===');
+    console.log('Payload is Buffer:', Buffer.isBuffer(payload));
+    console.log('Payload length:', payload.length);
+    console.log('Signature:', signature);
+    console.log('Endpoint secret present:', !!endpointSecret);
+    console.log('Endpoint secret length:', endpointSecret?.length);
+
+    // Log first 200 characters of payload for debugging
+    console.log('Payload preview:', payload.toString('utf8').substring(0, 200));
+
+    // Try to parse the signature header
+    if (signature) {
+      const sigParts = signature.split(',');
+      console.log('Signature parts:', sigParts);
+    }
+
+    let event;
     try {
       event = this.stripe.webhooks.constructEvent(
-        payload.rawBody,
+        payload, // must be raw Buffer
         signature,
         endpointSecret,
       );
-      console.log('Webhook verified');
-    } catch (error) {
-      console.log('Webhook error', error.message);
-      throw error;
+      console.log('✅ Webhook verified successfully:', event.type);
+    } catch (err) {
+      console.error('❌ Webhook signature verification failed:', err.message);
+
+      // Additional debugging for signature verification
+      console.log('Trying manual signature verification...');
+
+      // Log what we're actually sending to Stripe
+      console.log('Payload type being sent to Stripe:', typeof payload);
+      console.log('Payload constructor:', payload.constructor.name);
+
+      throw err;
     }
+
     const data = event.data.object;
     const eventType = event.type;
 
-    if (
-      eventType === 'checkout.session.completed' ||
-      eventType === 'checkout.session.async_payment_succeeded'
-    ) {
-      this.fulfillCheckout(data.id);
+    console.log('Event type:', eventType);
+    console.log('Data:', data);
+
+    switch (eventType) {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded':
+        console.log('Fulfilling checkout');
+        await this.fulfillCheckout(data.id);
+        break;
+      case 'payment_intent.payment_failed':
+        console.log('Handling payment failed');
+        await this.handlePaymentFailed(data.id);
+        break;
+      case 'checkout.session.expired':
+        console.log('Handling checkout expired');
+        await this.handleCheckoutExpired(data.id);
+        break;
+      default:
+        console.log(`Unhandled event type: ${eventType}`);
     }
 
     return { received: true };
@@ -405,7 +774,7 @@ export class BookingService {
           where: { userId },
           include: { event: true },
           skip,
-          take: limit,
+          take: Number(limit),
           orderBy: { createdAt: 'desc' },
         }),
         this.prisma.booking.count({ where: { userId } }),
@@ -710,5 +1079,182 @@ export class BookingService {
     return Object.entries(buckets)
       .map(([month, revenue]) => ({ month, revenue }))
       .sort((a, b) => a.month.localeCompare(b.month));
+  }
+
+  async createBookingIntent(userId: string, dto: CreateBookingIntentDto) {
+    try {
+      // First, verify the event exists and get its details
+      const event = await this.prisma.event.findUnique({
+        where: { id: dto.eventId },
+        include: {
+          organiser: true,
+        },
+      });
+
+      if (!event) {
+        throw new NotFoundException('Event not found');
+      }
+
+      if (!event.organiser?.stripe_account_id) {
+        throw new BadRequestException(
+          'Organiser has not connected their Stripe account',
+        );
+      }
+
+      const eventPrice = Number(event.price);
+      const amount = eventPrice * dto.ticket_quantity;
+
+      // Create a PaymentIntent with Stripe
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to pence
+        currency: 'gbp',
+        metadata: {
+          eventId: dto.eventId,
+          userId: userId,
+          ticketQuantity: dto.ticket_quantity.toString(),
+          eventName: event.name,
+        },
+        application_fee_amount: Math.round(amount * 0.15 * 100), // 15% platform fee
+        transfer_data: {
+          destination: event.organiser.stripe_account_id,
+        },
+      });
+
+      return {
+        client_secret: paymentIntent.client_secret,
+        payment_intent_id: paymentIntent.id,
+        amount: amount,
+        currency: 'gbp',
+        event_name: event.name,
+        ticket_quantity: dto.ticket_quantity,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async handlePaymentSuccess(userId: string, dto: PaymentSuccessDto) {
+    try {
+      // Verify the payment intent with Stripe
+      const paymentIntent = await this.stripe.paymentIntents.retrieve(
+        dto.payment_intent_id,
+      );
+
+      if (paymentIntent.status !== 'succeeded') {
+        throw new BadRequestException(
+          'Payment has not been completed successfully',
+        );
+      }
+
+      // Check if booking already exists for this payment intent
+      const existingBooking = await this.prisma.booking.findFirst({
+        where: {
+          sessionId: dto.payment_intent_id,
+          userId: userId,
+        },
+      });
+
+      if (existingBooking) {
+        throw new BadRequestException(
+          'Booking already exists for this payment',
+        );
+      }
+
+      // Get event details
+      const event = await this.prisma.event.findUnique({
+        where: { id: dto.eventId },
+        include: {
+          organiser: true,
+        },
+      });
+
+      if (!event) {
+        throw new NotFoundException('Event not found');
+      }
+
+      // Create the booking
+      const booking = await this.prisma.booking.create({
+        data: {
+          userId: userId,
+          eventId: dto.eventId,
+          ticket_quantity: dto.ticket_quantity,
+          status: 'Confirmed',
+          sessionId: dto.payment_intent_id,
+        },
+        include: {
+          user: true,
+          event: true,
+        },
+      });
+
+      // Update payment record
+      await this.paymentService.updatePaymentStatusByTransactionId(
+        dto.payment_intent_id,
+        { status: PaymentStatus.SUCCESSFUL },
+      );
+
+      // Send confirmation notification
+      await this.notificationHelper.sendBookingConfirmation(
+        booking.userId,
+        booking.event.name,
+      );
+
+      return {
+        message: 'Payment successful and booking confirmed',
+        booking: {
+          id: booking.id,
+          event_name: booking.event.name,
+          ticket_quantity: booking.ticket_quantity,
+          status: booking.status,
+          event_date: booking.event.date,
+        },
+        payment: {
+          amount: Number(paymentIntent.amount) / 100,
+          currency: paymentIntent.currency,
+          status: paymentIntent.status,
+        },
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async handlePaymentFailure(userId: string, dto: PaymentFailureDto) {
+    try {
+      // Verify the payment intent with Stripe
+      await this.stripe.paymentIntents.retrieve(dto.payment_intent_id);
+
+      // Update payment record to failed status
+      await this.paymentService.updatePaymentStatusByTransactionId(
+        dto.payment_intent_id,
+        { status: PaymentStatus.FAILED },
+      );
+
+      // Get user details for notification
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (user) {
+        // Send failure notification - using a simple notification for now
+        await this.notification.createNotification({
+          title: 'Payment Failed',
+          body: `Your payment failed: ${dto.error_message || 'Payment was not completed successfully'}`,
+          recipientId: userId,
+          sendPush: true,
+          recipientType: 'USER',
+        });
+      }
+
+      return {
+        message: 'Payment failure recorded',
+        payment_intent_id: dto.payment_intent_id,
+        status: 'failed',
+        error_message:
+          dto.error_message || 'Payment was not completed successfully',
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 }

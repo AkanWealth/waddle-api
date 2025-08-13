@@ -152,16 +152,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { setupRedoc } from './middleware';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import * as express from 'express';
 import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Configure body parser FIRST with larger limits for file uploads
-  app.use(express.json({ limit: '100mb' }));
-  app.use(express.urlencoded({ limit: '100mb', extended: true }));
-  app.use(express.raw({ limit: '100mb' }));
+  // Configure body parsing - IMPORTANT: order matters!
+  // First, set up raw parsing for webhook routes
+  app.useBodyParser('raw', { type: 'application/json' });
+
+  // Then set up JSON parsing for other routes
+  app.useBodyParser('json', { limit: '50mb' });
+  app.useBodyParser('urlencoded', { limit: '100mb', extended: true });
 
   const prisma = app.get(PrismaService);
 
@@ -175,7 +177,7 @@ async function bootstrap() {
 
   console.log('User table columns:', columns);
 
-  // Configure CORS after body parser
+  // Configure CORS
   app.enableCors({
     origin: (origin, callback) => {
       const allowedOrigins = [
@@ -238,7 +240,7 @@ async function bootstrap() {
 
     // Set timeout for upload requests
     if (req.url.includes('/uploads')) {
-      req.setTimeout(600000); // 10 minutes (increased from 5)
+      req.setTimeout(600000); // 10 minutes
       res.setTimeout(600000);
     }
 
