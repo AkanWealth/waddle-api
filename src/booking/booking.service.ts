@@ -845,16 +845,61 @@ export class BookingService {
     }
   }
 
-  // delete a booking by id
+  // cancel a booking by id
   async cancelBooking(dto: CreateRefundDto) {
     try {
       const booking = await this.prisma.booking.findUnique({
         where: { id: dto.id },
-        include: { event: true, user: true },
+        include: {
+          event: true,
+          user: true,
+          payments: true,
+        },
       });
 
       if (!booking)
         throw new NotFoundException('Booking with the provided ID not found');
+
+      // Check if booking is confirmed and has a payment
+      if (booking.status !== 'Confirmed') {
+        throw new BadRequestException(
+          'Only confirmed bookings can be cancelled',
+        );
+      }
+
+      const payment = booking.payments[0]; // Get the first payment
+      if (!payment || payment.status !== PaymentStatus.SUCCESSFUL) {
+        throw new BadRequestException(
+          'No successful payment found for this booking',
+        );
+      }
+
+      // Create refund through Stripe
+      let refund;
+      try {
+        refund = await this.stripe.refunds.create({
+          payment_intent: booking.payment_intent,
+        });
+      } catch (refundError) {
+        throw new BadRequestException(`Refund failed: ${refundError.message}`);
+      }
+
+      if (!refund) throw new Error('Unable to create a refund');
+
+      // Update booking status
+      await this.prisma.booking.update({
+        where: { id: booking.id },
+        data: {
+          status: 'Cancelled',
+        },
+      });
+
+      // Update payment status to refunded
+      await this.paymentService.updatePaymentStatus(payment.id, {
+        status: PaymentStatus.REFUNDED,
+      });
+
+      // Send cancellation notification
       if (booking.user.fcmIsOn) {
         await this.notificationHelper.sendBookingCancel(
           booking.userId,
@@ -863,30 +908,27 @@ export class BookingService {
         );
       }
 
-      const refund = await this.stripe.refunds.create({
-        payment_intent: dto.payment_intent,
-      });
-
-      if (!refund) throw new Error('Unable to create a refund');
-
-      await this.prisma.booking.update({
-        where: { id: booking.id },
-        data: {
-          status: 'Cancelled',
-        },
-      });
-
-      const subject = 'Booking Confirmation';
-      const message = `<p>Hello,</p>
-
-      <p>Thank you for booking the event <b>${booking.event.name}</b>, your booking id is <b>${booking.id}</b> to verify your email account.</p>
-
-      <p>Warm regards,</p>
-
-      <p>Waddle Team</p>
+      // Send cancellation email
+      const subject = 'Booking Cancellation Confirmation';
+      const message = `
+        <p>Hello ${booking.user.name},</p>
+        <p>Your booking for the event <strong>${booking.event.name}</strong> has been cancelled.</p>
+        <p>Booking ID: <strong>${booking.id}</strong></p>
+        <p>Refund ID: <strong>${refund.id}</strong></p>
+        <p>A refund of £${payment.amountPaid} will be processed to your original payment method.</p>
+        <p>Please allow 5-10 business days for the refund to appear in your account.</p>
+        <p>Warm regards,</p>
+        <p>Waddle Team</p>
       `;
 
       await this.mailer.sendMail(booking.user.email, subject, message);
+
+      return {
+        message: 'Booking cancelled and refund processed',
+        bookingId: booking.id,
+        refundId: refund.id,
+        refundAmount: payment.amountPaid,
+      };
     } catch (error) {
       throw error;
     }
@@ -1118,7 +1160,7 @@ export class BookingService {
       const eventPrice = Number(event.price);
       const amount = eventPrice * dto.ticket_quantity;
 
-      // Create a PaymentIntent with Stripe
+      // Create a PaymentIntent with Stripe (without immediate transfer)
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to pence
         currency: 'gbp',
@@ -1127,11 +1169,10 @@ export class BookingService {
           userId: userId,
           ticketQuantity: dto.ticket_quantity.toString(),
           eventName: event.name,
+          organiserId: event.organiser.id,
         },
-        application_fee_amount: Math.round(amount * 0.15 * 100), // 15% platform fee
-        transfer_data: {
-          destination: event.organiser.stripe_account_id,
-        },
+        // Remove application_fee_amount and transfer_data
+        // We'll handle the transfer manually after confirming the booking
       });
 
       // Get user details for payment record
@@ -1221,12 +1262,20 @@ export class BookingService {
         },
         include: {
           user: true,
-          event: true,
+          event: {
+            include: {
+              organiser: true,
+            },
+          },
         },
       });
 
       // Update payment record with final amounts
       const paymentAmount = Number(paymentIntent.amount) / 100;
+      const platformFee = paymentAmount * 0.15; // 15% platform fee
+      const organiserAmount = paymentAmount * 0.85; // 85% to organiser
+
+      // Update payment status first
       await this.paymentService.updatePaymentStatusByTransactionId(
         dto.payment_intent_id,
         { status: PaymentStatus.SUCCESSFUL },
@@ -1242,10 +1291,31 @@ export class BookingService {
           where: { id: payment.id },
           data: {
             amountPaid: paymentAmount,
-            netAmount: paymentAmount * 0.85, // 85% to organiser
-            processingFee: paymentAmount * 0.15, // 15% platform fee
+            netAmount: organiserAmount,
+            processingFee: platformFee,
           },
         });
+      }
+
+      // Now transfer money to the organiser (only after confirming booking)
+      try {
+        const transfer = await this.stripe.transfers.create({
+          amount: Math.round(organiserAmount * 100), // Convert to pence
+          currency: 'gbp',
+          destination: booking.event.organiser.stripe_account_id,
+          description: `Payment for event: ${booking.event.name} (Booking: ${booking.id})`,
+          metadata: {
+            bookingId: booking.id,
+            eventId: booking.event.id,
+            organiserId: booking.event.organiser.id,
+          },
+        });
+
+        console.log('Transfer to organiser successful:', transfer.id);
+      } catch (transferError) {
+        console.error('Failed to transfer money to organiser:', transferError);
+        // You might want to handle this error appropriately
+        // For now, we'll log it but not fail the booking confirmation
       }
 
       // Send confirmation notification
