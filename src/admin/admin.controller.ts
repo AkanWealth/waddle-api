@@ -212,6 +212,23 @@ export class AdminController {
   }
 
   @ApiOperation({
+    summary: 'Restore a soft-deleted admin (web)',
+    description: 'Admin with admin role can restore a soft-deleted admin by ID',
+  })
+  @ApiNoContentResponse({ description: 'Admin successfully restored' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Patch('restore/:id')
+  @Roles(Role.Admin)
+  async restoreDeletedAdmin(
+    @GetUser() admin: User,
+    @Param('id') id: string,
+  ): Promise<{ message: string }> {
+    if (admin) {
+      return this.adminService.restoreDeletedAdmin(id);
+    }
+  }
+
+  @ApiOperation({
     summary: 'Deactivate an admin (web)',
     description: 'Admin with admin role can deactivate another admin by ID',
   })

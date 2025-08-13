@@ -541,6 +541,28 @@ export class AdminService {
     }
   }
 
+  async restoreDeletedAdmin(id: string) {
+    try {
+      const result = await this.prisma.admin.updateMany({
+        where: {
+          id,
+          isDeleted: true,
+        },
+        data: {
+          isDeleted: false,
+        },
+      });
+
+      if (result.count === 0) {
+        throw new NotFoundException('Admin not found or already restored');
+      }
+
+      return { message: 'Admin successfully restored' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getUserActivitys(startDate: Date, endDate: Date) {
     // const currentYear = startDate.getFullYear();
 
