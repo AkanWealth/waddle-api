@@ -562,21 +562,22 @@ export class EventService {
     distance?: string,
   ) {
     try {
-      const whereClause: any = {};
+      const whereClause: any = {
+        isDeleted: false,
+        isPublished: true,
+        status: EventStatus.APPROVED,
+      };
 
       if (name) {
         whereClause.name = { contains: name, mode: 'insensitive' };
-        whereClause.isPublished = true;
       }
 
       if (age) {
         whereClause.age_range = age;
-        whereClause.isPublished = true;
       }
 
       if (price) {
         whereClause.price = price;
-        whereClause.isPublished = true;
       }
 
       if (tags) {
@@ -585,7 +586,6 @@ export class EventService {
         } else {
           whereClause.tags = { has: tags };
         }
-        whereClause.isPublished = true;
       }
 
       if (facilities) {
@@ -594,14 +594,12 @@ export class EventService {
         } else {
           whereClause.facilities = { has: facilities };
         }
-        whereClause.isPublished = true;
       }
 
       if (distance) {
         const distNum = Number(distance);
         if (!isNaN(distNum)) {
           whereClause.distance = distNum;
-          whereClause.isPublished = true;
         }
       }
 
@@ -614,15 +612,15 @@ export class EventService {
           'Event with the provided criteria does not exist.',
         );
 
-      const eventWithImage = event.map((list) => {
-        const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.files[0]}`;
-        return {
-          ...list,
-          images,
-        };
-      });
+      // const eventWithImage = event.map((list) => {
+      //   const images = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_EVENT_FOLDER')}/${list.files[0]}`;
+      //   return {
+      //     ...list,
+      //     images,
+      //   };
+      // });
 
-      return { message: 'Event found', event: eventWithImage };
+      return { message: 'Event found', event };
     } catch (error) {
       throw error;
     }
