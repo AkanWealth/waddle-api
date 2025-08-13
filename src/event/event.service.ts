@@ -560,6 +560,7 @@ export class EventService {
     tags?: string[] | string,
     facilities?: string[] | string,
     distance?: string,
+    eventType?: string,
   ) {
     try {
       const whereClause: any = {
@@ -602,6 +603,8 @@ export class EventService {
           whereClause.distance = distNum;
         }
       }
+
+      if (eventType) whereClause.eventType = eventType;
 
       const event = await this.prisma.event.findMany({
         where: whereClause,

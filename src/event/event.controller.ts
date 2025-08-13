@@ -268,6 +268,12 @@ export class EventController {
   @ApiQuery({ name: 'tags', required: false, type: [String] })
   @ApiQuery({ name: 'facilities', required: false, type: [String] })
   @ApiQuery({ name: 'distance', required: false, type: Number })
+  @ApiQuery({
+    name: 'eventType',
+    required: false,
+    type: String,
+    enum: EventType,
+  })
   @Get('search')
   searchEvent(
     @Query('name') name: string,
@@ -276,6 +282,7 @@ export class EventController {
     @Query('tags') tags?: string[] | string,
     @Query('facilities') facilities?: string[] | string,
     @Query('distance') distance?: string,
+    @Query('eventType') eventType?: string,
   ) {
     return this.eventService.searchEvent(
       name,
@@ -284,6 +291,7 @@ export class EventController {
       tags,
       facilities,
       distance,
+      eventType,
     );
   }
 
