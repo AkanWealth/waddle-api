@@ -63,7 +63,7 @@ export class DisputeService {
         bookingRef: createDisputeDto.bookingRef,
         refundRequest: null, // No refundRequest in DTO
         description: createDisputeDto.description,
-        file: (createDisputeDto as any).file || null,
+        file: createDisputeDto.file,
         status: DisputeStatus.PENDING,
       },
       include: {
