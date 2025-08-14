@@ -175,8 +175,8 @@ export class CrowdSourcingService {
       where: {
         isDeleted: false,
         tag: 'Place',
-        isVerified: true,
-        isPublished: true,
+        // isVerified: true,
+        // isPublished: true,
       },
       orderBy: {
         createdAt: 'desc',

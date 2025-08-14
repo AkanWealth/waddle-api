@@ -808,6 +808,46 @@ export class EventService {
     return { message: 'Event updated', event };
   }
 
+  async publishAdminDraftedEvent(
+    id: string,
+    creatorId: string,
+    dto: UpdateEventDto,
+  ) {
+    // Find event owned by this admin
+    const existingEvent = await this.prisma.event.findFirst({
+      where: { id, adminId: creatorId },
+    });
+
+    if (!existingEvent) {
+      throw new NotFoundException('Event with the provided ID does not exist.');
+    }
+
+    // Prevent updates to past events
+
+    // Ensure type conversions where necessary
+    const updateData: any = {
+      ...dto,
+      status: EventStatus.APPROVED,
+      isPublished: true,
+      date: dto.date ? new Date(dto.date) : undefined,
+      total_ticket: dto.total_ticket ? Number(dto.total_ticket) : undefined,
+      distance: dto.distance !== undefined ? dto.distance : undefined,
+    };
+
+    // Remove undefined fields so Prisma doesn't overwrite them
+    Object.keys(updateData).forEach(
+      (key) => updateData[key] === undefined && delete updateData[key],
+    );
+
+    // Update event
+    const event = await this.prisma.event.update({
+      where: { id: existingEvent.id },
+      data: updateData,
+    });
+
+    return { message: 'Event updated', event };
+  }
+
   async updateEventAsOrganiser(
     id: string,
     creatorId: string,

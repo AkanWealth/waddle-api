@@ -363,6 +363,23 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary: 'Publish a draft as an admin',
+    description: 'Publish my draft as a logged in admin',
+  })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @ApiParam({ name: 'id' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('host/:id/publish')
+  @Roles(Role.Admin)
+  publishAdminDraftedEvent(
+    @Param('id') id: string,
+    @GetUser() user: User,
+    @Body() dto: UpdateEventDto,
+  ) {
+    return this.eventService.publishAdminDraftedEvent(id, user.id, dto);
+  }
+
+  @ApiOperation({
     summary: 'Update an event as organiser by the event id',
     description: 'Update an event by id based on the logged in organiser',
   })
