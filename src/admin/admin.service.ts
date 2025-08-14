@@ -270,7 +270,7 @@ export class AdminService {
       const subject = 'Waddle Admin Invite';
       const message = `<p>Hello ${subAdmin.first_name},</p>
     <
-          <p>I hope this mail finds you well. Pleae note that you have been invited to manage the waddle app.</p>
+          <p>I hope this mail finds you well. Please note that you have been invited to manage the waddle app.</p>
           <p>Kindly follow the steps below to set up your password.</p>
 
           <p><a href="${setUpPasswordUrl}" target="_blank">${setUpPasswordUrl}</a></p>
