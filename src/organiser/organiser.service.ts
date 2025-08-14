@@ -561,14 +561,27 @@ export class OrganiserService {
       }
 
       // Send email
-      await this.mailer.sendMail(updated.email, subject, message);
+      try {
+        await this.mailer.sendMail(updated.email, subject, message);
+      } catch (emailError) {
+        console.error('Failed to send approval email:', emailError);
+        // Continue with the process even if email fails
+      }
 
       // Send any in-app notification if needed
-      await this.notificationHelper.sendAccountApprovalStatusAlert(
-        id,
-        updated.name,
-        isApproved,
-      );
+      try {
+        await this.notificationHelper.sendAccountApprovalStatusAlert(
+          id,
+          updated.name,
+          isApproved,
+        );
+      } catch (notificationError) {
+        console.error(
+          'Failed to send approval notification:',
+          notificationError,
+        );
+        // Continue with the process even if notification fails
+      }
 
       return {
         message: `Organiser ${isApproved ? 'approved' : 'rejected'}`,
@@ -591,11 +604,57 @@ export class OrganiserService {
           suspensionReason,
         },
       });
-      await this.notificationHelper.sendAccountSuspensionAlert(
-        id,
-        updated.name,
-        suspensionReason,
-      );
+
+      // Send email notification to the organiser
+      const subject = 'Your Waddle Vendor Account Has Been Suspended';
+      const message = `
+        <p>Hello ${updated.name},</p>
+        <p>We regret to inform you that your vendor account has been suspended due to a policy violation.</p>
+        
+        <p><b>Reason for suspension:</b></p>
+        <p>${suspensionReason}</p>
+        
+        <p><b>What this means:</b></p>
+        <ul>
+          <li>Your account is temporarily disabled</li>
+          <li>You cannot create or manage events</li>
+          <li>Existing bookings may be affected</li>
+        </ul>
+        
+        <p><b>Next steps:</b></p>
+        <ul>
+          <li>Review the reason for suspension</li>
+          <li>Address any issues mentioned above</li>
+          <li>Contact our support team if you believe this is an error</li>
+        </ul>
+        
+        <p>If you have any questions or concerns, please don't hesitate to reach out to our support team.</p>
+        
+        <p>Best regards,<br> The Waddle Team</p>
+      `;
+
+      // Send email notification to the organiser
+      try {
+        await this.mailer.sendMail(updated.email, subject, message);
+      } catch (emailError) {
+        console.error('Failed to send suspension email:', emailError);
+        // Continue with the process even if email fails
+      }
+
+      // Send in-app notification
+      try {
+        await this.notificationHelper.sendAccountSuspensionAlert(
+          id,
+          updated.name,
+          suspensionReason,
+        );
+      } catch (notificationError) {
+        console.error(
+          'Failed to send suspension notification:',
+          notificationError,
+        );
+        // Continue with the process even if notification fails
+      }
 
       return {
         message: `Organiser suspended`,
