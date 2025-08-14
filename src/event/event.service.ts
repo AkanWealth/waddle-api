@@ -363,11 +363,29 @@ export class EventService {
     }
   }
 
-  async viewAllEventAdmin() {
+  async viewAllEventAdmin(adminId: string) {
     try {
       const events = await this.prisma.event.findMany({
         where: {
           isDeleted: false,
+          OR: [
+            {
+              isPublished: true, // Include all published events
+            },
+            {
+              status: 'PENDING', // Include all pending events
+            },
+            {
+              AND: [
+                {
+                  isPublished: false, // Drafted events
+                },
+                {
+                  adminId: adminId, // Only include drafted events created by current admin
+                },
+              ],
+            },
+          ],
         },
         include: {
           admin: true,

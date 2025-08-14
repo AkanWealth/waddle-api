@@ -609,6 +609,27 @@ export class NotificationService {
     }
   }
 
+  // Get unread notification count for a single admin
+  async getAdminUnreadCount(adminId: string) {
+    try {
+      const unreadCount = await this.prisma.adminNotificationStatus.count({
+        where: {
+          adminId,
+          isRead: false,
+          isCleared: false,
+          isDeleted: false,
+        },
+      });
+
+      return {
+        adminId,
+        unreadCount,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // Clean up old notifications (run as a scheduled job)
   async cleanupOldAdminNotifications(daysOld: number = 90) {
     try {

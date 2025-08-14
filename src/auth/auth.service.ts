@@ -19,6 +19,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Mailer, Otp } from '../helper';
+import { OrganiserStatus } from 'src/utils/constants/organiserTypes';
 
 @Injectable()
 export class AuthService {
@@ -449,6 +450,9 @@ export class AuthService {
       // Check if the organiser is locked
       if (organiser?.isLocked) {
         throw new ForbiddenException('Account is locked, try again later!');
+      }
+      if (organiser.status === OrganiserStatus.SUSPENDED) {
+        throw new ForbiddenException('Your account has been suspended.');
       }
 
       // Lock the account after 3 failed attempts

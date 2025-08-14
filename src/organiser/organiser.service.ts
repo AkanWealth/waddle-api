@@ -16,6 +16,7 @@ import Stripe from 'stripe';
 import { UpdatePasswordDto } from '../user/dto';
 import { NotificationService } from '../notification/notification.service';
 import { OrganiserStatus } from 'src/utils/constants/organiserTypes';
+import { EventStatus } from 'src/utils/constants/eventTypes';
 import { NotificationHelper } from 'src/notification/notification.helper';
 import { Mailer } from 'src/helper';
 
@@ -250,8 +251,10 @@ export class OrganiserService {
         )}/${event.files[0]}`;
 
         const isUpcoming = event.date > now;
-        if (isUpcoming) upcomingEvents++;
-        else pastEvents++;
+        const isApproved = event.status === EventStatus.APPROVED;
+
+        if (isUpcoming && isApproved) upcomingEvents++;
+        else if (!isUpcoming) pastEvents++;
 
         const totalEventAttendees = event.bookings.reduce(
           (acc, booking) => acc + booking.ticket_quantity,

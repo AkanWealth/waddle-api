@@ -207,8 +207,9 @@ export class EventController {
   })
   @ApiOkResponse({ description: 'Ok' })
   @Get('/admin')
-  findAllAdmin() {
-    return this.eventService.viewAllEventAdmin();
+  @Roles(Role.Admin)
+  findAllAdmin(@GetUser() user: { id: string }) {
+    return this.eventService.viewAllEventAdmin(user.id);
   }
 
   @ApiOperation({

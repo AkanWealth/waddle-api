@@ -402,6 +402,15 @@ export class NotificationController {
     return this.notificationService.getAdminNotificationCounts(adminId);
   }
 
+  @ApiOperation({
+    summary: 'Get admin unread notification count',
+    description: 'Get the count of unread notifications for a specific admin',
+  })
+  @Get('admin/:adminId/unread-count')
+  async getAdminUnreadCount(@Param('adminId') adminId: string) {
+    return this.notificationService.getAdminUnreadCount(adminId);
+  }
+
   @ApiOperation({ summary: 'Mark admin notification as read' })
   @Patch('admin/:notificationId/read/:adminId')
   async markAdminNotificationAsRead(
