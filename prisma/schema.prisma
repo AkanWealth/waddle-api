@@ -84,6 +84,7 @@ model Organiser {
   isProfileCompleted            Boolean        @default(false)
   status                        String         @default("PENDING")
   suspensionReason              String?
+  rejectionReason               String?
   disputes                      Dispute[]
   events                        Event[]
   notifications                 Notification[] @relation("OrganiserNotifications")

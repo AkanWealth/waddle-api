@@ -264,7 +264,11 @@ export class OrganiserController {
     @Body() body: ApproveOrganiserDto,
   ) {
     if (admin) {
-      return this.organiserService.setApprovalStatus(id, body.isApproved);
+      return this.organiserService.setApprovalStatus(
+        id,
+        body.isApproved,
+        body.rejectionReason,
+      );
     }
   }
 

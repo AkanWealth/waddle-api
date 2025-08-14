@@ -511,12 +511,17 @@ export class OrganiserService {
     }
   }
 
-  async setApprovalStatus(id: string, isApproved: boolean) {
+  async setApprovalStatus(
+    id: string,
+    isApproved: boolean,
+    rejectionReason: string,
+  ) {
     try {
       const updated = await this.prisma.organiser.update({
         where: { id },
         data: {
           isApproved: isApproved ? true : false,
+          rejectionReason,
           status: isApproved
             ? OrganiserStatus.APPROVED
             : OrganiserStatus.REJECTED,
@@ -547,20 +552,23 @@ export class OrganiserService {
       } else {
         subject = 'Your Waddle Vendor Verification Status';
         message = `
-        <p>Hello ${updated.name},</p>
-        <p>After reviewing your vendor application, we’re unable to approve your account at this time due to verification requirements not being met.</p>
+  <p>Hello ${updated.name},</p>
+  <p>After reviewing your vendor application, we’re unable to approve your account at this time.</p>
+  
+  <p><b>Reason provided by our team:</b></p>
+  <p>${rejectionReason}</p>
 
-        <p><b>What to do next:</b></p>
-        <ul>
-          <li>Review your submitted information</li>
-          <li>Ensure all required documents are clear and valid</li>
-          <li>Re-submit your application for verification</li>
-        </ul>
+  <p><b>What to do next:</b></p>
+  <ul>
+    <li>Review your submitted information</li>
+    <li>Ensure all required documents are clear and valid</li>
+    <li>Re-submit your application for verification</li>
+  </ul>
 
-        <p>We’d be happy to verify you once the necessary details are provided.</p>
+  <p>We’d be happy to verify you once the necessary details are provided.</p>
 
-        <p>Best regards,<br> Waddle Team</p>
-      `;
+  <p>Best regards,<br>Waddle Team</p>
+`;
       }
 
       // Send email

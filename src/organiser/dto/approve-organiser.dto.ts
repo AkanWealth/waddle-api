@@ -1,4 +1,4 @@
-import { IsBoolean } from 'class-validator';
+import { IsBoolean, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ApproveOrganiserDto {
@@ -8,4 +8,11 @@ export class ApproveOrganiserDto {
   })
   @IsBoolean()
   isApproved: boolean;
+
+  @ApiProperty({
+    example: 'Violation of policies',
+    description: 'Rejection reason',
+  })
+  @IsString()
+  rejectionReason: string;
 }
