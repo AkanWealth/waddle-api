@@ -17,6 +17,7 @@ import { BookingConsentDto, CreateRefundDto } from './dto';
 import { NotificationHelper } from 'src/notification/notification.helper';
 import { PaymentService } from '../payment/payment.service';
 import { PaymentStatus } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class BookingService {
@@ -877,9 +878,17 @@ export class BookingService {
       // Create refund through Stripe
       let refund;
       try {
-        refund = await this.stripe.refunds.create({
-          payment_intent: booking.payment_intent,
-        });
+        // Generate unique idempotency key for this refund
+        const refundIdempotencyKey = `refund_${booking.id}_${Date.now()}_${randomUUID()}`;
+
+        refund = await this.stripe.refunds.create(
+          {
+            payment_intent: booking.payment_intent,
+          },
+          {
+            idempotencyKey: refundIdempotencyKey,
+          },
+        );
       } catch (refundError) {
         throw new BadRequestException(`Refund failed: ${refundError.message}`);
       }
@@ -943,14 +952,22 @@ export class BookingService {
       if (amount <= 0)
         throw new BadRequestException('Amount must be greater than zero');
 
-      const payout = await this.stripe.payouts.create({
-        amount,
-        currency: 'usd',
-        statement_descriptor: 'Event Payout',
-        destination: payoutAccountId,
-        description,
-        method: 'standard',
-      });
+      // Generate unique idempotency key for this payout
+      const payoutIdempotencyKey = `payout_${payoutAccountId}_${amount}_${Date.now()}_${randomUUID()}`;
+
+      const payout = await this.stripe.payouts.create(
+        {
+          amount,
+          currency: 'usd',
+          statement_descriptor: 'Event Payout',
+          destination: payoutAccountId,
+          description,
+          method: 'standard',
+        },
+        {
+          idempotencyKey: payoutIdempotencyKey,
+        },
+      );
       if (!payout) throw new Error('Unable to payout!');
 
       return { message: 'Payout initiated', payout };
@@ -963,6 +980,7 @@ export class BookingService {
     const organisers = await this.prisma.organiser.findMany({
       where: {
         isDeleted: false,
+        isProfileCompleted: true,
       },
       include: {
         events: {
@@ -1160,20 +1178,28 @@ export class BookingService {
       const eventPrice = Number(event.price);
       const amount = eventPrice * dto.ticket_quantity;
 
+      // Generate unique idempotency key for this payment intent
+      const idempotencyKey = `pi_${userId}_${dto.eventId}_${dto.ticket_quantity}_${Date.now()}_${randomUUID()}`;
+
       // Create a PaymentIntent with Stripe (without immediate transfer)
-      const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to pence
-        currency: 'gbp',
-        metadata: {
-          eventId: dto.eventId,
-          userId: userId,
-          ticketQuantity: dto.ticket_quantity.toString(),
-          eventName: event.name,
-          organiserId: event.organiser.id,
+      const paymentIntent = await this.stripe.paymentIntents.create(
+        {
+          amount: Math.round(amount * 100), // Convert to pence
+          currency: 'gbp',
+          metadata: {
+            eventId: dto.eventId,
+            userId: userId,
+            ticketQuantity: dto.ticket_quantity.toString(),
+            eventName: event.name,
+            organiserId: event.organiser.id,
+          },
+          // Remove application_fee_amount and transfer_data
+          // We'll handle the transfer manually after confirming the booking
         },
-        // Remove application_fee_amount and transfer_data
-        // We'll handle the transfer manually after confirming the booking
-      });
+        {
+          idempotencyKey: idempotencyKey,
+        },
+      );
 
       // Get user details for payment record
       const user = await this.prisma.user.findUnique({
@@ -1299,17 +1325,25 @@ export class BookingService {
 
       // Now transfer money to the organiser (only after confirming booking)
       try {
-        const transfer = await this.stripe.transfers.create({
-          amount: Math.round(organiserAmount * 100), // Convert to pence
-          currency: 'gbp',
-          destination: booking.event.organiser.stripe_account_id,
-          description: `Payment for event: ${booking.event.name} (Booking: ${booking.id})`,
-          metadata: {
-            bookingId: booking.id,
-            eventId: booking.event.id,
-            organiserId: booking.event.organiser.id,
+        // Generate unique idempotency key for this transfer
+        const transferIdempotencyKey = `transfer_${booking.id}_${Date.now()}_${randomUUID()}`;
+
+        const transfer = await this.stripe.transfers.create(
+          {
+            amount: Math.round(organiserAmount * 100), // Convert to pence
+            currency: 'gbp',
+            destination: booking.event.organiser.stripe_account_id,
+            description: `Payment for event: ${booking.event.name} (Booking: ${booking.id})`,
+            metadata: {
+              bookingId: booking.id,
+              eventId: booking.event.id,
+              organiserId: booking.event.organiser.id,
+            },
           },
-        });
+          {
+            idempotencyKey: transferIdempotencyKey,
+          },
+        );
 
         console.log('Transfer to organiser successful:', transfer.id);
       } catch (transferError) {

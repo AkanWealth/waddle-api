@@ -14,6 +14,7 @@ import {
   RevenueData,
 } from './dto';
 import { PaymentStatus } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class PaymentService {
@@ -150,9 +151,17 @@ export class PaymentService {
     // Call Stripe to process the refund
     let refund;
     try {
-      refund = await this.stripe.refunds.create({
-        payment_intent: paymentIntent,
-      });
+      // Generate unique idempotency key for this refund
+      const refundIdempotencyKey = `refund_${payment.id}_${Date.now()}_${randomUUID()}`;
+
+      refund = await this.stripe.refunds.create(
+        {
+          payment_intent: paymentIntent,
+        },
+        {
+          idempotencyKey: refundIdempotencyKey,
+        },
+      );
     } catch (error) {
       throw new ForbiddenException('Stripe refund failed: ' + error.message);
     }
@@ -176,7 +185,8 @@ export class PaymentService {
     status: PaymentStatus = PaymentStatus.SUCCESSFUL,
   ): Promise<RevenueData[]> {
     const { startDate, endDate } = this.getDateRange(period);
-
+    console.log(status, 'This is the status');
+    // let statusFilter = status === undefined ? PaymentStatus.SUCCESSFUL : status;
     // Get successful payments within the date range
     const payments = await this.prisma.payment.findMany({
       where: {
@@ -184,7 +194,7 @@ export class PaymentService {
           gte: startDate,
           lte: endDate,
         },
-        status: status,
+        status: PaymentStatus.SUCCESSFUL,
       },
       select: {
         amount: true,

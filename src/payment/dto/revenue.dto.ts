@@ -25,7 +25,7 @@ export class RevenueQueryDto {
     description: 'Status of the payment',
   })
   @IsOptional()
-  @IsEnum(PaymentStatus)
+  // @IsEnum(PaymentStatus)
   status?: PaymentStatus = PaymentStatus.SUCCESSFUL;
 }
 
