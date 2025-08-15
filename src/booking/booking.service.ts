@@ -207,6 +207,39 @@ export class BookingService {
     }
   }
 
+  async getBookingConsent(bookingId: string) {
+    try {
+      const consent = await this.prisma.consent.findMany({
+        where: {
+          bookingId: bookingId,
+        },
+        // include: {
+        //   booking: {
+        //     include: {
+        //       event: true,
+        //       user: true,
+        //     },
+        //   },
+        // },
+      });
+      console.log(consent);
+
+      // if (!consent) {
+      //   throw new NotFoundException('Booking consent not found');
+      // }
+
+      return {
+        message: 'Booking consent retrieved successfully',
+        consent,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to retrieve booking consent');
+    }
+  }
+
   // checkout fulfillment confirmation function
   // private async fulfillCheckout(sessionId: string) {
   //   try {

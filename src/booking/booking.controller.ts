@@ -109,6 +109,24 @@ export class BookingController {
   }
 
   @ApiOperation({
+    summary: 'get booking consent by booking ID',
+    description: 'Retrieve booking consent information for a specific booking',
+  })
+  @ApiOkResponse({ description: 'Booking consent retrieved successfully' })
+  @ApiParam({
+    name: 'bookingId',
+    description: 'The ID of the booking to get consent for',
+    example: 'cm7539b180003u0qavzlq72p4',
+  })
+  @Get('consent/:bookingId')
+  getBookingConsent(
+    @GetUser() user: User,
+    @Param('bookingId') bookingId: string,
+  ) {
+    if (user) return this.bookingService.getBookingConsent(bookingId);
+  }
+
+  @ApiOperation({
     summary: 'view all bookings',
     description: 'Admin can view all booked events',
   })
