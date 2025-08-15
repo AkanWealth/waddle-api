@@ -368,4 +368,18 @@ export class AdminController {
       },
     };
   }
+
+  @ApiOperation({
+    summary: 'Get booking data by period',
+    description:
+      'Retrieves booking data for different time periods: 7days (last 7 days), monthly (last 12 months), or yearly (last 7 years)',
+  })
+  @ApiOkResponse({ description: 'Booking data retrieved successfully' })
+  @Get('analytics/booking/:period')
+  @Roles(Role.Admin)
+  async getBookingData(
+    @Param('period') period: '7days' | 'monthly' | 'yearly',
+  ) {
+    return await this.adminService.getBookingData(period);
+  }
 }

@@ -1566,4 +1566,161 @@ export class AdminService {
 
     return result;
   }
+
+  async getBookingData(period: '7days' | 'monthly' | 'yearly') {
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date;
+
+    switch (period) {
+      case '7days':
+        // Last 7 days from today
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Include today
+        break;
+      case 'monthly':
+        // Last 12 months from current month
+        startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        break;
+      case 'yearly':
+        // Last 7 years from current year
+        startDate = new Date(now.getFullYear() - 7, 0, 1);
+        endDate = new Date(now.getFullYear() + 1, 0, 1);
+        break;
+      default:
+        throw new BadRequestException(
+          'Invalid period. Must be 7days, monthly, or yearly',
+        );
+    }
+
+    // Get booking data for the specified period
+    const allData = await this.prisma.$queryRaw<
+      Array<{
+        booking_id: string | null;
+        booking_created_at: Date | null;
+        booking_quantity: number | null;
+      }>
+    >`
+      SELECT 
+        b.id as booking_id,
+        b."createdAt" as booking_created_at,
+        b.ticket_quantity as booking_quantity
+      FROM "booking" b
+      WHERE b."isDeleted" = false 
+        AND b.status = 'Confirmed'
+        AND b."createdAt" >= ${startDate}
+        AND b."createdAt" < ${endDate}
+      ORDER BY b."createdAt" ASC
+    `;
+
+    const bookingsByDay = new Map<string, number>();
+
+    // Process booking data
+    allData.forEach((row) => {
+      if (row.booking_id && row.booking_created_at) {
+        const bookingCreatedAt = new Date(row.booking_created_at);
+        const bookingQuantity = row.booking_quantity || 1;
+
+        // Create appropriate key based on period
+        let dateKey: string;
+        if (period === '7days') {
+          dateKey = bookingCreatedAt.toISOString().split('T')[0];
+        } else if (period === 'monthly') {
+          dateKey = `${bookingCreatedAt.getFullYear()}-${String(
+            bookingCreatedAt.getMonth() + 1,
+          ).padStart(2, '0')}`;
+        } else {
+          // yearly
+          dateKey = bookingCreatedAt.getFullYear().toString();
+        }
+
+        const currentCount = bookingsByDay.get(dateKey) || 0;
+        bookingsByDay.set(dateKey, currentCount + bookingQuantity);
+      }
+    });
+
+    return this.processBookingDataFromMapByPeriod(
+      bookingsByDay,
+      startDate,
+      endDate,
+      period,
+    );
+  }
+
+  private processBookingDataFromMapByPeriod(
+    bookingsByDay: Map<string, number>,
+    startDate: Date,
+    endDate: Date,
+    period: '7days' | 'monthly' | 'yearly',
+  ) {
+    const result = [];
+
+    if (period === '7days') {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      // Generate data for the last 7 days
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+
+        const dateKey = date.toISOString().split('T')[0];
+        const dayName = days[date.getDay()];
+        const bookings = bookingsByDay.get(dateKey) || 0;
+
+        result.push({
+          period: dayName,
+          bookings,
+          date: dateKey,
+        });
+      }
+    } else if (period === 'monthly') {
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+
+      // Generate data for the last 12 months
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+
+        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthName = months[date.getMonth()];
+        const bookings = bookingsByDay.get(dateKey) || 0;
+
+        result.push({
+          period: monthName,
+          bookings,
+          date: dateKey,
+        });
+      }
+    } else {
+      // yearly
+      // Generate data for the last 7 years
+      for (let i = 6; i >= 0; i--) {
+        const year = new Date().getFullYear() - i;
+        const dateKey = year.toString();
+        const bookings = bookingsByDay.get(dateKey) || 0;
+
+        result.push({
+          period: year.toString(),
+          bookings,
+          date: dateKey,
+        });
+      }
+    }
+
+    return result;
+  }
 }
