@@ -521,7 +521,7 @@ export class OrganiserService {
         where: { id },
         data: {
           isApproved: isApproved ? true : false,
-          rejectionReason,
+          rejectionReason: isApproved ? '' : rejectionReason,
           status: isApproved
             ? OrganiserStatus.APPROVED
             : OrganiserStatus.REJECTED,

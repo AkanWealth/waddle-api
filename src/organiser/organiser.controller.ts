@@ -283,7 +283,7 @@ export class OrganiserController {
   suspendOrganiser(
     @GetUser() admin: User,
     @Param('id') id: string,
-    @Body() body: { suspensionReason: string },
+    @Body() body: { suspensionReason?: string },
   ) {
     if (admin) {
       return this.organiserService.suspendOrganiser(id, body.suspensionReason);
