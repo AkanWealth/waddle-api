@@ -117,17 +117,36 @@ export class BookingService {
           event: {
             include: {
               organiser: true,
+              admin: true,
             },
           },
         },
       });
 
-      if (!booking.event.organiser?.stripe_account_id) {
+      // Check if event is created by admin or organiser
+      const isAdminEvent = !!booking.event.adminId;
+      const isOrganiserEvent = !!booking.event.organiserId;
+
+      if (isOrganiserEvent && !booking.event.organiser?.stripe_account_id) {
         throw new Error('Organiser has not connected their Stripe account');
       }
 
       const eventPrice = Number(booking.event.price);
       const amount = eventPrice * booking.ticket_quantity;
+
+      // Calculate fees for payment record
+      let processingFee = 0;
+      let netAmount = amount;
+
+      if (isAdminEvent) {
+        // For admin events, Waddle keeps everything (100%)
+        processingFee = amount;
+        netAmount = 0;
+      } else if (isOrganiserEvent) {
+        // For organiser events, Waddle takes 15% platform fee
+        processingFee = amount * 0.15;
+        netAmount = amount * 0.85;
+      }
 
       // Record pending payment
       await this.paymentService.createPayment({
@@ -140,13 +159,29 @@ export class BookingService {
         amount,
         status: PaymentStatus.PENDING,
         method: 'stripe',
-        processingFee: 0,
-        netAmount: 0,
+        processingFee: processingFee,
+        netAmount: netAmount,
         amountPaid: 0,
       });
 
-      // Your platform fee (example: 15% commission)
-      const platformFee = Math.round(amount * 0.15 * 100); // in pence
+      // Calculate platform fee based on event type
+      let platformFee = 0;
+      let paymentIntentData: any = {};
+
+      if (isAdminEvent) {
+        // For admin events, Waddle keeps everything (100%)
+        platformFee = Math.round(amount * 100); // in pence
+        // No transfer_data needed for admin events
+      } else if (isOrganiserEvent) {
+        // For organiser events, Waddle takes 15% platform fee
+        platformFee = Math.round(amount * 0.15 * 100); // in pence
+        paymentIntentData = {
+          application_fee_amount: platformFee,
+          transfer_data: {
+            destination: booking.event.organiser.stripe_account_id, // send rest to organiser
+          },
+        };
+      }
 
       // Create Checkout Session
       const session = await this.stripe.checkout.sessions.create({
@@ -167,12 +202,7 @@ export class BookingService {
         mode: 'payment',
         success_url: `${this.config.getOrThrow('BASE_URL')}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${this.config.getOrThrow('BASE_URL')}`,
-        payment_intent_data: {
-          application_fee_amount: platformFee, // your cut in pence
-          transfer_data: {
-            destination: booking.event.organiser.stripe_account_id, // send rest to organiser
-          },
-        },
+        payment_intent_data: paymentIntentData,
       });
 
       // Save Stripe session ID to booking
@@ -1195,6 +1225,7 @@ export class BookingService {
         where: { id: dto.eventId },
         include: {
           organiser: true,
+          admin: true,
         },
       });
 
@@ -1202,7 +1233,11 @@ export class BookingService {
         throw new NotFoundException('Event not found');
       }
 
-      if (!event.organiser?.stripe_account_id) {
+      // Check if event is created by admin or organiser
+      const isAdminEvent = !!event.adminId;
+      const isOrganiserEvent = !!event.organiserId;
+
+      if (isOrganiserEvent && !event.organiser?.stripe_account_id) {
         throw new BadRequestException(
           'Organiser has not connected their Stripe account',
         );
@@ -1214,18 +1249,25 @@ export class BookingService {
       // Generate unique idempotency key for this payment intent
       const idempotencyKey = `pi_${userId}_${dto.eventId}_${dto.ticket_quantity}_${Date.now()}_${randomUUID()}`;
 
+      // Create metadata for payment intent
+      const metadata: any = {
+        eventId: dto.eventId,
+        userId: userId,
+        ticketQuantity: dto.ticket_quantity.toString(),
+        eventName: event.name,
+        isAdminEvent: isAdminEvent.toString(),
+      };
+
+      if (isOrganiserEvent) {
+        metadata.organiserId = event.organiser.id;
+      }
+
       // Create a PaymentIntent with Stripe (without immediate transfer)
       const paymentIntent = await this.stripe.paymentIntents.create(
         {
           amount: Math.round(amount * 100), // Convert to pence
           currency: 'gbp',
-          metadata: {
-            eventId: dto.eventId,
-            userId: userId,
-            ticketQuantity: dto.ticket_quantity.toString(),
-            eventName: event.name,
-            organiserId: event.organiser.id,
-          },
+          metadata: metadata,
           // Remove application_fee_amount and transfer_data
           // We'll handle the transfer manually after confirming the booking
         },
@@ -1254,6 +1296,20 @@ export class BookingService {
         },
       });
 
+      // Calculate fees based on event type
+      let processingFee = 0;
+      let netAmount = amount;
+
+      if (isAdminEvent) {
+        // For admin events, Waddle keeps everything (100%)
+        processingFee = amount;
+        netAmount = 0;
+      } else if (isOrganiserEvent) {
+        // For organiser events, Waddle takes 15% platform fee
+        processingFee = amount * 0.15;
+        netAmount = amount * 0.85;
+      }
+
       // Create payment record in database
       await this.paymentService.createPayment({
         transactionId: paymentIntent.id, // Use payment intent ID as transaction ID
@@ -1265,8 +1321,8 @@ export class BookingService {
         amount: amount,
         status: PaymentStatus.PENDING,
         method: 'stripe',
-        processingFee: amount * 0.15, // 15% platform fee
-        netAmount: amount * 0.85, // 85% goes to organiser
+        processingFee: processingFee,
+        netAmount: netAmount,
         amountPaid: 0, // Will be updated when payment succeeds
       });
 
@@ -1305,7 +1361,12 @@ export class BookingService {
         },
         include: {
           user: true,
-          event: true,
+          event: {
+            include: {
+              organiser: true,
+              admin: true,
+            },
+          },
         },
       });
 
@@ -1324,6 +1385,7 @@ export class BookingService {
           event: {
             include: {
               organiser: true,
+              admin: true,
             },
           },
         },
@@ -1331,8 +1393,23 @@ export class BookingService {
 
       // Update payment record with final amounts
       const paymentAmount = Number(paymentIntent.amount) / 100;
-      const platformFee = paymentAmount * 0.15; // 15% platform fee
-      const organiserAmount = paymentAmount * 0.85; // 85% to organiser
+
+      // Determine if this is an admin or organiser event
+      const isAdminEvent = !!booking.event.adminId;
+      const isOrganiserEvent = !!booking.event.organiserId;
+
+      let platformFee = 0;
+      let organiserAmount = 0;
+
+      if (isAdminEvent) {
+        // For admin events, Waddle keeps everything (100%)
+        platformFee = paymentAmount;
+        organiserAmount = 0;
+      } else if (isOrganiserEvent) {
+        // For organiser events, Waddle takes 15% platform fee
+        platformFee = paymentAmount * 0.15;
+        organiserAmount = paymentAmount * 0.85;
+      }
 
       // Update payment status first
       await this.paymentService.updatePaymentStatusByTransactionId(
@@ -1356,33 +1433,42 @@ export class BookingService {
         });
       }
 
-      // Now transfer money to the organiser (only after confirming booking)
-      try {
-        // Generate unique idempotency key for this transfer
-        const transferIdempotencyKey = `transfer_${booking.id}_${Date.now()}_${randomUUID()}`;
+      // Transfer money to the organiser only if it's an organiser event
+      if (isOrganiserEvent && booking.event.organiser?.stripe_account_id) {
+        try {
+          // Generate unique idempotency key for this transfer
+          const transferIdempotencyKey = `transfer_${booking.id}_${Date.now()}_${randomUUID()}`;
 
-        const transfer = await this.stripe.transfers.create(
-          {
-            amount: Math.round(organiserAmount * 100), // Convert to pence
-            currency: 'gbp',
-            destination: booking.event.organiser.stripe_account_id,
-            description: `Payment for event: ${booking.event.name} (Booking: ${booking.id})`,
-            metadata: {
-              bookingId: booking.id,
-              eventId: booking.event.id,
-              organiserId: booking.event.organiser.id,
+          const transfer = await this.stripe.transfers.create(
+            {
+              amount: Math.round(organiserAmount * 100), // Convert to pence
+              currency: 'gbp',
+              destination: booking.event.organiser.stripe_account_id,
+              description: `Payment for event: ${booking.event.name} (Booking: ${booking.id})`,
+              metadata: {
+                bookingId: booking.id,
+                eventId: booking.event.id,
+                organiserId: booking.event.organiser.id,
+              },
             },
-          },
-          {
-            idempotencyKey: transferIdempotencyKey,
-          },
-        );
+            {
+              idempotencyKey: transferIdempotencyKey,
+            },
+          );
 
-        console.log('Transfer to organiser successful:', transfer.id);
-      } catch (transferError) {
-        console.error('Failed to transfer money to organiser:', transferError);
-        // You might want to handle this error appropriately
-        // For now, we'll log it but not fail the booking confirmation
+          console.log('Transfer to organiser successful:', transfer.id);
+        } catch (transferError) {
+          console.error(
+            'Failed to transfer money to organiser:',
+            transferError,
+          );
+          // You might want to handle this error appropriately
+          // For now, we'll log it but not fail the booking confirmation
+        }
+      } else if (isAdminEvent) {
+        console.log(
+          'Admin event - no transfer needed. Waddle keeps 100% of payment.',
+        );
       }
 
       // Send confirmation notification
