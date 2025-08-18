@@ -13,6 +13,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { EventStatus } from 'src/utils/constants/eventTypes';
 import { DraftEventDto } from './dto/draft-event.dto';
+import { NotificationHelper } from 'src/notification/notification.helper';
 
 @Injectable()
 export class EventService {
@@ -27,6 +28,7 @@ export class EventService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private notificationHelper: NotificationHelper,
   ) {}
 
   async createEventByOrganiser(
@@ -222,6 +224,13 @@ export class EventService {
       if (!event) {
         throw new Error('Event not found or could not be updated');
       }
+      if (event.organiserId) {
+        await this.notificationHelper.sendEventApprovalNotification(
+          event.organiserId,
+          event.name,
+          true,
+        );
+      }
 
       return {
         success: true,
@@ -246,7 +255,13 @@ export class EventService {
       if (!event) {
         throw new Error('Event not found or could not be updated');
       }
-
+      if (event.organiserId) {
+        await this.notificationHelper.sendEventApprovalNotification(
+          event.organiserId,
+          event.name,
+          false,
+        );
+      }
       return {
         success: true,
         message: 'The Event has been rejected',

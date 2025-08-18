@@ -26,6 +26,21 @@ export class NotificationHelper {
       recipientType: recipientTypeEnum.USER,
     });
   }
+  async sendEventApprovalNotification(
+    userId: string,
+    eventName: string,
+    isApproved: boolean,
+  ) {
+    await this.notificationService.createNotification({
+      title: isApproved ? 'Event Approved!' : 'Event Rejected!',
+      body: isApproved
+        ? `Great news! Your event "${eventName}" has been approved and is now visible to users.`
+        : `We’re sorry. Your event "${eventName}" has been rejected. Please review our guidelines or contact support for more details.`,
+      recipientId: userId,
+      sendPush: true,
+      recipientType: recipientTypeEnum.ORGANISER,
+    });
+  }
 
   async sendBookingCancel(userId: string, name: string, eventName: string) {
     await this.notificationService.createNotification({
