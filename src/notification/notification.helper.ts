@@ -16,6 +16,20 @@ export class NotificationHelper {
       recipientType: recipientTypeEnum.USER,
     });
   }
+  async sendEventBookedNotification(
+    organiserId: string,
+    eventName: string,
+    userName: string,
+  ) {
+    // Send notification to organiser
+    await this.notificationService.createNotification({
+      title: 'New Booking!',
+      body: `${userName} has booked a spot for your event "${eventName}".`,
+      recipientId: organiserId,
+      sendPush: true,
+      recipientType: recipientTypeEnum.ORGANISER,
+    });
+  }
 
   async sendEventReminder(userId: string, eventName: string) {
     await this.notificationService.createNotification({

@@ -1476,6 +1476,13 @@ export class BookingService {
         booking.userId,
         booking.event.name,
       );
+      if (isOrganiserEvent) {
+        await this.notificationHelper.sendEventBookedNotification(
+          booking.event.organiserId,
+          booking.event.name,
+          booking.user.name,
+        );
+      }
       const subject = 'Booking Confirmation';
       const message = `
       <p>Hello ${booking.user.name},</p>
