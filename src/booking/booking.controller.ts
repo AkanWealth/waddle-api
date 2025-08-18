@@ -97,15 +97,17 @@ export class BookingController {
 
   @ApiOperation({
     summary: 'consent to book an event as a loggedin parent',
-    description: 'Parents can consent to book an event',
+    description:
+      'Parents can consent to book an event for multiple participants',
   })
   @ApiCreatedResponse({ description: 'Created' })
-  @Post('consent')
+  @Post('consent/:bookingId') // bookingId now in params
   bookingConsent(
     @GetUser() user: { id: string },
+    @Param('bookingId') bookingId: string,
     @Body() dto: BookingConsentDto,
   ) {
-    if (user) return this.bookingService.bookingConsent(dto);
+    if (user) return this.bookingService.bookingConsent(bookingId, dto);
   }
 
   @ApiOperation({

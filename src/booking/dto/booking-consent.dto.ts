@@ -5,18 +5,12 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
-export class BookingConsentDto {
-  @ApiProperty({
-    description: 'Booking ID',
-    example: 'cm7539b180003u0qavzlq72p4',
-    required: true,
-  })
-  @IsString({ message: 'Booking ID must be a string' })
-  @IsNotEmpty({ message: 'Booking ID can not be empty' })
-  bookingId: string;
-
+export class ConsentItemDto {
   @ApiProperty({
     description: 'Name',
     example: 'Tony Martins',
@@ -51,4 +45,28 @@ export class BookingConsentDto {
   @IsBoolean({ message: 'Consent must be a boolean' })
   @IsNotEmpty()
   consent: boolean;
+}
+
+export class BookingConsentDto {
+  @ApiProperty({
+    description: 'Array of consent items',
+    type: [ConsentItemDto],
+    example: [
+      {
+        name: 'Tony Martins',
+        age: 10,
+        notes: 'Allergic to peanuts',
+        consent: true,
+      },
+      {
+        name: 'Sarah Johnson',
+        age: 8,
+        consent: true,
+      },
+    ],
+  })
+  @IsArray({ message: 'Consents must be an array' })
+  @ValidateNested({ each: true })
+  @Type(() => ConsentItemDto)
+  consents: ConsentItemDto[];
 }

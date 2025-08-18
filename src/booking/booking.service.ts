@@ -222,15 +222,25 @@ export class BookingService {
     }
   }
 
-  async bookingConsent(dto: BookingConsentDto) {
+  async bookingConsent(bookingId: string, dto: BookingConsentDto) {
     try {
-      const consent = await this.prisma.consent.create({
-        data: <any>{ ...dto },
-      });
+      const consents = await this.prisma.$transaction(
+        dto.consents.map((consentItem) =>
+          this.prisma.consent.create({
+            data: {
+              name: consentItem.name,
+              age: consentItem.age,
+              notes: consentItem.notes,
+              consent: consentItem.consent,
+              bookingId: bookingId,
+            },
+          }),
+        ),
+      );
 
       return {
-        message: 'Booking consent added',
-        consent,
+        message: 'Booking consents added',
+        consents,
       };
     } catch (error) {
       throw error;
