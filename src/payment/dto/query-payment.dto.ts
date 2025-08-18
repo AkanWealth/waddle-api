@@ -11,6 +11,20 @@ import { Type } from 'class-transformer';
 import { PaymentStatus } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
+// Define custom enums for the specific status filtering
+enum BookingStatusFilter {
+  SUCCESSFUL = 'SUCCESSFUL',
+  NO_BOOKING = 'NO_BOOKING',
+  CANCELLED = 'CANCELLED',
+}
+
+enum PaymentStatusFilter {
+  SUCCESSFUL = 'SUCCESSFUL',
+  PENDING = 'PENDING',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED',
+}
+
 export class QueryPaymentDto {
   @ApiPropertyOptional({
     description: 'Page number (for pagination)',
@@ -39,13 +53,32 @@ export class QueryPaymentDto {
   limit?: number = 10;
 
   @ApiPropertyOptional({
-    description: 'Filter by payment status',
+    description:
+      'Filter by payment status (legacy - use paymentStatus instead)',
     enum: PaymentStatus,
     example: PaymentStatus.SUCCESSFUL,
   })
   @IsOptional()
   @IsEnum(PaymentStatus)
   status?: PaymentStatus;
+
+  @ApiPropertyOptional({
+    description: 'Filter by payment status',
+    enum: PaymentStatusFilter,
+    example: PaymentStatusFilter.SUCCESSFUL,
+  })
+  @IsOptional()
+  @IsEnum(PaymentStatusFilter)
+  paymentStatus?: PaymentStatusFilter;
+
+  @ApiPropertyOptional({
+    description: 'Filter by booking status',
+    enum: BookingStatusFilter,
+    example: BookingStatusFilter.SUCCESSFUL,
+  })
+  @IsOptional()
+  @IsEnum(BookingStatusFilter)
+  bookingStatus?: BookingStatusFilter;
 
   @ApiPropertyOptional({
     description: 'Filter by User ID',

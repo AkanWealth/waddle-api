@@ -68,36 +68,132 @@ export class PaymentService {
     });
   }
 
+  // async getPayments(query: QueryPaymentDto) {
+  //   const {
+  //     page = 1,
+  //     limit = 10,
+  //     status,
+  //     userId,
+  //     eventId,
+  //     startDate,
+  //     endDate,
+  //   } = query;
+  //   const skip = (page - 1) * limit;
+  //   const where: any = {};
+  //   if (status) where.status = status;
+  //   if (userId) where.userId = userId;
+  //   if (eventId) where.eventId = eventId;
+  //   if (startDate || endDate) {
+  //     where.createdAt = {};
+  //     if (startDate) where.createdAt.gte = new Date(startDate);
+  //     if (endDate) where.createdAt.lte = new Date(endDate);
+  //   }
+  //   const [data, total] = await Promise.all([
+  //     this.prisma.payment.findMany({
+  //       where,
+  //       orderBy: { createdAt: 'desc' },
+  //       skip,
+  //       take: limit,
+  //       include: { user: true, event: true, booking: true },
+  //     }),
+  //     this.prisma.payment.count({ where }),
+  //   ]);
+  //   return {
+  //     data,
+  //     pagination: {
+  //       page,
+  //       limit,
+  //       total,
+  //       totalPages: Math.ceil(total / limit),
+  //       hasNext: page * limit < total,
+  //       hasPrev: page > 1,
+  //     },
+  //   };
+  // }
   async getPayments(query: QueryPaymentDto) {
     const {
       page = 1,
       limit = 10,
       status,
+      paymentStatus,
+      bookingStatus,
       userId,
       eventId,
       startDate,
       endDate,
     } = query;
+
     const skip = (page - 1) * limit;
     const where: any = {};
-    if (status) where.status = status;
+
+    // Handle payment status filtering (prioritize paymentStatus over status)
+    const finalPaymentStatus = paymentStatus || status;
+    if (finalPaymentStatus) {
+      where.status = finalPaymentStatus;
+    }
+
+    // Handle booking status filtering
+    if (bookingStatus) {
+      switch (bookingStatus) {
+        case 'SUCCESSFUL':
+          where.booking = {
+            status: 'Confirmed', // Maps to BookingStatus.Confirmed from your schema
+          };
+          break;
+        case 'CANCELLED':
+          where.booking = {
+            status: 'Cancelled', // Maps to BookingStatus.Cancelled from your schema
+          };
+          break;
+        case 'NO_BOOKING':
+          // This means payments without associated bookings or failed/pending/refunded bookings
+          where.OR = [
+            {
+              booking: {
+                status: 'Pending',
+              },
+            },
+            {
+              booking: {
+                status: 'Failed',
+              },
+            },
+            {
+              booking: {
+                status: 'Refunded',
+              },
+            },
+          ];
+          break;
+      }
+    }
+
+    // Handle other filters
     if (userId) where.userId = userId;
     if (eventId) where.eventId = eventId;
+
+    // Handle date range filtering
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) where.createdAt.gte = new Date(startDate);
       if (endDate) where.createdAt.lte = new Date(endDate);
     }
+
     const [data, total] = await Promise.all([
       this.prisma.payment.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        include: { user: true, event: true, booking: true },
+        include: {
+          user: true,
+          event: true,
+          booking: true,
+        },
       }),
       this.prisma.payment.count({ where }),
     ]);
+
     return {
       data,
       pagination: {
