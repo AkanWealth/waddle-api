@@ -694,7 +694,7 @@ export class OrganiserService {
   }
 
   async getOrganiserRecentActivities(organiserId: string, limit = 20) {
-    const recentActivities = this.prisma.recentActivity.findMany({
+    const recentActivities = await this.prisma.recentActivity.findMany({
       where: { organiserId },
       orderBy: { createdAt: 'desc' },
       take: limit,
