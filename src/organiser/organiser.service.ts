@@ -702,6 +702,8 @@ export class OrganiserService {
     return { success: true, data: recentActivities };
   }
 
+  // async fetchOrganizerAnalytics(){}
+
   // End Organiser
 
   // Start staff

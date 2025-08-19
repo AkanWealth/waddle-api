@@ -1,32 +1,31 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CommentCrowdSourcingDto {
   @ApiProperty({
-    description: 'Content',
-    type: String,
-    example: 'This is a comment',
-    required: true,
-  })
-  @IsNotEmpty()
-  @IsString()
-  content: string;
-
-  @ApiPropertyOptional({
-    description: 'Crowd Sourced Event ID',
-    type: String,
-    example: 'cr93e2h9h9rr92rh2rh',
+    description: 'Crowd Source ID',
+    example: 'hdiyir6ehef8y3883y',
+    required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Crowd Source ID must be a type of string' })
   crowdSourceId?: string;
 
-  @ApiPropertyOptional({
-    description: 'Parent Comment ID',
-    type: String,
-    example: 'cr93e2h9h9rr92rh2rh',
+  @ApiProperty({
+    description: 'Parent comment ID for replies',
+    example: 'hdiyir6ehef8y3883y',
+    required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsString({ message: 'Parent ID must be a type of string' })
   parentId?: string;
+
+  @ApiProperty({
+    description: 'Comment content',
+    example: 'This is a great place!',
+    required: true,
+  })
+  @IsString({ message: 'Content must be a type of string' })
+  @IsNotEmpty({ message: 'Content must not be empty' })
+  content: string;
 }

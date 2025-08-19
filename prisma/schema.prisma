@@ -323,18 +323,20 @@ model Recommendation {
 }
 
 model Comment {
-  id            String       @id @default(dbgenerated("generate_unique_id('comment'::text, 'CMT-'::text)"))
+  id            String        @id @default(dbgenerated("generate_unique_id('comment'::text, 'CMT-'::text)"))
   content       String
   userId        String
   crowdSourceId String?
   parentId      String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  crowdSource   CrowdSource? @relation(fields: [crowdSourceId], references: [id])
-  parent        Comment?     @relation("CommentReplies", fields: [parentId], references: [id])
-  replies       Comment[]    @relation("CommentReplies")
-  user          User         @relation(fields: [userId], references: [id])
-  like          Like[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  status        CommentStatus @default(PENDING)
+
+  crowdSource CrowdSource? @relation(fields: [crowdSourceId], references: [id])
+  parent      Comment?     @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     Comment[]    @relation("CommentReplies")
+  user        User         @relation(fields: [userId], references: [id])
+  like        Like[]
 
   @@index([crowdSourceId])
   @@map("comment")
@@ -545,4 +547,10 @@ enum CrowdSourceStatus {
 enum RecipientType {
   ORGANISER
   USER
+}
+
+enum CommentStatus {
+  PENDING
+  APPROPRIATE
+  INAPPROPRIATE
 }

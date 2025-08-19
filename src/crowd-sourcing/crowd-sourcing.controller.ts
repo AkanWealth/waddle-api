@@ -19,6 +19,7 @@ import {
   CommentCrowdSourcingDto,
   CreateCrowdSourcingDto,
   UpdateCrowdSourcingDto,
+  FlagCommentDto,
 } from './dto';
 import { GetUser } from '../auth/decorator';
 import { User } from '@prisma/client';
@@ -360,6 +361,50 @@ export class CrowdSourcingController {
     return { crowdSourceId, percentage };
   }
 
+  @Get(':id/percentage')
+  @ApiOperation({
+    summary: 'Get percentage statistics for a crowdsource (event or place)',
+    description:
+      'For events: percentage of people going (excluding PENDING). For places: percentage of people recommending (excluding PENDING).',
+  })
+  @ApiOkResponse({ description: 'Percentage calculated successfully' })
+  @ApiNotFoundResponse({ description: 'CrowdSource not found' })
+  async getCrowdSourcePercentage(@Param('id') crowdSourceId: string) {
+    return this.crowdSourcingService.getCrowdSourcePercentage(crowdSourceId);
+  }
+
+  @Get('event/:id/attendance-percentage')
+  @ApiOperation({
+    summary: 'Get attendance percentage for an event',
+    description:
+      'Returns the percentage of people going to the event (excluding PENDING responses)',
+  })
+  @ApiOkResponse({ description: 'Percentage calculated successfully' })
+  @ApiNotFoundResponse({ description: 'Event not found' })
+  async getEventAttendancePercentage(@Param('id') crowdSourceId: string) {
+    const percentage =
+      await this.crowdSourcingService.getEventAttendancePercentage(
+        crowdSourceId,
+      );
+    return { crowdSourceId, percentage };
+  }
+
+  @Get('place/:id/recommendation-percentage')
+  @ApiOperation({
+    summary: 'Get recommendation percentage for a place',
+    description:
+      'Returns the percentage of people recommending the place (excluding PENDING responses)',
+  })
+  @ApiOkResponse({ description: 'Percentage calculated successfully' })
+  @ApiNotFoundResponse({ description: 'Place not found' })
+  async getPlaceRecommendationPercentage(@Param('id') crowdSourceId: string) {
+    const percentage =
+      await this.crowdSourcingService.getPlaceRecommendationPercentage(
+        crowdSourceId,
+      );
+    return { crowdSourceId, percentage };
+  }
+
   //Working Fine And Used
   @ApiOperation({
     summary: 'Fetch paginated reviews for a crowdsourced place',
@@ -446,6 +491,109 @@ export class CrowdSourcingController {
   })
   getAttendanceStatsWithStatus(@Param('crowdSourceId') id: string) {
     return this.crowdSourcingService.getAttendanceStatsWithStatus(id);
+  }
+
+  @Get(':crowdSourceId/attendance/parents-going')
+  @ApiOperation({ summary: 'Get list of parents who are going to an event' })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'List of parents going retrieved successfully',
+  })
+  getParentsGoingToEvent(@Param('crowdSourceId') id: string) {
+    return this.crowdSourcingService.getParentsGoingToEvent(id);
+  }
+
+  @Post('place/:crowdSourceId/recommendation')
+  @ApiOperation({ summary: 'Toggle recommendation for a place' })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiBody({ type: ToggleRecommendationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Recommendation toggled successfully',
+  })
+  togglePlaceRecommendation(
+    @Param('crowdSourceId') id: string,
+    @Body() body: ToggleRecommendationDto,
+  ) {
+    return this.crowdSourcingService.togglePlaceRecommendation(
+      body.userId,
+      id,
+      body.wouldRecommend,
+    );
+  }
+
+  @Get('place/:crowdSourceId/recommendation/stats')
+  @ApiOperation({ summary: 'Get recommendation stats for a place' })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Recommendation stats retrieved successfully',
+  })
+  getPlaceRecommendationStats(@Param('crowdSourceId') id: string) {
+    return this.crowdSourcingService.getPlaceRecommendationStats(id);
+  }
+
+  @Post('place/:crowdSourceId/review/comment')
+  @ApiOperation({ summary: 'Add a comment to a place review' })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiBody({ type: CommentCrowdSourcingDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Comment added successfully',
+  })
+  addReviewComment(
+    @GetUser('id') userId: string,
+    @Param('crowdSourceId') id: string,
+    @Body() dto: CommentCrowdSourcingDto,
+  ) {
+    return this.crowdSourcingService.addReviewComment(userId, id, dto);
+  }
+
+  @Get('place/:crowdSourceId/review/comments')
+  @ApiOperation({
+    summary: 'Get all comments for a place review with like counts',
+  })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Comments retrieved successfully',
+  })
+  getReviewComments(@Param('crowdSourceId') id: string) {
+    return this.crowdSourcingService.getReviewComments(id);
+  }
+
+  @Post('comment/:commentId/like')
+  @ApiOperation({ summary: 'Toggle like on a comment' })
+  @ApiParam({ name: 'commentId', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Comment like toggled successfully',
+  })
+  toggleCommentLike(
+    @GetUser('id') userId: string,
+    @Param('commentId') commentId: string,
+  ) {
+    return this.crowdSourcingService.toggleCommentLike(userId, commentId);
+  }
+
+  @Post('comment/:commentId/flag')
+  @ApiOperation({
+    summary: 'Flag a comment as appropriate or inappropriate (Admin only)',
+  })
+  @ApiParam({ name: 'commentId', type: String })
+  @ApiBody({ type: FlagCommentDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Comment flagged successfully',
+  })
+  @Roles(Role.Admin)
+  flagComment(
+    @GetUser() user: User,
+    @Param('commentId') commentId: string,
+    @Body() dto: FlagCommentDto,
+  ) {
+    return this.crowdSourcingService.flagComment(commentId, dto.status);
   }
 
   // @ApiOperation({

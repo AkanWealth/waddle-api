@@ -1028,6 +1028,165 @@ export class CrowdSourcingService {
     return Math.round(percentage);
   }
 
+  // Method 13: Get event attendance percentage (excluding PENDING)
+  async getEventAttendancePercentage(crowdSourceId: string): Promise<number> {
+    // Verify crowdsource exists and is an event
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Event',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Event not found');
+    }
+
+    // Get total responses (excluding PENDING)
+    const totalResponses = await this.prisma.crowdSourceAttendance.count({
+      where: {
+        crowdSourceId,
+        going: {
+          in: ['YES', 'NO'],
+        },
+      },
+    });
+
+    if (totalResponses === 0) return 0;
+
+    // Get positive responses (YES)
+    const positiveResponses = await this.prisma.crowdSourceAttendance.count({
+      where: {
+        crowdSourceId,
+        going: 'YES',
+      },
+    });
+
+    const percentage = (positiveResponses / totalResponses) * 100;
+
+    return Math.round(percentage);
+  }
+
+  // Method 14: Get place recommendation percentage (excluding PENDING)
+  async getPlaceRecommendationPercentage(
+    crowdSourceId: string,
+  ): Promise<number> {
+    // Verify crowdsource exists and is a place
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Place',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Place not found');
+    }
+
+    // Get total responses (excluding PENDING - which would be null would_recommend)
+    const totalResponses = await this.prisma.crowdSourceReview.count({
+      where: {
+        crowdSourceId,
+        would_recommend: {
+          not: null,
+        },
+      },
+    });
+
+    if (totalResponses === 0) return 0;
+
+    // Get positive responses (would_recommend: true)
+    const positiveResponses = await this.prisma.crowdSourceReview.count({
+      where: {
+        crowdSourceId,
+        would_recommend: true,
+      },
+    });
+
+    const percentage = (positiveResponses / totalResponses) * 100;
+
+    return Math.round(percentage);
+  }
+
+  // Method 15: Get comprehensive percentage for both events and places
+  async getCrowdSourcePercentage(crowdSourceId: string) {
+    // Verify crowdsource exists
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    let type: string;
+    let totalResponses: number;
+    let positiveResponses: number;
+
+    if (crowdSource.tag === 'Event') {
+      // For events: calculate percentage of people going (excluding PENDING)
+      totalResponses = await this.prisma.crowdSourceAttendance.count({
+        where: {
+          crowdSourceId,
+          going: {
+            in: ['YES', 'NO'],
+          },
+        },
+      });
+
+      positiveResponses = await this.prisma.crowdSourceAttendance.count({
+        where: {
+          crowdSourceId,
+          going: 'YES',
+        },
+      });
+
+      type = 'attendance';
+    } else {
+      // For places: calculate percentage of people recommending (excluding PENDING)
+      totalResponses = await this.prisma.crowdSourceReview.count({
+        where: {
+          crowdSourceId,
+          would_recommend: {
+            not: null,
+          },
+        },
+      });
+
+      positiveResponses = await this.prisma.crowdSourceReview.count({
+        where: {
+          crowdSourceId,
+          would_recommend: true,
+        },
+      });
+
+      type = 'recommendation';
+    }
+
+    const percentage =
+      totalResponses > 0
+        ? Math.round((positiveResponses / totalResponses) * 100)
+        : 0;
+
+    return {
+      success: true,
+      data: {
+        crowdSourceId,
+        type,
+        percentage,
+        totalResponses,
+        positiveResponses,
+        crowdSourceName: crowdSource.name,
+        crowdSourceTag: crowdSource.tag,
+      },
+    };
+  }
+
   // crowdsource-review.service.ts
 
   // async getPaginatedPlaceReviews(
@@ -1421,6 +1580,450 @@ export class CrowdSourcingService {
         percentageGoing: total > 0 ? Math.round((yes / total) * 100) : 0,
         percentageNotGoing: total > 0 ? Math.round((no / total) * 100) : 0,
         percentagePending: total > 0 ? Math.round((pending / total) * 100) : 0,
+      },
+    };
+  }
+
+  // Method 6: Get parents who are going to an event with profile pictures
+  async getParentsGoingToEvent(crowdSourceId: string) {
+    // Verify crowdsource exists and is an event
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Event',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const parentsGoing = await this.prisma.crowdSourceAttendance.findMany({
+      where: {
+        crowdSourceId,
+        going: 'YES',
+        user: {
+          role: 'GUARDIAN',
+          isDeleted: false,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Parents going to this event retrieved successfully',
+      data: {
+        totalGoing: parentsGoing.length,
+        parents: parentsGoing.map((attendance) => ({
+          attendanceId: attendance.id,
+          user: {
+            ...attendance.user,
+            profile_picture: attendance.user.profile_picture
+              ? `${process.env.S3_PUBLIC_URL}/users/${attendance.user.profile_picture}`
+              : null,
+          },
+          goingStatus: attendance.going,
+          respondedAt: attendance.createdAt,
+        })),
+      },
+    };
+  }
+
+  // Method 7: Toggle place recommendation
+  async togglePlaceRecommendation(
+    userId: string,
+    crowdSourceId: string,
+    wouldRecommend: boolean,
+  ) {
+    // Verify crowdsource exists and is a place
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Place',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Place not found');
+    }
+
+    // Check if user already has a review for this place
+    const existingReview = await this.prisma.crowdSourceReview.findUnique({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+    });
+
+    let review;
+
+    if (existingReview) {
+      // Update existing review
+      review = await this.prisma.crowdSourceReview.update({
+        where: {
+          userId_crowdSourceId: {
+            userId,
+            crowdSourceId,
+          },
+        },
+        data: {
+          would_recommend: wouldRecommend,
+          updatedAt: new Date(),
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profile_picture: true,
+            },
+          },
+        },
+      });
+    } else {
+      // Create new review with recommendation only
+      review = await this.prisma.crowdSourceReview.create({
+        data: {
+          userId,
+          crowdSourceId,
+          rating: null, // No rating required for recommendation
+          comment: null, // No comment required for recommendation
+          would_recommend: wouldRecommend,
+          verified: false,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profile_picture: true,
+            },
+          },
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: `Place ${wouldRecommend ? 'recommended' : 'recommendation removed'} successfully`,
+      data: {
+        reviewId: review.id,
+        wouldRecommend: review.would_recommend,
+        user: review.user,
+      },
+    };
+  }
+
+  // Method 8: Get place recommendation stats
+  async getPlaceRecommendationStats(crowdSourceId: string) {
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Place',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Place not found');
+    }
+
+    const recommendationStats = await this.prisma.crowdSourceReview.groupBy({
+      by: ['would_recommend'],
+      where: {
+        crowdSourceId,
+        user: {
+          isDeleted: false,
+        },
+      },
+      _count: {
+        would_recommend: true,
+      },
+    });
+
+    const recommended =
+      recommendationStats.find((stat) => stat.would_recommend === true)?._count
+        ?.would_recommend || 0;
+    const notRecommended =
+      recommendationStats.find((stat) => stat.would_recommend === false)?._count
+        ?.would_recommend || 0;
+    const total = recommended + notRecommended;
+
+    return {
+      success: true,
+      data: {
+        recommended,
+        notRecommended,
+        total,
+        percentageRecommended:
+          total > 0 ? Math.round((recommended / total) * 100) : 0,
+        percentageNotRecommended:
+          total > 0 ? Math.round((notRecommended / total) * 100) : 0,
+      },
+    };
+  }
+
+  // Method 9: Add comment to place review
+  async addReviewComment(
+    userId: string,
+    crowdSourceId: string,
+    dto: CommentCrowdSourcingDto,
+  ) {
+    // Verify crowdsource exists and is a place
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Place',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Place not found');
+    }
+
+    const comment = await this.prisma.comment.create({
+      data: {
+        content: dto.content,
+        userId,
+        crowdSourceId,
+        parentId: dto.parentId || null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Comment added successfully',
+      data: {
+        ...comment,
+        user: {
+          ...comment.user,
+          profile_picture: comment.user.profile_picture
+            ? `${process.env.S3_PUBLIC_URL}/users/${comment.user.profile_picture}`
+            : null,
+        },
+      },
+    };
+  }
+
+  // Method 10: Get review comments with like counts
+  async getReviewComments(crowdSourceId: string) {
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Place',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Place not found');
+    }
+
+    const comments = await this.prisma.comment.findMany({
+      where: {
+        crowdSourceId,
+        parentId: null, // Only top-level comments
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile_picture: true,
+          },
+        },
+        replies: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                profile_picture: true,
+              },
+            },
+            _count: {
+              select: {
+                like: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            like: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const formattedComments = comments.map((comment) => ({
+      ...comment,
+      user: {
+        ...comment.user,
+        profile_picture: comment.user.profile_picture
+          ? `${process.env.S3_PUBLIC_URL}/users/${comment.user.profile_picture}`
+          : null,
+      },
+      replies: comment.replies.map((reply) => ({
+        ...reply,
+        user: {
+          ...reply.user,
+          profile_picture: reply.user.profile_picture
+            ? `${process.env.S3_PUBLIC_URL}/users/${reply.user.profile_picture}`
+            : null,
+        },
+      })),
+    }));
+
+    return {
+      success: true,
+      data: {
+        totalComments: comments.length,
+        comments: formattedComments,
+      },
+    };
+  }
+
+  // Method 11: Toggle comment like
+  async toggleCommentLike(userId: string, commentId: string) {
+    // Verify comment exists
+    const comment = await this.prisma.comment.findUnique({
+      where: {
+        id: commentId,
+      },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    // Check if user already liked this comment
+    const existingLike = await this.prisma.like.findUnique({
+      where: {
+        userId_commentId: {
+          userId,
+          commentId,
+        },
+      },
+    });
+
+    if (existingLike) {
+      // Unlike the comment
+      await this.prisma.like.delete({
+        where: {
+          userId_commentId: {
+            userId,
+            commentId,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Comment unliked successfully',
+        data: { liked: false },
+      };
+    } else {
+      // Like the comment
+      await this.prisma.like.create({
+        data: {
+          userId,
+          commentId,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Comment liked successfully',
+        data: { liked: true },
+      };
+    }
+  }
+
+  // Method 12: Flag comment as appropriate or inappropriate (Admin only)
+  // TODO: Uncomment after running migration to add status field to comment table
+
+  async flagComment(
+    commentId: string,
+    status: 'APPROPRIATE' | 'INAPPROPRIATE',
+  ) {
+    // Verify comment exists
+    const comment = await this.prisma.comment.findUnique({
+      where: {
+        id: commentId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    // Update comment status
+    const updatedComment = await this.prisma.comment.update({
+      where: {
+        id: commentId,
+      },
+      data: {
+        status,
+        updatedAt: new Date(),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: `Comment flagged as ${status.toLowerCase()} successfully`,
+      data: {
+        commentId: updatedComment.id,
+        // status: updatedComment.status,
+        // user: updatedComment.user,
+        content: updatedComment.content,
+        flaggedAt: updatedComment.updatedAt,
       },
     };
   }
