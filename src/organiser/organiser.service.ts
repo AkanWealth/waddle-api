@@ -19,6 +19,7 @@ import { OrganiserStatus } from 'src/utils/constants/organiserTypes';
 import { EventStatus } from 'src/utils/constants/eventTypes';
 import { NotificationHelper } from 'src/notification/notification.helper';
 import { Mailer } from 'src/helper';
+import { RecentActivityType } from '@prisma/client';
 
 @Injectable()
 export class OrganiserService {
@@ -678,6 +679,28 @@ export class OrganiserService {
       throw error;
     }
   }
+
+  async createOrganiserRecentActivity(data: {
+    organiserId: string;
+    type: RecentActivityType;
+    amount: string;
+    title: string;
+  }) {
+    try {
+      return await this.prisma.recentActivity.create({ data });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getOrganiserRecentActivities(organiserId: string, limit = 20) {
+    return this.prisma.recentActivity.findMany({
+      where: { organiserId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
   // End Organiser
 
   // Start staff

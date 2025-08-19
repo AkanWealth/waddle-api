@@ -25,6 +25,9 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { User } from '@prisma/client';
@@ -103,6 +106,31 @@ export class OrganiserController {
   @Get('is-stripe-connected')
   async isStripeConnected(@GetUser('id') userId: string) {
     return this.organiserService.isStripeConnected(userId);
+  }
+
+  @ApiOperation({ summary: 'Get organiser recent activities' })
+  @ApiParam({
+    name: 'organiserId',
+    description: 'ID of the organiser',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Number of activities to fetch',
+    required: false,
+    type: Number,
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of recent activities',
+    type: Object, // could be replaced with a DTO class
+    isArray: true,
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('recent-activity')
+  async getOrganiserRecentActivities(@GetUser('id') userId: string) {
+    return this.organiserService.getOrganiserRecentActivities(userId);
   }
 
   @ApiOperation({

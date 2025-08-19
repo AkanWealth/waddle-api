@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationHelper } from 'src/notification/notification.helper';
 import { Mailer } from 'src/helper';
+import { OrganiserRecentActivity } from './organiser-recent-activity-helper';
 
 @Module({
   imports: [
@@ -18,8 +19,10 @@ import { Mailer } from 'src/helper';
     OrganiserService,
     NotificationService,
     NotificationHelper,
+    OrganiserRecentActivity,
     Mailer,
   ],
+  exports: [OrganiserService, OrganiserRecentActivity],
 })
 export class OrganiserModule implements NestModule {
   configure() {}

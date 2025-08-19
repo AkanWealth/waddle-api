@@ -49,20 +49,20 @@ model AdminPermission {
 }
 
 model Organiser {
-  id                            String         @id @default(dbgenerated("generate_unique_id('organiser'::text, 'ORG-'::text)"))
+  id                            String           @id @default(dbgenerated("generate_unique_id('organiser'::text, 'ORG-'::text)"))
   name                          String?
-  email                         String         @unique
+  email                         String           @unique
   password                      String
   phone_number                  String?
   business_logo                 String?
   address                       String?
   business_name                 String?
   registration_number           String?
-  email_verify                  Boolean        @default(false)
-  isLocked                      Boolean        @default(false)
-  isDeleted                     Boolean        @default(false)
-  isVerified                    Boolean        @default(false)
-  failedLoginAttempts           Int            @default(0)
+  email_verify                  Boolean          @default(false)
+  isLocked                      Boolean          @default(false)
+  isDeleted                     Boolean          @default(false)
+  isVerified                    Boolean          @default(false)
+  failedLoginAttempts           Int              @default(0)
   website_url                   String?
   business_url                  String?
   facebook_url                  String?
@@ -70,24 +70,25 @@ model Organiser {
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime       @default(now())
-  updatedAt                     DateTime       @updatedAt
+  createdAt                     DateTime         @default(now())
+  updatedAt                     DateTime         @updatedAt
   fcmToken                      String?
-  role                          Role           @default(ORGANISER)
-  fcmIsOn                       Boolean        @default(false)
-  isApproved                    Boolean        @default(false)
-  lastLoginAt                   DateTime?      @db.Timestamp(6)
+  role                          Role             @default(ORGANISER)
+  fcmIsOn                       Boolean          @default(false)
+  isApproved                    Boolean          @default(false)
+  lastLoginAt                   DateTime?        @db.Timestamp(6)
   stripe_account_id             String?
-  is_stripe_connected           Boolean        @default(false)
+  is_stripe_connected           Boolean          @default(false)
   attachment                    String?
   description                   String?
-  isProfileCompleted            Boolean        @default(false)
-  status                        String         @default("PENDING")
+  isProfileCompleted            Boolean          @default(false)
+  status                        String           @default("PENDING")
   suspensionReason              String?
   rejectionReason               String?
   disputes                      Dispute[]
   events                        Event[]
-  notifications                 Notification[] @relation("OrganiserNotifications")
+  notifications                 Notification[]   @relation("OrganiserNotifications")
+  RecentActivity                RecentActivity[]
 
   @@index([email])
   @@map("organiser")
@@ -464,6 +465,24 @@ model Payment {
   user          User          @relation(fields: [userId], references: [id])
 
   @@map("payment")
+}
+
+model RecentActivity {
+  id          String             @id @default(cuid())
+  organiserId String
+  type        RecentActivityType
+  title       String
+  amount      Decimal?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  organiser Organiser? @relation(fields: [organiserId], references: [id])
+}
+
+enum RecentActivityType {
+  ORDER
+  PAYMENT
+  CANCELLED
 }
 
 enum Role {

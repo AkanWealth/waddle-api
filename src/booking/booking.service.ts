@@ -18,6 +18,7 @@ import { NotificationHelper } from 'src/notification/notification.helper';
 import { PaymentService } from '../payment/payment.service';
 import { PaymentStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { OrganiserRecentActivity } from 'src/organiser/organiser-recent-activity-helper';
 
 @Injectable()
 export class BookingService {
@@ -29,6 +30,7 @@ export class BookingService {
     private notification: NotificationService,
     private mailer: Mailer,
     private notificationHelper: NotificationHelper,
+    private organiserRecentActivity: OrganiserRecentActivity,
     private paymentService: PaymentService, // Inject PaymentService
   ) {
     const stripeSecretKey = this.config.getOrThrow('STRIPE_SECRET_KEY');
@@ -863,7 +865,12 @@ export class BookingService {
           include: { event: true },
           skip,
           take: Number(limit),
-          orderBy: { createdAt: 'desc' },
+          orderBy: {
+            createdAt: 'desc',
+            // event: {
+            //   date: 'desc',
+            // },
+          },
         }),
         this.prisma.booking.count({ where: { userId } }),
       ]);
@@ -1487,6 +1494,18 @@ export class BookingService {
         booking.event.name,
       );
       if (isOrganiserEvent) {
+        await this.organiserRecentActivity.sendRecentOrderActivity(
+          booking.event.organiserId,
+          payment.amount,
+          booking.user.name,
+          booking.ticket_quantity,
+          booking.event.name,
+        );
+        await this.organiserRecentActivity.sendRecentPaymentReceivedActivity(
+          booking.event.organiserId,
+          payment.amount,
+          booking.event.name,
+        );
         await this.notificationHelper.sendEventBookedNotification(
           booking.event.organiserId,
           booking.event.name,
