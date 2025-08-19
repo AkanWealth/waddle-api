@@ -25,7 +25,6 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiResponse,
   ApiUnauthorizedResponse,
@@ -109,11 +108,6 @@ export class OrganiserController {
   }
 
   @ApiOperation({ summary: 'Get organiser recent activities' })
-  @ApiParam({
-    name: 'organiserId',
-    description: 'ID of the organiser',
-    type: String,
-  })
   @ApiQuery({
     name: 'limit',
     description: 'Number of activities to fetch',
