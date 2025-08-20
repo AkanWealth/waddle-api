@@ -5,11 +5,12 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationModule } from 'src/notification/notification.module';
 import { NotificationService } from 'src/notification/notification.service';
 import { NotificationHelper } from 'src/notification/notification.helper';
+import { Mailer } from 'src/helper';
 
 @Module({
   imports: [PrismaModule, NotificationModule],
   controllers: [DisputeController],
-  providers: [DisputeService, NotificationService, NotificationHelper],
+  providers: [DisputeService, NotificationService, NotificationHelper, Mailer],
   exports: [DisputeService],
 })
 export class DisputeModule {}

@@ -1,13 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as firebase from 'firebase-admin';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateAdminNotificationDto, CreateNotificationDto } from './dto';
+import {
+  CreateAdminNotificationDto,
+  CreateNotificationDto,
+  SendEmailToWaddleTeamViaContactUsFormDto,
+} from './dto';
 import { recipientTypeEnum } from './dto/recepientTypes';
 import { RecipientType } from '@prisma/client';
+import { Mailer } from 'src/helper';
 
 @Injectable()
 export class NotificationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailer: Mailer,
+  ) {}
 
   async createNotification(dto: CreateNotificationDto) {
     try {
@@ -644,6 +652,28 @@ export class NotificationService {
           },
         },
       });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async sendEmailToWaddleTeamViaContactUsForm(
+    dto: SendEmailToWaddleTeamViaContactUsFormDto,
+  ) {
+    try {
+      const { email, name, message } = dto;
+      const subject = 'New Contact Form Submission';
+
+      const emailBody = `<p>Hello Team,</p>
+<p>You’ve received a new message from the Waddle contact form:</p>
+<p><b>Name</b>: ${name}</p>
+<p><b>Email</b>: ${email}</p>
+<p><b>Message</b>: ${message}</p>
+
+Best regards,
+`;
+      await this.mailer.sendMail('iamdavidhype@gmail.com', subject, emailBody);
+      return { success: true, message: 'Email sent successfully' };
     } catch (error) {
       throw error;
     }

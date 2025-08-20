@@ -219,6 +219,7 @@ import {
   CreateAdminNotificationDto,
   CreateNotificationDto,
   SendPushDto,
+  SendEmailToWaddleTeamViaContactUsFormDto,
 } from './dto';
 import { recipientTypeEnum } from './dto/recepientTypes';
 
@@ -457,5 +458,13 @@ export class NotificationController {
       adminId,
       notificationId,
     );
+  }
+
+  @ApiOperation({ summary: 'Send Email To Waddle Team Via Contact Us Form' })
+  @Post('admin/send-email-to-waddle-team-via-contact-us-form')
+  async sendEmailToWaddleTeamViaContactUsForm(
+    @Body() dto: SendEmailToWaddleTeamViaContactUsFormDto,
+  ) {
+    return this.notificationService.sendEmailToWaddleTeamViaContactUsForm(dto);
   }
 }

@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from '../auth/strategy';
 import { NotificationService } from 'src/notification/notification.service';
 import { NotificationModule } from 'src/notification/notification.module';
+import { Mailer } from 'src/helper';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { NotificationModule } from 'src/notification/notification.module';
     NotificationModule,
   ],
   controllers: [EventController],
-  providers: [EventService, JwtStrategy, NotificationService],
+  providers: [EventService, JwtStrategy, NotificationService, Mailer],
 })
 export class EventModule implements NestModule {
   configure() {}
