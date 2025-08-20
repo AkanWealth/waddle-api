@@ -271,9 +271,8 @@ export class CrowdSourcingController {
 
   // Start Commenting and Replying
   @ApiOperation({
-    summary: 'create a new comment for crowd sourcing event/place',
-    description:
-      'Create a new comment for crowd sourcing event/place by parent',
+    summary: 'create a new comment for crowd sourcing event',
+    description: 'Create a new comment for crowd sourcing event by parent',
   })
   @ApiCreatedResponse({ description: 'Created' })
   @ApiBadRequestResponse({ description: 'Bad request' })
@@ -439,6 +438,26 @@ export class CrowdSourcingController {
   ) {
     const { page, limit } = query;
     return this.crowdSourcingService.getPaginatedPlaceReviews(
+      crowdSourceId,
+      page,
+      limit,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Fetch paginated reviews for a crowdsourced events',
+    description:
+      'Returns reviews (including comment, recommendation, user info) in paginated form',
+  })
+  @ApiOkResponse({ description: 'Reviews fetched successfully' })
+  @ApiNotFoundResponse({ description: 'CrowdSource not found' })
+  @Get('events-review/:id/paginated')
+  async getPaginatedEventCommentss(
+    @Param('id') crowdSourceId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    const { page, limit } = query;
+    return this.crowdSourcingService.getPaginatedEventComments(
       crowdSourceId,
       page,
       limit,

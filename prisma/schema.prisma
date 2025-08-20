@@ -219,17 +219,18 @@ model CrowdSourceAttendance {
 }
 
 model CrowdSourceReview {
-  id              String      @id @default(dbgenerated("generate_unique_id('crowdsource_review'::text, 'CRV-'::text)"))
+  id              String        @id @default(dbgenerated("generate_unique_id('crowdsource_review'::text, 'CRV-'::text)"))
   userId          String
   crowdSourceId   String
   rating          Int?
+  status          CommentStatus @default(PENDING)
   comment         String?
-  would_recommend Boolean     @default(false)
-  verified        Boolean     @default(false)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  crowdSource     CrowdSource @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  would_recommend Boolean       @default(false)
+  verified        Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  crowdSource     CrowdSource   @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   likes           Like[]
 
   @@unique([userId, crowdSourceId])

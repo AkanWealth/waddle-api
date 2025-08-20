@@ -19,7 +19,7 @@ import {
 } from './dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 // import { CreateReviewDto } from './dto/create-review.dto';
-import { CrowdSourceStatus } from '@prisma/client';
+import { CommentStatus, CrowdSourceStatus } from '@prisma/client';
 import { CreateCrowdSourceReviewDto } from './dto/create-crowdsource-review.dto';
 
 @Injectable()
@@ -503,10 +503,12 @@ export class CrowdSourcingService {
         throw new BadRequestException('Crowd Sourced ID is required');
 
       const event = await this.prisma.crowdSource.findUnique({
-        where: { id: dto.crowdSourceId },
+        where: { id: dto.crowdSourceId, tag: 'Event' },
       });
       if (!event) {
-        throw new NotFoundException('CrowdSource not found');
+        throw new NotFoundException(
+          'CrowdSource not found or is probably a place.',
+        );
       }
 
       const comment = await this.prisma.comment.create({
@@ -943,6 +945,7 @@ export class CrowdSourcingService {
     }
   }
 
+  //This one has the likes stuff that i need.
   async getReviewLikes(reviewId: string) {
     // Verify review exists
     const review = await this.prisma.crowdSourceReview.findUnique({
@@ -1312,10 +1315,20 @@ export class CrowdSourcingService {
 
     const [total, reviews] = await this.prisma.$transaction([
       this.prisma.crowdSourceReview.count({
-        where: { crowdSourceId },
+        where: {
+          crowdSourceId,
+          status: {
+            in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+          },
+        },
       }),
       this.prisma.crowdSourceReview.findMany({
-        where: { crowdSourceId },
+        where: {
+          crowdSourceId,
+          status: {
+            in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+          },
+        },
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -1326,26 +1339,119 @@ export class CrowdSourcingService {
               profile_picture: true,
             },
           },
+          _count: {
+            select: {
+              likes: true,
+            },
+          },
         },
       }),
     ]);
 
     const formattedReviews = reviews.map((review) => ({
       ...review,
-      user: {
-        ...review.user,
-        profile_picture: review.user?.profile_picture
-          ? `${process.env.S3_PUBLIC_URL}/users/${review.user.profile_picture}`
-          : null,
-      },
+      user: review.user,
+      likeCount: review._count.likes,
+      // Remove the _count object from the response as we've extracted likeCount
+      _count: undefined,
+      // If you have a status field on reviews, you can check for flagging
+      // isFlagged: review.status === 'INAPPROPRIATE',
     }));
 
     return {
+      success: true, // Fixed typo from "sucess" to "success"
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
       reviews: formattedReviews,
+    };
+  }
+
+  async getPaginatedEventComments(
+    crowdSourceId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [total, comments] = await this.prisma.$transaction([
+      this.prisma.comment.count({
+        where: {
+          crowdSourceId,
+          status: {
+            in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+          },
+
+          parentId: null, // ✅ only fetch top-level comments, not replies
+        },
+      }),
+      this.prisma.comment.findMany({
+        where: {
+          crowdSourceId,
+          status: {
+            in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+          },
+          parentId: null, // ✅ only top-level comments
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              name: true,
+              profile_picture: true,
+            },
+          },
+          _count: {
+            select: {
+              like: true,
+              replies: true, // ✅ count replies as well
+            },
+          },
+          replies: {
+            take: 2, // ✅ optionally fetch first 2 replies (you can paginate further if needed)
+            orderBy: { createdAt: 'asc' },
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  profile_picture: true,
+                },
+              },
+              _count: {
+                select: {
+                  like: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    const formattedComments = comments.map((comment) => ({
+      ...comment,
+      user: comment.user,
+      likeCount: comment._count.like,
+      replyCount: comment._count.replies,
+      replies: comment.replies.map((reply) => ({
+        ...reply,
+        user: reply.user,
+        likeCount: reply._count.like,
+        _count: undefined,
+      })),
+      _count: undefined, // cleanup
+    }));
+
+    return {
+      success: true,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      comments: formattedComments,
     };
   }
 
