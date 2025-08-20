@@ -491,11 +491,13 @@ export class CrowdSourcingController {
     description: 'Attendance status set successfully',
   })
   setAttendanceWithStatus(
+    @GetUser() user: User,
     @Param('crowdSourceId') id: string,
     @Body() body: AttendanceStatusDto,
   ) {
+    console.log(body);
     return this.crowdSourcingService.setAttendanceWithStatus(
-      body.userId,
+      user.id,
       id,
       body.going,
     );

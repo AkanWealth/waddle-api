@@ -1230,7 +1230,7 @@ export class CrowdSourcingService {
         data: {
           userId,
           crowdSourceId,
-          going: attendance.going,
+          going: 'PENDING',
           message: 'No attendance response recorded yet',
           event: {
             id: crowdSource.id,
@@ -1239,7 +1239,6 @@ export class CrowdSourcingService {
             time: crowdSource.time,
             address: crowdSource.address,
           },
-          respondedAt: null,
         },
       };
     }
@@ -1558,8 +1557,9 @@ export class CrowdSourcingService {
   async setAttendanceWithStatus(
     userId: string,
     crowdSourceId: string,
-    going: 'YES' | 'NO' | 'PENDING',
+    going: string,
   ) {
+    console.log(going, 'This is the going stuff');
     // Verify crowdsource exists
     const crowdSource = await this.prisma.crowdSource.findFirst({
       where: {
@@ -1703,12 +1703,7 @@ export class CrowdSourcingService {
         totalGoing: parentsGoing.length,
         parents: parentsGoing.map((attendance) => ({
           attendanceId: attendance.id,
-          user: {
-            ...attendance.user,
-            profile_picture: attendance.user.profile_picture
-              ? `${process.env.S3_PUBLIC_URL}/users/${attendance.user.profile_picture}`
-              : null,
-          },
+          user: attendance.user,
           goingStatus: attendance.going,
           respondedAt: attendance.createdAt,
         })),
