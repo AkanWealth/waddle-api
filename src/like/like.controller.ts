@@ -71,6 +71,35 @@ export class LikeController {
   }
 
   @ApiOperation({
+    summary: 'like a review under a recommended place',
+    description: 'Parents can like a review under a recommended place',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('comment')
+  likeACrowdsourcePlaceComment(
+    @GetUser() user: User,
+    @Body() dto: CreateCommentLikeDto,
+  ) {
+    return this.likeService.likeACrowdsourcePlaceComment(user.id, dto);
+  }
+
+  @ApiOperation({
+    summary: 'like a review under a recommended place',
+    description: 'Parents can like a review under a recommended place',
+  })
+  @ApiCreatedResponse({ description: 'Created' })
+  @Post('comment')
+  unLikeACrowdsourcePlaceComment(
+    @GetUser() user: User,
+    @Body() dto: CreateCommentLikeDto,
+  ) {
+    return this.likeService.unLikeACrowdsourcePlaceComment(
+      user.id,
+      dto.commentId,
+    );
+  }
+
+  @ApiOperation({
     summary: 'like a review',
     description: 'Parents can like a review',
   })

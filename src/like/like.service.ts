@@ -44,6 +44,41 @@ export class LikeService {
     }
   }
 
+  async likeACrowdsourcePlaceComment(
+    userId: string,
+    dto: CreateCommentLikeDto,
+  ) {
+    try {
+      const like = await this.prisma.like.create({
+        data: { crowdSourceReviewId: dto.commentId, userId },
+      });
+      return { success: true, message: 'Crowdource place review liked', like };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async unLikeACrowdsourcePlaceComment(userId: string, commentId: string) {
+    const like = await this.prisma.like.findUnique({
+      where: {
+        userId_crowdSourceReviewId: {
+          userId,
+          crowdSourceReviewId: commentId,
+        },
+      },
+    });
+
+    if (!like) {
+      throw new NotFoundException('Like not found');
+    }
+
+    await this.prisma.like.delete({
+      where: { id: like.id },
+    });
+
+    return { success: true, message: 'Deleted successfully' };
+  }
+
   // like the review
   async likeReview(userId: string, dto: CreateReviewLikeDto) {
     try {
