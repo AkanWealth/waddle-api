@@ -1344,6 +1344,11 @@ export class CrowdSourcingService {
               likes: true,
             },
           },
+          likes: {
+            select: {
+              userId: true,
+            },
+          },
         },
       }),
     ]);
@@ -1352,6 +1357,7 @@ export class CrowdSourcingService {
       ...review,
       user: review.user,
       likeCount: review._count.likes,
+      likes: review.likes,
       // Remove the _count object from the response as we've extracted likeCount
       _count: undefined,
       // If you have a status field on reviews, you can check for flagging
@@ -1382,8 +1388,7 @@ export class CrowdSourcingService {
           status: {
             in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
           },
-
-          parentId: null, // ✅ only fetch top-level comments, not replies
+          parentId: null, // ✅ only fetch top-level comments
         },
       }),
       this.prisma.comment.findMany({
@@ -1404,20 +1409,30 @@ export class CrowdSourcingService {
               profile_picture: true,
             },
           },
+          like: {
+            select: {
+              userId: true, // ✅ fetch the likers
+            },
+          },
           _count: {
             select: {
               like: true,
-              replies: true, // ✅ count replies as well
+              replies: true, // ✅ count replies too
             },
           },
           replies: {
-            take: 2, // ✅ optionally fetch first 2 replies (you can paginate further if needed)
+            take: 2, // ✅ first 2 replies
             orderBy: { createdAt: 'asc' },
             include: {
               user: {
                 select: {
                   name: true,
                   profile_picture: true,
+                },
+              },
+              like: {
+                select: {
+                  userId: true, // ✅ fetch reply likers
                 },
               },
               _count: {
@@ -1440,6 +1455,7 @@ export class CrowdSourcingService {
         ...reply,
         user: reply.user,
         likeCount: reply._count.like,
+
         _count: undefined,
       })),
       _count: undefined, // cleanup
