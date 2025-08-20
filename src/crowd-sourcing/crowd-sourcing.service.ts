@@ -1092,9 +1092,6 @@ export class CrowdSourcingService {
     const totalResponses = await this.prisma.crowdSourceReview.count({
       where: {
         crowdSourceId,
-        would_recommend: {
-          not: null,
-        },
       },
     });
 
@@ -1374,6 +1371,68 @@ export class CrowdSourcingService {
     };
   }
 
+  async getPaginatedReviewsAsAdmin(
+    crowdSourceId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [total, reviews] = await this.prisma.$transaction([
+      this.prisma.crowdSourceReview.count({
+        where: {
+          crowdSourceId,
+        },
+      }),
+      this.prisma.crowdSourceReview.findMany({
+        where: {
+          crowdSourceId,
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              name: true,
+              profile_picture: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+            },
+          },
+          likes: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const formattedReviews = reviews.map((review) => ({
+      ...review,
+      user: review.user,
+      likeCount: review._count.likes,
+      likes: review.likes,
+      // Remove the _count object from the response as we've extracted likeCount
+      _count: undefined,
+      // If you have a status field on reviews, you can check for flagging
+      // isFlagged: review.status === 'INAPPROPRIATE',
+    }));
+
+    return {
+      success: true, // Fixed typo from "sucess" to "success"
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      reviews: formattedReviews,
+    };
+  }
+
   async getPaginatedEventComments(
     crowdSourceId: string,
     page: number = 1,
@@ -1397,6 +1456,99 @@ export class CrowdSourcingService {
           status: {
             in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
           },
+          parentId: null, // ✅ only top-level comments
+        },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              name: true,
+              profile_picture: true,
+            },
+          },
+          like: {
+            select: {
+              userId: true, // ✅ fetch the likers
+            },
+          },
+          _count: {
+            select: {
+              like: true,
+              replies: true, // ✅ count replies too
+            },
+          },
+          replies: {
+            take: 2, // ✅ first 2 replies
+            orderBy: { createdAt: 'asc' },
+            include: {
+              user: {
+                select: {
+                  name: true,
+                  profile_picture: true,
+                },
+              },
+              like: {
+                select: {
+                  userId: true, // ✅ fetch reply likers
+                },
+              },
+              _count: {
+                select: {
+                  like: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    const formattedComments = comments.map((comment) => ({
+      ...comment,
+      user: comment.user,
+      likeCount: comment._count.like,
+      replyCount: comment._count.replies,
+      replies: comment.replies.map((reply) => ({
+        ...reply,
+        user: reply.user,
+        likeCount: reply._count.like,
+
+        _count: undefined,
+      })),
+      _count: undefined, // cleanup
+    }));
+
+    return {
+      success: true,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      comments: formattedComments,
+    };
+  }
+
+  async getPaginatedEventCommentsAsAdmin(
+    crowdSourceId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const [total, comments] = await this.prisma.$transaction([
+      this.prisma.comment.count({
+        where: {
+          crowdSourceId,
+
+          parentId: null, // ✅ only fetch top-level comments
+        },
+      }),
+      this.prisma.comment.findMany({
+        where: {
+          crowdSourceId,
+
           parentId: null, // ✅ only top-level comments
         },
         skip,
@@ -2167,8 +2319,9 @@ export class CrowdSourcingService {
     commentId: string,
     status: 'APPROPRIATE' | 'INAPPROPRIATE',
   ) {
+    console.log(status, 'This is the status');
     // Verify comment exists
-    const comment = await this.prisma.comment.findUnique({
+    const comment = await this.prisma.crowdSourceReview.findUnique({
       where: {
         id: commentId,
       },
@@ -2187,7 +2340,7 @@ export class CrowdSourcingService {
     }
 
     // Update comment status
-    const updatedComment = await this.prisma.comment.update({
+    const updatedComment = await this.prisma.crowdSourceReview.update({
       where: {
         id: commentId,
       },
@@ -2210,11 +2363,18 @@ export class CrowdSourcingService {
       message: `Comment flagged as ${status.toLowerCase()} successfully`,
       data: {
         commentId: updatedComment.id,
-        // status: updatedComment.status,
-        // user: updatedComment.user,
-        content: updatedComment.content,
+        status: updatedComment.status,
+        user: updatedComment.user,
+        comment: updatedComment.comment,
         flaggedAt: updatedComment.updatedAt,
       },
     };
+  }
+
+  async flagCrowdsourcePlaceCommentAsAdmin(
+    commentId: string,
+    status: 'APPROPRIATE' | 'INAPPROPRIATE',
+  ) {
+    return this.flagComment(commentId, status);
   }
 }

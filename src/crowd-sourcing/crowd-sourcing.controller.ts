@@ -445,6 +445,26 @@ export class CrowdSourcingController {
   }
 
   @ApiOperation({
+    summary: 'Fetch paginated reviews for a crowdsourced place as an admin',
+    description:
+      'Returns reviews (including comment, recommendation, user info) in paginated form as an adminn',
+  })
+  @ApiOkResponse({ description: 'Reviews fetched successfully' })
+  @ApiNotFoundResponse({ description: 'CrowdSource not found' })
+  @Get('admin-review/:id/paginated')
+  async getPaginatedReviewsAsAdmin(
+    @Param('id') crowdSourceId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    const { page, limit } = query;
+    return this.crowdSourcingService.getPaginatedReviewsAsAdmin(
+      crowdSourceId,
+      page,
+      limit,
+    );
+  }
+
+  @ApiOperation({
     summary: 'Fetch paginated reviews for a crowdsourced events',
     description:
       'Returns reviews (including comment, recommendation, user info) in paginated form',
@@ -458,6 +478,26 @@ export class CrowdSourcingController {
   ) {
     const { page, limit } = query;
     return this.crowdSourcingService.getPaginatedEventComments(
+      crowdSourceId,
+      page,
+      limit,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Fetch paginated reviews for a crowdsourced events As An Admin',
+    description:
+      'Returns reviews (including comment, recommendation, user info) in paginated form As Admin',
+  })
+  @ApiOkResponse({ description: 'Reviews fetched successfully' })
+  @ApiNotFoundResponse({ description: 'CrowdSource not found' })
+  @Get('admin/events-review/:id/paginated')
+  async getPaginatedEventCommentsAsAdmin(
+    @Param('id') crowdSourceId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    const { page, limit } = query;
+    return this.crowdSourcingService.getPaginatedEventCommentsAsAdmin(
       crowdSourceId,
       page,
       limit,
@@ -634,6 +674,28 @@ export class CrowdSourcingController {
     @Body() dto: FlagCommentDto,
   ) {
     return this.crowdSourcingService.flagComment(commentId, dto.status);
+  }
+
+  @Post('place-review/:commentId/flag')
+  @ApiOperation({
+    summary: 'Flag a comment as appropriate or inappropriate (Admin only)',
+  })
+  @ApiParam({ name: 'commentId', type: String })
+  @ApiBody({ type: FlagCommentDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Comment flagged successfully',
+  })
+  @Roles(Role.Admin)
+  flagCrowdsourcePlaceCommentAsAdmin(
+    @GetUser() user: User,
+    @Param('commentId') commentId: string,
+    @Body() dto: FlagCommentDto,
+  ) {
+    return this.crowdSourcingService.flagCrowdsourcePlaceCommentAsAdmin(
+      commentId,
+      dto.status,
+    );
   }
 
   // @ApiOperation({
