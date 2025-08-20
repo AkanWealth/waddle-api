@@ -11,5 +11,6 @@ export class AppService {
   async scheduleDeleteOldBlacklistedToken() {
     await this.cleaner.deleteOldBlacklistedToken();
     await this.cleaner.removePendingBooking();
+    await this.cleaner.deleteOldNotifications();
   }
 }
