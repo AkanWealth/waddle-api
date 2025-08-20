@@ -405,6 +405,25 @@ export class CrowdSourcingController {
     return { crowdSourceId, percentage };
   }
 
+  @Get(':crowdSourceId/my-attendance')
+  @ApiOperation({
+    summary: 'Check my attendance status for an event',
+    description:
+      "Returns the current user's attendance status (YES/NO/PENDING) for a specific event",
+  })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiOkResponse({ description: 'Attendance status retrieved successfully' })
+  @ApiNotFoundResponse({ description: 'Event not found' })
+  async getMyAttendanceStatus(
+    @GetUser('id') userId: string,
+    @Param('crowdSourceId') crowdSourceId: string,
+  ) {
+    return this.crowdSourcingService.getMyAttendanceStatus(
+      userId,
+      crowdSourceId,
+    );
+  }
+
   //Working Fine And Used
   @ApiOperation({
     summary: 'Fetch paginated reviews for a crowdsourced place',

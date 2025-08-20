@@ -1187,6 +1187,84 @@ export class CrowdSourcingService {
     };
   }
 
+  // Method 16: Get user's attendance status for an event
+  async getMyAttendanceStatus(userId: string, crowdSourceId: string) {
+    // Verify crowdsource exists and is an event
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Event',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Event not found');
+    }
+
+    // Check if user has an attendance record
+    const attendance = await this.prisma.crowdSourceAttendance.findUnique({
+      where: {
+        userId_crowdSourceId: {
+          userId,
+          crowdSourceId,
+        },
+      },
+      include: {
+        crowdSource: {
+          select: {
+            id: true,
+            name: true,
+            date: true,
+            time: true,
+            address: true,
+          },
+        },
+      },
+    });
+
+    // If no attendance record exists, return PENDING status
+    if (!attendance) {
+      return {
+        success: true,
+        data: {
+          userId,
+          crowdSourceId,
+          going: attendance.going,
+          message: 'No attendance response recorded yet',
+          event: {
+            id: crowdSource.id,
+            name: crowdSource.name,
+            date: crowdSource.date,
+            time: crowdSource.time,
+            address: crowdSource.address,
+          },
+          respondedAt: null,
+        },
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        userId,
+        crowdSourceId,
+        going: attendance.going,
+        status: attendance.going,
+        message: `You have responded: ${attendance.going}`,
+        event: {
+          id: attendance.crowdSource.id,
+          name: attendance.crowdSource.name,
+          date: attendance.crowdSource.date,
+          time: attendance.crowdSource.time,
+          address: attendance.crowdSource.address,
+        },
+        respondedAt: attendance.createdAt,
+        updatedAt: attendance.updatedAt,
+      },
+    };
+  }
+
   // crowdsource-review.service.ts
 
   // async getPaginatedPlaceReviews(
