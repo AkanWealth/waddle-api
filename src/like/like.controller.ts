@@ -75,7 +75,7 @@ export class LikeController {
     description: 'Parents can like a review under a recommended place',
   })
   @ApiCreatedResponse({ description: 'Created' })
-  @Post('comment')
+  @Post('crowdsource-place/like')
   likeACrowdsourcePlaceComment(
     @GetUser() user: User,
     @Body() dto: CreateCommentLikeDto,
@@ -84,11 +84,11 @@ export class LikeController {
   }
 
   @ApiOperation({
-    summary: 'like a review under a recommended place',
+    summary: 'unlike a review under a recommended place',
     description: 'Parents can like a review under a recommended place',
   })
   @ApiCreatedResponse({ description: 'Created' })
-  @Post('comment')
+  @Post('crowdsource-review/unlike')
   unLikeACrowdsourcePlaceComment(
     @GetUser() user: User,
     @Body() dto: CreateCommentLikeDto,
