@@ -1573,11 +1573,6 @@ export class CrowdSourcingService {
     }
 
     // Validate going status
-    if (!['YES', 'NO', 'PENDING'].includes(going)) {
-      throw new BadRequestException(
-        'Invalid going status. Must be YES, NO, or PENDING',
-      );
-    }
 
     // Upsert attendance record
     const attendance = await this.prisma.crowdSourceAttendance.upsert({
