@@ -813,6 +813,9 @@ export class BookingService {
       const bookings = await this.prisma.booking.findMany({
         where: { event: { organiserId: userId } },
         include: { event: true, user: true },
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
 
       if (!bookings || bookings.length <= 0)
