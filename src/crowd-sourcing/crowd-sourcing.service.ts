@@ -2321,6 +2321,60 @@ export class CrowdSourcingService {
   ) {
     console.log(status, 'This is the status');
     // Verify comment exists
+    const comment = await this.prisma.comment.findUnique({
+      where: {
+        id: commentId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    // Update comment status
+    const updatedComment = await this.prisma.comment.update({
+      where: {
+        id: commentId,
+      },
+      data: {
+        status,
+        updatedAt: new Date(),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: `Comment flagged as ${status.toLowerCase()} successfully`,
+      data: {
+        commentId: updatedComment.id,
+        status: updatedComment.status,
+        user: updatedComment.user,
+        comment: updatedComment.content,
+        flaggedAt: updatedComment.updatedAt,
+      },
+    };
+  }
+
+  async flagCrowdsourcePlaceCommentAsAdmin(
+    commentId: string,
+    status: 'APPROPRIATE' | 'INAPPROPRIATE',
+  ) {
     const comment = await this.prisma.crowdSourceReview.findUnique({
       where: {
         id: commentId,
@@ -2369,12 +2423,5 @@ export class CrowdSourcingService {
         flaggedAt: updatedComment.updatedAt,
       },
     };
-  }
-
-  async flagCrowdsourcePlaceCommentAsAdmin(
-    commentId: string,
-    status: 'APPROPRIATE' | 'INAPPROPRIATE',
-  ) {
-    return this.flagComment(commentId, status);
   }
 }
