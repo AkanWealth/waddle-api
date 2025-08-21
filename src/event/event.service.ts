@@ -481,7 +481,11 @@ export class EventService {
         include: {
           organiser: true,
           reviews: true,
-          bookings: true,
+          bookings: {
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
           favorites: true,
           like: true,
           recommendations: true,
