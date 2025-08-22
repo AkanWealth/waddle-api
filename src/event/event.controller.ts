@@ -15,6 +15,7 @@ import {
   FileTypeValidator,
   HttpCode,
   HttpStatus,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { EventService } from './event.service';
 import { CreateEventDto, UpdateEventDto } from './dto';
@@ -224,6 +225,20 @@ export class EventController {
   @Roles(Role.Admin)
   findAllAdmin(@GetUser() user: { id: string }) {
     return this.eventService.viewAllEventAdmin(user.id);
+  }
+
+  @ApiOperation({
+    summary: 'View all cancelled events as an admin (paginated)',
+    description: 'Admin can view all cancelled events with pagination',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('/admin/cancel')
+  @Roles(Role.Admin)
+  viewAllCancelledEventAsAdmin(
+    @Query('page', new ParseIntPipe({ optional: true })) page: number = 1,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 10,
+  ) {
+    return this.eventService.viewAllCancelledEventAsAdmin(page, limit);
   }
 
   @ApiOperation({

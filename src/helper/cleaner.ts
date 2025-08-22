@@ -39,6 +39,7 @@ export class Cleaner {
 
   async deleteOldNotifications() {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    //const thirtyDaysAgo = new Date(Date.now() - 5 * 60 * 1000);
 
     // Delete old regular notifications (for users and organisers)
     await this.prisma.notification.deleteMany({

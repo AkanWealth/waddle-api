@@ -111,4 +111,12 @@ export class QueryPaymentDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Search by transaction Id, name, event name and user name',
+    example: '#PAY-BA846',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

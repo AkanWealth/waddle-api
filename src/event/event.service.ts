@@ -139,7 +139,6 @@ export class EventService {
       if (!event) {
         throw new Error('Event not found or you are not the organiser');
       }
-
       const cancelledEvent = await this.prisma.event.update({
         where: { id: eventId },
         data: {
@@ -466,6 +465,40 @@ export class EventService {
       return {
         message: 'Events found',
         events: eventsWithImages,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async viewAllCancelledEventAsAdmin(page: number = 1, limit: number = 10) {
+    try {
+      const skip = (page - 1) * limit;
+
+      const [total, events] = await this.prisma.$transaction([
+        this.prisma.event.count({
+          where: {
+            isDeleted: false,
+            status: EventStatus.CANCELLED,
+          },
+        }),
+        this.prisma.event.findMany({
+          where: {
+            isDeleted: false,
+            status: EventStatus.CANCELLED,
+          },
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      return {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        events,
       };
     } catch (error) {
       throw error;

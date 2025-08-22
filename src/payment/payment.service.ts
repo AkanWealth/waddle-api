@@ -111,6 +111,7 @@ export class PaymentService {
   //   };
   // }
   async getPayments(query: QueryPaymentDto) {
+    let search = query.search;
     const {
       page = 1,
       limit = 10,
@@ -122,6 +123,9 @@ export class PaymentService {
       startDate,
       endDate,
     } = query;
+    if (search.startsWith('#')) {
+      search = search.slice(1);
+    }
 
     const skip = (page - 1) * limit;
     const where: any = {};
@@ -146,23 +150,11 @@ export class PaymentService {
           };
           break;
         case 'NO_BOOKING':
-          // This means payments without associated bookings or failed/pending/refunded bookings
           where.OR = [
-            {
-              booking: {
-                status: 'Pending',
-              },
-            },
-            {
-              booking: {
-                status: 'Failed',
-              },
-            },
-            {
-              booking: {
-                status: 'Refunded',
-              },
-            },
+            { booking: { status: 'Pending' } },
+            { booking: { status: 'Failed' } },
+            { booking: { status: 'Refunded' } },
+            { booking: null }, // payments without any booking at all
           ];
           break;
       }
@@ -177,6 +169,16 @@ export class PaymentService {
       where.createdAt = {};
       if (startDate) where.createdAt.gte = new Date(startDate);
       if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+
+    // 🔍 Handle search
+    if (search) {
+      where.OR = [
+        { id: { contains: search, mode: 'insensitive' } },
+        { user: { name: { contains: search, mode: 'insensitive' } } },
+        { user: { email: { contains: search, mode: 'insensitive' } } }, // optional, useful for admins
+        { event: { name: { contains: search, mode: 'insensitive' } } },
+      ];
     }
 
     const [data, total] = await Promise.all([
