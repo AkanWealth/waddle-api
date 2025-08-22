@@ -1,5 +1,7 @@
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from './../prisma/prisma.service';
 
+@Injectable()
 export class Cleaner {
   constructor(private prisma: PrismaService) {}
 
@@ -14,8 +16,25 @@ export class Cleaner {
     });
   }
 
+  // async removePendingBooking() {
+  //   await this.prisma.booking.deleteMany({ where: { status: 'Pending' } });
+  // }
   async removePendingBooking() {
-    await this.prisma.booking.deleteMany({ where: { status: 'Pending' } });
+    await this.prisma.$transaction(async (prisma) => {
+      // Delete payments first
+      await prisma.payment.deleteMany({
+        where: {
+          booking: {
+            status: 'Pending',
+          },
+        },
+      });
+
+      // Then delete bookings
+      await prisma.booking.deleteMany({
+        where: { status: 'Pending' },
+      });
+    });
   }
 
   async deleteOldNotifications() {

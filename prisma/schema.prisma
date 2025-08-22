@@ -141,7 +141,7 @@ model Event {
   total_ticket    Int?
   isUnlimited     Boolean            @default(false)
   ticket_booked   Int                @default(0)
-  eventFrequency  EventFrequencyType @default(oneTime)
+  frequency       EventFrequencyType @default(oneTime)
   customFrequency DateTime[]
   date            DateTime?
   time            String?

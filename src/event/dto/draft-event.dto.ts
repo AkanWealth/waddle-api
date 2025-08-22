@@ -147,14 +147,14 @@ export class DraftEventDto {
     message:
       'Event frequency must be oneTime, weekly, everyTwoWeeks, monthly, or custom',
   })
-  eventFrequency: EventFrequencyType;
+  frequency: EventFrequencyType;
 
   @ApiPropertyOptional({
     description:
       'Custom frequency dates (only required if eventFrequency = custom)',
     example: ['2025-03-26T10:00:00Z', '2025-03-28T10:00:00Z'],
   })
-  @ValidateIf((o) => o.eventFrequency === EventFrequencyType.custom)
+  @ValidateIf((o) => o.frequency === EventFrequencyType.custom)
   @IsArray({ message: 'Custom frequency must be an array of dates' })
   @IsDateString(
     { strict: true },

@@ -21,7 +21,7 @@ export class EventFrequencyCronService {
         where: {
           isDeleted: false,
           isPublished: true,
-          eventFrequency: {
+          frequency: {
             not: EventFrequencyType.oneTime,
           },
           date: {
@@ -65,7 +65,7 @@ export class EventFrequencyCronService {
           adminId: event.adminId,
           date: nextDate,
           isDeleted: false,
-          eventFrequency: event.eventFrequency,
+          frequency: event.frequency,
         },
       });
 
@@ -92,7 +92,7 @@ export class EventFrequencyCronService {
   private calculateNextEventDate(event: any): Date | null {
     const eventDate = new Date(event.date);
 
-    switch (event.eventFrequency) {
+    switch (event.frequency) {
       case EventFrequencyType.weekly:
         const nextWeekly = new Date(eventDate);
         nextWeekly.setDate(eventDate.getDate() + 7);
@@ -142,7 +142,7 @@ export class EventFrequencyCronService {
       total_ticket: originalEvent.total_ticket,
       isUnlimited: originalEvent.isUnlimited,
       ticket_booked: 0, // Reset ticket count for new event
-      eventFrequency: originalEvent.eventFrequency,
+      frequency: originalEvent.frequency,
       customFrequency: originalEvent.customFrequency,
       date: nextDate,
       time: originalEvent.time, // Keep same time
@@ -182,7 +182,7 @@ export class EventFrequencyCronService {
       where: {
         isDeleted: false,
         isPublished: true,
-        eventFrequency: {
+        frequency: {
           not: EventFrequencyType.oneTime,
         },
         date: {
@@ -193,7 +193,7 @@ export class EventFrequencyCronService {
         id: true,
         name: true,
         date: true,
-        eventFrequency: true,
+        frequency: true,
         customFrequency: true,
         organiserId: true,
         adminId: true,
@@ -216,7 +216,7 @@ export class EventFrequencyCronService {
     return {
       currentDate: event.date,
       nextDate,
-      frequency: event.eventFrequency,
+      frequency: event.frequency,
     };
   }
 }
