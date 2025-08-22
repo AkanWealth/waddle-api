@@ -133,14 +133,16 @@ model User {
 }
 
 model Event {
-  id              String           @id @default(dbgenerated("generate_unique_id('event'::text, 'EVT-'::text)"))
+  id              String             @id @default(dbgenerated("generate_unique_id('event'::text, 'EVT-'::text)"))
   name            String?
   description     String?
   address         String?
   price           Decimal?
   total_ticket    Int?
-  isUnlimited     Boolean          @default(false)
-  ticket_booked   Int              @default(0)
+  isUnlimited     Boolean            @default(false)
+  ticket_booked   Int                @default(0)
+  eventFrequency  EventFrequencyType @default(oneTime)
+  customFrequency DateTime[]
   date            DateTime?
   time            String?
   age_range       String?
@@ -150,19 +152,19 @@ model Event {
   facilities      String[]
   tags            String[]
   eventType       EventType?
-  status          String?          @default("PENDING")
+  status          String?            @default("PENDING")
   rejectionReason String?
   files           String[]
-  isPublished     Boolean?         @default(false)
-  isDeleted       Boolean?         @default(false)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  isPublished     Boolean?           @default(false)
+  isDeleted       Boolean?           @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
   adminId         String?
   organiserId     String?
   bookings        Booking[]
   disputes        Dispute[]
-  admin           Admin?           @relation(fields: [adminId], references: [id])
-  organiser       Organiser?       @relation(fields: [organiserId], references: [id])
+  admin           Admin?             @relation(fields: [adminId], references: [id])
+  organiser       Organiser?         @relation(fields: [organiserId], references: [id])
   favorites       Favorite?
   like            Like[]
   payments        Payment[]
@@ -554,4 +556,12 @@ enum CommentStatus {
   PENDING
   APPROPRIATE
   INAPPROPRIATE
+}
+
+enum EventFrequencyType {
+  oneTime
+  weekly
+  everyTwoWeeks
+  monthly
+  custom
 }

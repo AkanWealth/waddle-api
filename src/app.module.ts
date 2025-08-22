@@ -20,7 +20,7 @@ import { TicketModule } from './ticket/ticket.module';
 import { AdminModule } from './admin/admin.module';
 import { CrowdSourcingModule } from './crowd-sourcing/crowd-sourcing.module';
 import { DisputeModule } from './dispute/dispute.module';
-import { Cleaner } from './helper';
+import { Cleaner, EventFrequencyCronService } from './helper';
 import { PaymentModule } from './payment/payment.module';
 import { UploadModule } from './upload/upload.module';
 
@@ -55,7 +55,7 @@ import { UploadModule } from './upload/upload.module';
     PaymentModule,
     UploadModule,
   ],
-  providers: [AppService, Cleaner],
+  providers: [AppService, Cleaner, EventFrequencyCronService],
   controllers: [AppController],
 })
 export class AppModule {}

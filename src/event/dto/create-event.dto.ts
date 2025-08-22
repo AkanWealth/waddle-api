@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { EventFrequencyType } from '@prisma/client';
 import {
   IsArray,
   IsDateString,
@@ -7,6 +8,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  ValidateIf,
 } from 'class-validator';
 
 export enum EventType {
@@ -138,4 +140,31 @@ export class CreateEventDto {
   @IsArray({ message: 'File must be an array of strings' })
   @IsString({ each: true, message: 'Each file must be a string' })
   files?: string[];
+
+  @ApiProperty({
+    description: 'Event Frequency',
+    enum: EventFrequencyType,
+    example: EventFrequencyType.oneTime,
+  })
+  @IsEnum(EventFrequencyType, {
+    message:
+      'Event frequency must be oneTime, weekly, everyTwoWeeks, monthly, or custom',
+  })
+  eventFrequency: EventFrequencyType;
+
+  @ApiPropertyOptional({
+    description:
+      'Custom frequency dates (only required if eventFrequency = custom)',
+    example: ['2025-03-26T10:00:00Z', '2025-03-28T10:00:00Z'],
+  })
+  @ValidateIf((o) => o.eventFrequency === EventFrequencyType.custom)
+  @IsArray({ message: 'Custom frequency must be an array of dates' })
+  @IsDateString(
+    { strict: true },
+    {
+      each: true,
+      message: 'Each custom frequency must be a valid date string',
+    },
+  )
+  customFrequency?: string[];
 }
