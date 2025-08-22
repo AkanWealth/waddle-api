@@ -123,7 +123,7 @@ export class PaymentService {
       startDate,
       endDate,
     } = query;
-    if (search.startsWith('#')) {
+    if (search?.startsWith('#')) {
       search = search.slice(1);
     }
 
