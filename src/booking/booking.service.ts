@@ -991,6 +991,16 @@ export class BookingService {
         status: PaymentStatus.REFUNDED,
       });
 
+      // Decrement event ticket count since booking is cancelled
+      await this.prisma.event.update({
+        where: { id: booking.event.id },
+        data: {
+          ticket_booked: {
+            decrement: booking.ticket_quantity,
+          },
+        },
+      });
+
       // Send cancellation notification
       if (booking.user.fcmIsOn) {
         await this.notificationHelper.sendBookingCancel(
@@ -1498,6 +1508,16 @@ export class BookingService {
           'Admin event - no transfer needed. Waddle keeps 100% of payment.',
         );
       }
+
+      // Update event ticket count
+      await this.prisma.event.update({
+        where: { id: booking.event.id },
+        data: {
+          ticket_booked: {
+            increment: booking.ticket_quantity,
+          },
+        },
+      });
 
       // Send confirmation notification
       await this.notificationHelper.sendBookingConfirmation(
