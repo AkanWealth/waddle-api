@@ -4,4 +4,5 @@ export enum EventStatus {
   DRAFT = 'DRAFT',
   NON_COMPLIANT = 'NON_COMPLIANT',
   CROWD_SOURCED = 'CROWD_SOURCED',
+  CANCELLED = 'CANCELLED',
 }

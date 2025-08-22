@@ -10,8 +10,8 @@ export class AppService {
   ) {}
 
   // cron job to run automated task
-  // @Cron('0 0 * * *') // runs every day at midnight
-  @Cron('*/5 * * * * *')
+  @Cron('0 0 * * *') // runs every day at midnight
+  //@Cron('*/5 * * * * *')
   async scheduleDeleteOldBlacklistedToken() {
     console.log('Cron job started at ' + new Date().toISOString());
 

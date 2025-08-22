@@ -118,6 +118,20 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary: 'Cancel an event as an organiser',
+    description: 'Cancel an event as an organiser',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Patch('organiser/:id/cancel')
+  @Roles(Role.Organiser)
+  cancelAnEventAsOrganiser(
+    @GetUser() user: { id: string },
+    @Param('id') eventId: string,
+  ) {
+    return this.eventService.cancelAnEventAsOrganiser(eventId, user.id);
+  }
+
+  @ApiOperation({
     summary: 'create an event by admin',
     description: 'Create an event by the admin',
   })

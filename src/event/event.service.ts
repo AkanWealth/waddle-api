@@ -130,6 +130,33 @@ export class EventService {
       throw error;
     }
   }
+  async cancelAnEventAsOrganiser(eventId: string, organiserId: string) {
+    try {
+      const event = await this.prisma.event.findFirst({
+        where: { id: eventId, organiserId },
+      });
+
+      if (!event) {
+        throw new Error('Event not found or you are not the organiser');
+      }
+
+      const cancelledEvent = await this.prisma.event.update({
+        where: { id: eventId },
+        data: {
+          status: EventStatus.CANCELLED,
+          isPublished: false,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Your event is now cancelled',
+        data: cancelledEvent,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async createEventByAdmin(creatorId: string, dto: CreateEventDto) {
     try {
@@ -383,6 +410,9 @@ export class EventService {
       const events = await this.prisma.event.findMany({
         where: {
           isDeleted: false,
+          status: {
+            not: EventStatus.CANCELLED,
+          },
           OR: [
             {
               isPublished: true, // Include all published events
