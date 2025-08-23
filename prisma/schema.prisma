@@ -155,6 +155,8 @@ model Event {
   status          String?            @default("PENDING")
   rejectionReason String?
   files           String[]
+  isCancelled     Boolean            @default(false)
+  cancelledAt     DateTime? // when the event was cancelled
   isPublished     Boolean?           @default(false)
   isDeleted       Boolean?           @default(false)
   createdAt       DateTime           @default(now())

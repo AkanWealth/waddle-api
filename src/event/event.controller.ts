@@ -16,9 +16,14 @@ import {
   HttpCode,
   HttpStatus,
   ParseIntPipe,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { EventService } from './event.service';
-import { CreateEventDto, UpdateEventDto } from './dto';
+import {
+  ConfirmEventCancellation,
+  CreateEventDto,
+  UpdateEventDto,
+} from './dto';
 import { GetUser } from '../auth/decorator/get-user.decorator';
 import {
   ApiAcceptedResponse,
@@ -232,13 +237,77 @@ export class EventController {
     description: 'Admin can view all cancelled events with pagination',
   })
   @ApiOkResponse({ description: 'Ok' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'The organiser name or the event name',
+    example: 'Test event"',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: String,
+    description: 'Start date for filtering events (ISO date string)',
+    example: '2024-01-01',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: String,
+    description: 'End date for filtering events (ISO date string)',
+    example: '2024-12-31',
+  })
+  @ApiQuery({
+    name: 'isCancelled',
+    required: false,
+    type: Boolean,
+    description: 'Filter events by cancellation status (default: false)',
+    example: true,
+  })
   @Get('/admin/cancel')
   @Roles(Role.Admin)
   viewAllCancelledEventAsAdmin(
     @Query('page', new ParseIntPipe({ optional: true })) page: number = 1,
     @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 10,
+    @Query('search') search?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('isCancelled', new ParseBoolPipe({ optional: true }))
+    isCancelled?: boolean,
   ) {
-    return this.eventService.viewAllCancelledEventAsAdmin(page, limit);
+    return this.eventService.viewAllCancelledEventAsAdmin(
+      page,
+      limit,
+      isCancelled,
+      search,
+      startDate,
+      endDate,
+    );
+  }
+
+  @ApiOperation({
+    summary:
+      'Send notification to organiser and process refunds for a cancelled event',
+    description:
+      'Admins can notify the organiser of event cancellation and initiate refund processing for attendees.',
+  })
+  @ApiOkResponse({
+    description: 'Notification sent and refunds processed successfully',
+  })
+  @ApiParam({ name: 'id', type: String, description: 'Event ID' })
+  @Patch('admin/:id/cancel/notify')
+  @Roles(Role.Admin)
+  sendNotificationReminderAndProcessRefund(
+    @Param('id') eventId: string,
+    @Body() dto: ConfirmEventCancellation,
+  ) {
+    return this.eventService.sendNotificationReminderAndProcessRefund(
+      eventId,
+      dto,
+    );
   }
 
   @ApiOperation({

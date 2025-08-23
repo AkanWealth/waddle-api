@@ -199,4 +199,40 @@ export class NotificationHelper {
       },
     });
   }
+  async sendEventCancellationNotification(
+    organiserId: string,
+    eventName: string,
+  ) {
+    await this.notificationService.createNotification({
+      title: 'Requested Event Cancellation',
+      body: `You have requested a cancellation for "${eventName}". Our admin will initiate the refund process and notify you when the event is cancelled.`,
+      recipientId: organiserId,
+      recipientType: recipientTypeEnum.ORGANISER,
+      sendPush: true,
+      visibleToAdmins: false,
+    });
+  }
+
+  async sendEventCancellationNotificationToWishlistUsers(
+    userId: string,
+    eventName: string,
+  ) {
+    await this.notificationService.createNotification({
+      title: 'Event Cancelled',
+      body: `The event "${eventName}" that you were interested in has been cancelled.`,
+      recipientId: userId,
+      sendPush: true,
+      recipientType: recipientTypeEnum.USER,
+    });
+  }
+
+  async sendEventCancellationConfirmation(userId: string, eventName: string) {
+    await this.notificationService.createNotification({
+      title: 'Event Cancelled Confirmed',
+      body: `Your event "${eventName}" cancellation has been approved by an admin. Attendees have been notified, and refunds are now being processed.`,
+      recipientId: userId,
+      sendPush: true,
+      recipientType: recipientTypeEnum.ORGANISER,
+    });
+  }
 }

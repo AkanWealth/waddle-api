@@ -3,7 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateEventDto, UpdateEventDto } from './dto';
+import {
+  ConfirmEventCancellation,
+  CreateEventDto,
+  UpdateEventDto,
+} from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -14,6 +18,9 @@ import {
 import { EventStatus } from 'src/utils/constants/eventTypes';
 import { DraftEventDto } from './dto/draft-event.dto';
 import { NotificationHelper } from 'src/notification/notification.helper';
+import { PaymentService } from '../payment/payment.service';
+import { Mailer } from '../helper';
+import { PaymentStatus, BookingStatus } from '@prisma/client';
 
 @Injectable()
 export class EventService {
@@ -29,6 +36,8 @@ export class EventService {
     private prisma: PrismaService,
     private config: ConfigService,
     private notificationHelper: NotificationHelper,
+    private paymentService: PaymentService,
+    private mailer: Mailer,
   ) {}
 
   async createEventByOrganiser(
@@ -146,6 +155,10 @@ export class EventService {
           isPublished: false,
         },
       });
+      await this.notificationHelper.sendEventCancellationNotification(
+        organiserId,
+        event.name,
+      );
 
       return {
         success: true,
@@ -471,21 +484,55 @@ export class EventService {
     }
   }
 
-  async viewAllCancelledEventAsAdmin(page: number = 1, limit: number = 10) {
+  async viewAllCancelledEventAsAdmin(
+    page: number = 1,
+    limit: number = 10,
+    isCancelled?: boolean,
+    search?: string,
+    startDate?: string,
+    endDate?: string,
+  ) {
     try {
       const skip = (page - 1) * limit;
 
+      // Base condition (cancelled + not deleted)
+      const whereCondition: any = {
+        isDeleted: false,
+        status: EventStatus.CANCELLED,
+      };
+
+      // Add isCancelled filter only if provided
+      if (isCancelled !== undefined) {
+        whereCondition.isCancelled = isCancelled;
+      }
+
+      // Add date range filter if provided
+      if (startDate || endDate) {
+        whereCondition.date = {};
+        if (startDate) {
+          whereCondition.date.gte = new Date(startDate);
+        }
+        if (endDate) {
+          whereCondition.date.lte = new Date(endDate);
+        }
+      }
+
+      // Add search filter if present
+      if (search && search.trim() !== '') {
+        whereCondition.OR = [
+          { name: { contains: search, mode: 'insensitive' } }, // Event name
+          { organiser: { name: { contains: search, mode: 'insensitive' } } }, // Organiser name
+        ];
+      }
+
       const [total, events] = await this.prisma.$transaction([
-        this.prisma.event.count({
-          where: {
-            isDeleted: false,
-            status: EventStatus.CANCELLED,
-          },
-        }),
+        this.prisma.event.count({ where: whereCondition }),
         this.prisma.event.findMany({
-          where: {
-            isDeleted: false,
-            status: EventStatus.CANCELLED,
+          where: whereCondition,
+          include: {
+            organiser: true,
+            bookings: true,
+            favorites: true,
           },
           skip,
           take: limit,
@@ -499,6 +546,153 @@ export class EventService {
         limit,
         totalPages: Math.ceil(total / limit),
         events,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async sendNotificationReminderAndProcessRefund(
+    eventId: string,
+    dto: ConfirmEventCancellation,
+  ) {
+    try {
+      // Find the event with all related data
+      const event = await this.prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          bookings: {
+            include: {
+              user: true,
+              payments: true,
+            },
+          },
+          favorites: {
+            include: {
+              user: true,
+            },
+          },
+          like: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+
+      if (!event) {
+        throw new NotFoundException('Event not found');
+      }
+
+      // Mark event as cancelled and set cancelledAt date
+      await this.prisma.event.update({
+        where: { id: eventId },
+        data: {
+          isCancelled: true,
+          cancelledAt: new Date(),
+        },
+      });
+
+      // Process refunds for users who booked the event
+      const confirmedBookings = event.bookings.filter(
+        (booking) => booking.status === BookingStatus.Confirmed,
+      );
+
+      for (const booking of confirmedBookings) {
+        const payment = booking.payments[0]; // Get the first payment
+        if (payment && payment.status === PaymentStatus.SUCCESSFUL) {
+          try {
+            // Process refund
+            await this.paymentService.refundPayment(payment.id);
+
+            // Update booking status to cancelled
+            await this.prisma.booking.update({
+              where: { id: booking.id },
+              data: { status: BookingStatus.Cancelled },
+            });
+
+            // Decrement event ticket count since booking is cancelled
+            await this.prisma.event.update({
+              where: { id: eventId },
+              data: {
+                ticket_booked: {
+                  decrement: booking.ticket_quantity,
+                },
+              },
+            });
+
+            // Send email notification to user about refund
+            const subject = 'Event Cancelled - Refund Processed';
+            const message = `
+              <p>Hello ${booking.user.name},</p>
+              <p>We regret to inform you that the event <strong>"${event.name}"</strong> has been cancelled.</p>
+              <p>Your refund has been processed and will be credited back to your original payment method within 5-10 business days.</p>
+              <p><strong>Refund Details:</strong></p>
+              <ul>
+                <li>Event: ${event.name}</li>
+                <li>Booking ID: ${booking.id}</li>
+                <li>Amount Refunded: £${payment.amount}</li>
+                <li>Refund Date: ${new Date().toLocaleDateString()}</li>
+                ${
+                  dto.customMessage &&
+                  `<li>Custom message: ${dto.customMessage}</li>`
+                }
+                <li>Custom message: ${dto.customMessage}</li>
+              </ul>
+              <p>If you have any questions about your refund, please contact our support team.</p>
+              <p>We apologize for any inconvenience caused.</p>
+              <p>Best regards,<br>The Waddle Team</p>
+            `;
+
+            await this.mailer.sendMail(booking.user.email, subject, message);
+            return { success: true, message: 'Event is now fully cancelled' };
+          } catch (error) {
+            console.error(
+              `Failed to process refund for booking ${booking.id}:`,
+              error,
+            );
+            // Continue with other bookings even if one fails
+          }
+        }
+      }
+
+      // Send in-app notifications to users who favorited or liked the event
+      const usersToNotify = new Set<string>();
+
+      // Add users who favorited the event
+      if (event.favorites) {
+        usersToNotify.add(event.favorites.userId);
+      }
+
+      // Add users who liked the event
+      event.like.forEach((like) => {
+        usersToNotify.add(like.userId);
+      });
+
+      await this.notificationHelper.sendEventCancellationConfirmation(
+        event.organiserId,
+        event.name,
+      );
+      // Send in-app notifications
+      for (const userId of usersToNotify) {
+        try {
+          await this.notificationHelper.sendEventCancellationNotificationToWishlistUsers(
+            userId,
+            event.name,
+          );
+        } catch (error) {
+          console.error(
+            `Failed to send notification to user ${userId}:`,
+            error,
+          );
+          // Continue with other notifications even if one fails
+        }
+      }
+
+      return {
+        message: 'Event cancelled successfully',
+        refundsProcessed: confirmedBookings.length,
+        notificationsSent: usersToNotify.size,
       };
     } catch (error) {
       throw error;

@@ -6,6 +6,8 @@ import { JwtStrategy } from '../auth/strategy';
 import { NotificationService } from 'src/notification/notification.service';
 import { NotificationModule } from 'src/notification/notification.module';
 import { Mailer } from 'src/helper';
+import { PaymentModule } from '../payment/payment.module';
+import { PaymentService } from '../payment/payment.service';
 
 @Module({
   imports: [
@@ -14,9 +16,16 @@ import { Mailer } from 'src/helper';
       signOptions: { expiresIn: process.env.JWT_EXPIRATION_TIME },
     }),
     NotificationModule,
+    PaymentModule,
   ],
   controllers: [EventController],
-  providers: [EventService, JwtStrategy, NotificationService, Mailer],
+  providers: [
+    EventService,
+    JwtStrategy,
+    NotificationService,
+    Mailer,
+    PaymentService,
+  ],
 })
 export class EventModule implements NestModule {
   configure() {}
