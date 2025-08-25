@@ -788,6 +788,7 @@ export class BookingService {
           event: {
             include: {
               organiser: true,
+              admin: true,
             },
           },
           user: true,
