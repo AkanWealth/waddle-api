@@ -822,4 +822,84 @@ export class OrganiserService {
   //   return { message: 'Staff deleted' };
   // }
   // End Staff
+
+  async getAgeGroups(organiserId: string) {
+    try {
+      const consents = await this.prisma.consent.findMany({
+        where: {
+          booking: {
+            status: 'Confirmed',
+            isDeleted: false,
+            event: { organiserId, isDeleted: false },
+          },
+        },
+        select: { age: true },
+      });
+
+      const ages = consents
+        .map((c) => c.age)
+        .filter((a) => typeof a === 'number');
+
+      const buckets = [
+        { label: '0-5', min: 0, max: 5, count: 0 },
+        { label: '6-12', min: 6, max: 12, count: 0 },
+        { label: '13-20', min: 13, max: 20, count: 0 },
+      ];
+
+      for (const age of ages) {
+        for (const b of buckets) {
+          if (age >= b.min && age <= b.max) {
+            b.count += 1;
+            break;
+          }
+        }
+      }
+
+      const total = buckets.reduce((sum, b) => sum + b.count, 0);
+
+      const result = buckets.map((b) => ({
+        label: b.label,
+        count: b.count,
+        percentage:
+          total === 0 ? 0 : parseFloat(((b.count / total) * 100).toFixed(2)),
+      }));
+
+      const bookings = await this.prisma.booking.findMany({
+        where: {
+          status: 'Confirmed',
+          isDeleted: false,
+          event: { organiserId, isDeleted: false },
+        },
+        select: { userId: true },
+      });
+
+      const userCountMap = new Map<string, number>();
+      for (const b of bookings) {
+        const prev = userCountMap.get(b.userId) || 0;
+        userCountMap.set(b.userId, prev + 1);
+      }
+      const totalUniqueCustomers = userCountMap.size;
+      let returningCustomers = 0;
+      for (const count of userCountMap.values()) {
+        if (count >= 2) returningCustomers += 1;
+      }
+      const returningCustomersPercentage =
+        totalUniqueCustomers === 0
+          ? 0
+          : parseFloat(
+              ((returningCustomers / totalUniqueCustomers) * 100).toFixed(2),
+            );
+
+      return {
+        message: 'Age group percentages fetched',
+        total_attendees: total,
+        buckets: result,
+        // returning_customers: returningCustomers,
+        // total_unique_customers: totalUniqueCustomers,
+        returning_customers_percentage: returningCustomersPercentage,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }

@@ -128,6 +128,19 @@ export class OrganiserController {
   }
 
   @ApiOperation({
+    summary: 'Get available age groups for my events',
+    description:
+      'Returns distinct age range strings and expanded numeric ages from your events',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @Get('age-groups')
+  @Roles(Role.Organiser)
+  async getAgeGroups(@GetUser('id') userId: string) {
+    return this.organiserService.getAgeGroups(userId);
+  }
+
+  @ApiOperation({
     summary: 'stripe return',
     description: 'Stripe return',
   })
