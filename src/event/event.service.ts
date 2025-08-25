@@ -16,6 +16,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { EventStatus } from 'src/utils/constants/eventTypes';
+import { OrganiserStatus } from 'src/utils/constants/organiserTypes';
 import { DraftEventDto } from './dto/draft-event.dto';
 import { NotificationHelper } from 'src/notification/notification.helper';
 import { PaymentService } from '../payment/payment.service';
@@ -363,7 +364,14 @@ export class EventService {
       const calSkip = (page - 1) * pageSize;
 
       const events = await this.prisma.event.findMany({
-        where: { isPublished: true },
+        where: {
+          isPublished: true,
+          status: EventStatus.APPROVED,
+          organiser: {
+            isDeleted: false,
+            status: { not: OrganiserStatus.SUSPENDED },
+          },
+        },
         skip: calSkip,
         take: pageSize,
         include: {
@@ -382,7 +390,14 @@ export class EventService {
 
       // Get the total count of published events for pagination metadata
       const totalEvents = await this.prisma.event.count({
-        where: { isPublished: true },
+        where: {
+          isPublished: true,
+          status: EventStatus.APPROVED,
+          organiser: {
+            isDeleted: false,
+            status: { not: OrganiserStatus.SUSPENDED },
+          },
+        },
       });
 
       if (!events || events.length === 0) {
@@ -861,6 +876,10 @@ export class EventService {
         isDeleted: false,
         isPublished: true,
         status: EventStatus.APPROVED,
+        organiser: {
+          isDeleted: false,
+          status: { not: OrganiserStatus.SUSPENDED },
+        },
       };
 
       if (name) {
@@ -932,17 +951,14 @@ export class EventService {
     eventType?: string,
   ) {
     try {
-      const whereClause: Record<
-        string,
-        | string
-        | number
-        | boolean
-        | string[]
-        | { contains: string; mode: string }
-      > = {
+      const whereClause: any = {
         isPublished: true,
         status: EventStatus.APPROVED,
         isDeleted: false,
+        organiser: {
+          isDeleted: false,
+          status: { not: OrganiserStatus.SUSPENDED },
+        },
       };
 
       if (age_range) whereClause.age_range = age_range;
