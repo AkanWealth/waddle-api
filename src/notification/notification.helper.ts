@@ -199,6 +199,30 @@ export class NotificationHelper {
       },
     });
   }
+
+  // Account Reactivation Notification
+  async sendAccountReactivationAlert(userId: string, name: string) {
+    await this.notificationService.createNotification({
+      title: 'Account Reactivated!',
+      body: 'Congratulations! Your Waddle event organiser account has been reactivated.',
+      recipientId: userId,
+      visibleToAdmins: true,
+      sendPush: true,
+      recipientType: recipientTypeEnum.ORGANISER,
+    });
+    await this.notificationService.createAdminNotification({
+      title: 'Organiser Reactivated!',
+      body: `An organiser named ${name}  has been reactivated`,
+      type: 'ORGANISER_REACTIVATED',
+      data: {
+        organiserId: userId,
+        reason: 'No specific reason provided',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+
+  // Event Cancellation Notification
   async sendEventCancellationNotification(
     organiserId: string,
     eventName: string,

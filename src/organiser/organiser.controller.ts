@@ -307,6 +307,20 @@ export class OrganiserController {
     }
   }
 
+  @Patch(':id/reactivate')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.Admin)
+  @ApiOperation({
+    summary: 'Reactivate an organiser',
+    description: 'Admin can reactivate an organiser',
+  })
+  @ApiOkResponse({ description: 'Organiser reactivation status updated' })
+  reactivateOrganiser(@GetUser() admin: User, @Param('id') id: string) {
+    if (admin) {
+      return this.organiserService.reactivateOrganiser(id);
+    }
+  }
+
   @Patch(':id/suspend')
   @HttpCode(HttpStatus.OK)
   @Roles(Role.Admin)

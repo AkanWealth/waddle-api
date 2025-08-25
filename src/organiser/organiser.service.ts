@@ -607,6 +607,62 @@ export class OrganiserService {
     }
   }
 
+  async reactivateOrganiser(id: string) {
+    try {
+      const updated = await this.prisma.organiser.update({
+        where: { id },
+        data: {
+          status: OrganiserStatus.APPROVED,
+          isApproved: true,
+          rejectionReason: '',
+        },
+      });
+
+      // Send email notification to the organiser
+      const subject = 'Your Vendor Account Has Been Reactivated';
+      const message = `
+      <p><b>Hello ${updated.name},</b></p>
+      <p> We are pleased to inform you that your vendor account has now been reinstated. You can log in again to manage your events, view bookings, and continue offering your services to parents on our platform.</p>
+      <p>If you had active events before the suspension, they are now visible to parents again. We encourage you to review your event details to ensure everything is up to date.</p>
+      <p>We’re glad to have you back and look forward to seeing your events thrive.</p>
+      <p>If you have any questions or need support, please contact us at <a href="mailto:hello@waddleapp.io">hello@waddleapp.io</a></p>
+      
+        <p>Best regards,<br> The Waddle Team</p>
+      `;
+
+      // Send email notification to the organiser
+      try {
+        await this.mailer.sendMail(updated.email, subject, message);
+      } catch (emailError) {
+        console.error('Failed to send reactivation email:', emailError);
+        // Continue with the process even if email fails
+      }
+
+      // Send in-app notification
+      try {
+        await this.notificationHelper.sendAccountReactivationAlert(
+          id,
+          updated.name,
+        );
+      } catch (notificationError) {
+        console.error(
+          'Failed to send reactivation notification:',
+          notificationError,
+        );
+        // Continue with the process even if notification fails
+      }
+      return {
+        message: `Organiser reactivated`,
+        organiser: updated,
+      };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Organiser not found');
+      }
+      throw error;
+    }
+  }
+
   async suspendOrganiser(id: string, suspensionReason: string) {
     try {
       const updated = await this.prisma.organiser.update({
