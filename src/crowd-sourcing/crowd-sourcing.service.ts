@@ -126,7 +126,7 @@ export class CrowdSourcingService {
 
         include: { like: true, creator: true },
         orderBy: {
-          date: 'desc',
+          createdAt: 'desc',
         },
       });
 

@@ -440,31 +440,30 @@ export class EventService {
           status: {
             not: EventStatus.CANCELLED,
           },
-          // Filter out events from suspended organisers to ensure compliance
-          // This prevents suspended organisers' events from appearing in admin views
-          organiser: {
-            isDeleted: false,
-            status: { not: OrganiserStatus.SUSPENDED },
-          },
           OR: [
-            {
-              isPublished: true, // Include all published events
-            },
-            {
-              status: 'PENDING', // Include all pending events
-            },
-            {
-              status: EventStatus.NON_COMPLIANT, // Include non-compliant events
-            },
-
+            // Organiser events (published, pending, non-compliant)
             {
               AND: [
                 {
-                  isPublished: false, // Drafted events
+                  organiser: {
+                    isDeleted: false,
+                    status: { not: OrganiserStatus.SUSPENDED },
+                  },
                 },
                 {
-                  adminId: adminId, // Only include drafted events created by current admin
+                  OR: [
+                    { isPublished: true }, // Include all published events
+                    { status: 'PENDING' }, // Include all pending events
+                    { status: EventStatus.NON_COMPLIANT }, // Include non-compliant events
+                  ],
                 },
+              ],
+            },
+            // Admin events (drafted by current admin)
+            {
+              AND: [
+                { isPublished: false }, // Drafted events
+                { adminId: adminId }, // Only include drafted events created by current admin
               ],
             },
           ],
