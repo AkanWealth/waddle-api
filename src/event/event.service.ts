@@ -440,6 +440,12 @@ export class EventService {
           status: {
             not: EventStatus.CANCELLED,
           },
+          // Filter out events from suspended organisers to ensure compliance
+          // This prevents suspended organisers' events from appearing in admin views
+          organiser: {
+            isDeleted: false,
+            status: { not: OrganiserStatus.SUSPENDED },
+          },
           OR: [
             {
               isPublished: true, // Include all published events
@@ -447,6 +453,10 @@ export class EventService {
             {
               status: 'PENDING', // Include all pending events
             },
+            {
+              status: EventStatus.NON_COMPLIANT, // Include non-compliant events
+            },
+
             {
               AND: [
                 {
@@ -510,10 +520,16 @@ export class EventService {
     try {
       const skip = (page - 1) * limit;
 
-      // Base condition (cancelled + not deleted)
+      // Base condition (cancelled + not deleted + not from suspended organisers)
       const whereCondition: any = {
         isDeleted: false,
         status: EventStatus.CANCELLED,
+        // Filter out events from suspended organisers to ensure compliance
+        // This prevents suspended organisers' events from appearing in admin views
+        organiser: {
+          isDeleted: false,
+          status: { not: OrganiserStatus.SUSPENDED },
+        },
       };
 
       // Add isCancelled filter only if provided
