@@ -677,7 +677,7 @@ export class EventService {
             `;
 
             await this.mailer.sendMail(booking.user.email, subject, message);
-            return { success: true, message: 'Event is now fully cancelled' };
+            // return { success: true, message: 'Event is now fully cancelled' };
           } catch (error) {
             console.error(
               `Failed to process refund for booking ${booking.id}:`,
@@ -690,7 +690,6 @@ export class EventService {
 
       // Send in-app notifications to users who favorited or liked the event
       const usersToNotify = new Set<string>();
-
       // Add users who favorited the event (ensure array handling)
       if (Array.isArray(event.favorites)) {
         for (const fav of event.favorites) {
