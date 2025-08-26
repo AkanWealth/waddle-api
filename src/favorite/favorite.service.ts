@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateFavoriteDto } from './dto/create-favorite.dto';
 import { UpdateFavoriteDto } from './dto/update-favorite.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventStatus } from 'src/utils/constants/eventTypes';
 
 @Injectable()
 export class FavoriteService {
@@ -28,13 +29,27 @@ export class FavoriteService {
 
       const [favorites, total] = await this.prisma.$transaction([
         this.prisma.favorite.findMany({
-          where: { userId },
+          where: {
+            userId,
+            event: {
+              status: EventStatus.APPROVED,
+              isDeleted: false,
+            },
+          },
           include: { event: true },
           skip,
           take: limit,
           orderBy: { createdAt: 'desc' },
         }),
-        this.prisma.favorite.count({ where: { userId } }),
+        this.prisma.favorite.count({
+          where: {
+            userId,
+            event: {
+              status: EventStatus.APPROVED,
+              isDeleted: false,
+            },
+          },
+        }),
       ]);
 
       if (!favorites || favorites.length === 0) {
@@ -57,8 +72,15 @@ export class FavoriteService {
   // find one favorite event based on id for a user
   async viewFavorite(id: string, userId: string) {
     try {
-      const favorite = await this.prisma.favorite.findUnique({
-        where: { id, userId },
+      const favorite = await this.prisma.favorite.findFirst({
+        where: {
+          id,
+          userId,
+          event: {
+            status: EventStatus.APPROVED,
+            isDeleted: false,
+          },
+        },
         include: { event: true },
       });
       if (!favorite)

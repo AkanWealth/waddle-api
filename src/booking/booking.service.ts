@@ -19,6 +19,7 @@ import { PaymentService } from '../payment/payment.service';
 import { PaymentStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { OrganiserRecentActivity } from 'src/organiser/organiser-recent-activity-helper';
+import { EventStatus } from 'src/utils/constants/eventTypes';
 
 @Injectable()
 export class BookingService {
@@ -1280,6 +1281,9 @@ export class BookingService {
         throw new BadRequestException(
           'Organiser has not connected their Stripe account',
         );
+      }
+      if (event.status != EventStatus.APPROVED) {
+        throw new BadRequestException('You can only book an approved event');
       }
 
       const eventPrice = Number(event.price);

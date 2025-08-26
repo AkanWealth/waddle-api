@@ -134,6 +134,17 @@ export class CrowdSourcingController {
   }
 
   @ApiOperation({
+    summary: 'view all verified places as an admin',
+    description: 'View all verified places as an admin',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @Get('places/admin')
+  findAllSourcedPlaceAdmin() {
+    return this.crowdSourcingService.findAllSourcedPlaceAdmin();
+  }
+
+  @ApiOperation({
     summary: 'view all verified crowdsourced place',
     description: 'View all verified crowdsourced place',
   })

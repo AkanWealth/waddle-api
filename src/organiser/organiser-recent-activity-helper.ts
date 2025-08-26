@@ -52,4 +52,19 @@ export class OrganiserRecentActivity {
       title: `${userName} cancelled ${count} ${spotText} for ${eventName}`,
     });
   }
+  async sendRecentEventCancellationActivity(
+    organiserId: string,
+    amount: string,
+    count: number,
+    eventName: string,
+  ) {
+    const spotText = count === 1 ? 'booking' : 'bookings';
+
+    await this.organiserService.createOrganiserRecentActivity({
+      amount,
+      organiserId,
+      type: RecentActivityType.BOOKING_CANCELLED,
+      title: `You cancelled ${eventName}. 2 ${spotText} were refunded.`,
+    });
+  }
 }

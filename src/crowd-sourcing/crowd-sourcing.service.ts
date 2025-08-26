@@ -118,6 +118,56 @@ export class CrowdSourcingService {
     }
   }
 
+  async findAllSourcedPlace(page: number, pageSize: number) {
+    console.log(page, pageSize);
+    const places = await this.prisma.crowdSource.findMany({
+      where: {
+        isDeleted: false,
+        tag: 'Place',
+        status: 'APPROVED',
+        // isVerified: true,
+        // isPublished: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: { like: true, creator: true },
+    });
+
+    const totalPlaces = await this.prisma.crowdSource.count({
+      where: {
+        isDeleted: false,
+        tag: 'Place',
+        status: 'APPROVED',
+      },
+    });
+    if (!places || places.length === 0) {
+      return {
+        message: 'No place found for the given page.',
+        events: [],
+        totalPlaces: totalPlaces,
+      };
+    }
+
+    // const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+    // const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+    // const url = `${baseUrl}/${folder}`;
+
+    // const placesWithImage = places.map((place) => {
+    //   const imageUrls = place.images.map((image) => `${url}/${image}`);
+    //   return {
+    //     ...place,
+    //     images: imageUrls,
+    //   };
+    // });
+
+    return {
+      message: 'Places found',
+      places,
+      totalPlaces: totalPlaces,
+    };
+  }
+
   async findAllSourcedEventAdmin() {
     try {
       const events = await this.prisma.crowdSource.findMany({
@@ -171,13 +221,12 @@ export class CrowdSourcingService {
     }
   }
 
-  async findAllSourcedPlace(page: number, pageSize: number) {
-    console.log(page, pageSize);
+  async findAllSourcedPlaceAdmin() {
     const places = await this.prisma.crowdSource.findMany({
       where: {
         isDeleted: false,
         tag: 'Place',
-        status: 'APPROVED',
+        // status: 'APPROVED',
         // isVerified: true,
         // isPublished: true,
       },
@@ -191,7 +240,7 @@ export class CrowdSourcingService {
       where: {
         isDeleted: false,
         tag: 'Place',
-        status: 'APPROVED',
+        // status: 'APPROVED',
       },
     });
     if (!places || places.length === 0) {

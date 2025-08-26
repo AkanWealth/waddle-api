@@ -277,7 +277,7 @@ export class OrganiserService {
         upcomingEvents,
         pastEvents,
         totalAttendees,
-        events: eventsWithExtras,
+        events: eventsWithExtras.filter((e) => !e.isUpcoming),
       };
     } catch (error) {
       console.error(error);

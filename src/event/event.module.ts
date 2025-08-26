@@ -8,6 +8,8 @@ import { NotificationModule } from 'src/notification/notification.module';
 import { Mailer } from 'src/helper';
 import { PaymentModule } from '../payment/payment.module';
 import { PaymentService } from '../payment/payment.service';
+import { OrganiserModule } from 'src/organiser/organiser.module';
+import { OrganiserService } from 'src/organiser/organiser.service';
 
 @Module({
   imports: [
@@ -17,6 +19,7 @@ import { PaymentService } from '../payment/payment.service';
     }),
     NotificationModule,
     PaymentModule,
+    OrganiserModule,
   ],
   controllers: [EventController],
   providers: [
@@ -25,6 +28,7 @@ import { PaymentService } from '../payment/payment.service';
     NotificationService,
     Mailer,
     PaymentService,
+    OrganiserService,
   ],
 })
 export class EventModule implements NestModule {

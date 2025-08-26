@@ -490,6 +490,7 @@ enum RecentActivityType {
   ORDER
   PAYMENT
   CANCELLED
+  BOOKING_CANCELLED
 }
 
 enum Role {

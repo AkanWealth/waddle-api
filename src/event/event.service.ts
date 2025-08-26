@@ -22,6 +22,7 @@ import { NotificationHelper } from 'src/notification/notification.helper';
 import { PaymentService } from '../payment/payment.service';
 import { Mailer } from '../helper';
 import { PaymentStatus, BookingStatus } from '@prisma/client';
+import { OrganiserRecentActivity } from 'src/organiser/organiser-recent-activity-helper';
 
 @Injectable()
 export class EventService {
@@ -37,6 +38,7 @@ export class EventService {
     private prisma: PrismaService,
     private config: ConfigService,
     private notificationHelper: NotificationHelper,
+    private organiserRecentActivity: OrganiserRecentActivity,
     private paymentService: PaymentService,
     private mailer: Mailer,
   ) {}
@@ -689,40 +691,65 @@ export class EventService {
       // Send in-app notifications to users who favorited or liked the event
       const usersToNotify = new Set<string>();
 
-      // Add users who favorited the event
-      if (event.favorites) {
-        usersToNotify.add(event.favorites.userId);
+      // Add users who favorited the event (ensure array handling)
+      if (Array.isArray(event.favorites)) {
+        for (const fav of event.favorites) {
+          if (fav?.userId) usersToNotify.add(fav.userId);
+        }
       }
 
-      // Add users who liked the event
-      event.like.forEach((like) => {
-        usersToNotify.add(like.userId);
-      });
+      // Add users who liked the event (ensure array handling)
+      if (Array.isArray(event.like)) {
+        for (const like of event.like) {
+          if (like?.userId) usersToNotify.add(like.userId);
+        }
+      }
 
       await this.notificationHelper.sendEventCancellationConfirmation(
         event.organiserId,
         event.name,
       );
-      // Send in-app notifications
-      for (const userId of usersToNotify) {
+      await this.organiserRecentActivity.sendRecentEventCancellationActivity(
+        event.organiserId,
+        String(event.price),
+        confirmedBookings.length,
+        event.name,
+      );
+
+      // Send in-app notifications with concurrency limit and retries
+      const userIdList = Array.from(usersToNotify);
+      const maxConcurrent = 10;
+      let sentCount = 0;
+
+      const sendWithRetry = async (userId: string, retries = 2) => {
         try {
           await this.notificationHelper.sendEventCancellationNotificationToWishlistUsers(
             userId,
             event.name,
           );
+          sentCount += 1;
         } catch (error) {
+          if (retries > 0) {
+            // basic backoff
+            await new Promise((res) => setTimeout(res, 200));
+            return sendWithRetry(userId, retries - 1);
+          }
           console.error(
             `Failed to send notification to user ${userId}:`,
             error,
           );
-          // Continue with other notifications even if one fails
         }
+      };
+
+      for (let i = 0; i < userIdList.length; i += maxConcurrent) {
+        const chunk = userIdList.slice(i, i + maxConcurrent);
+        await Promise.allSettled(chunk.map((id) => sendWithRetry(id)));
       }
 
       return {
         message: 'Event cancelled successfully',
         refundsProcessed: confirmedBookings.length,
-        notificationsSent: usersToNotify.size,
+        notificationsSent: sentCount,
       };
     } catch (error) {
       throw error;
