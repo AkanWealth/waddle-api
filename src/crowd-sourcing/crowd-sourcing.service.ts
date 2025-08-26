@@ -65,6 +65,7 @@ export class CrowdSourcingService {
           isDeleted: false,
           isVerified: true,
           isPublished: true,
+          status: 'APPROVED',
           tag: 'Event',
         },
         skip: calSkip,
@@ -77,6 +78,7 @@ export class CrowdSourcingService {
           isDeleted: false,
           isVerified: true,
           isPublished: true,
+          status: 'APPROVED',
           tag: 'Event',
         },
       });
@@ -175,6 +177,7 @@ export class CrowdSourcingService {
       where: {
         isDeleted: false,
         tag: 'Place',
+        status: 'APPROVED',
         // isVerified: true,
         // isPublished: true,
       },
@@ -188,6 +191,7 @@ export class CrowdSourcingService {
       where: {
         isDeleted: false,
         tag: 'Place',
+        status: 'APPROVED',
       },
     });
     if (!places || places.length === 0) {
