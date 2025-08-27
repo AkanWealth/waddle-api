@@ -138,6 +138,13 @@ export class NotificationService {
     return { success: true, data: created };
   }
 
+  async getOrganiserNotificationPreferences(organiserId: string) {
+    const preferences = await this.prisma.notificationPreference.findUnique({
+      where: { organiserId: organiserId },
+    });
+    return { success: true, data: preferences };
+  }
+
   // Send push notification to specific user
   async sendPushToUser(userId: string, title: string, body: string) {
     try {

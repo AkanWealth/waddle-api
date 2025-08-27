@@ -295,4 +295,15 @@ export class NotificationController {
       dto,
     );
   }
+
+  @ApiOperation({ summary: 'Get organiser notification preferences' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard, RolesGuard)
+  @Roles(Role.Organiser)
+  @Get('organiser/preferences')
+  async getOrganiserPreferences(@GetUser('id') organiserId: string) {
+    return this.notificationService.getOrganiserNotificationPreferences(
+      organiserId,
+    );
+  }
 }

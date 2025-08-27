@@ -364,6 +364,10 @@ export class AuthService {
         },
       });
 
+      await this.prisma.notificationPreference.create({
+        data: { organiserId: organiser.id },
+      });
+
       const subject = 'Email Verification';
       const message = `<p>Hello ${organiser.name},</p>
 
