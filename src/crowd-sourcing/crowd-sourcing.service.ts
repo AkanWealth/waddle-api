@@ -63,8 +63,6 @@ export class CrowdSourcingService {
       const events = await this.prisma.crowdSource.findMany({
         where: {
           isDeleted: false,
-          isVerified: true,
-          isPublished: true,
           status: 'APPROVED',
           tag: 'Event',
         },
@@ -76,8 +74,6 @@ export class CrowdSourcingService {
       const totalEvents = await this.prisma.crowdSource.count({
         where: {
           isDeleted: false,
-          isVerified: true,
-          isPublished: true,
           status: 'APPROVED',
           tag: 'Event',
         },
