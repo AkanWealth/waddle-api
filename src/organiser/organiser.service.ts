@@ -109,10 +109,6 @@ export class OrganiserService {
   ): Promise<{ status: string; message: string; data: boolean }> {
     const organiser = await this.prisma.organiser.findUnique({
       where: { id: organiserId },
-      select: {
-        stripe_account_id: true,
-        is_stripe_connected: true,
-      },
     });
 
     if (!organiser) {
@@ -124,7 +120,9 @@ export class OrganiserService {
 
     return {
       status: 'success',
-      message: 'Stripe is connected successfully',
+      message: connected
+        ? 'Stripe is connected successfully'
+        : 'Stripe is not connected',
       data: connected,
     };
   }
