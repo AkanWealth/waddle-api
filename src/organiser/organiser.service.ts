@@ -20,6 +20,7 @@ import { EventStatus } from 'src/utils/constants/eventTypes';
 import { NotificationHelper } from 'src/notification/notification.helper';
 import { Mailer } from 'src/helper';
 import { RecentActivityType } from '@prisma/client';
+import { ReuploadDocumentDto } from './dto/reupload-document.dto';
 
 @Injectable()
 export class OrganiserService {
@@ -140,6 +141,43 @@ export class OrganiserService {
       });
 
       return { message: 'FCM token updated successfully' };
+    } catch (error) {
+      console.error('Error saving FCM token:', error);
+      if (error.code === 'P2025') {
+        throw new NotFoundException(
+          'Organiser with the provided ID does not exist.',
+        );
+      }
+      throw error;
+    }
+  }
+
+  async reuploadOrganiserDocument(userId: string, dto: ReuploadDocumentDto) {
+    if (!userId || !dto.attachment) {
+      throw new BadRequestException('User ID and token are required.');
+    }
+
+    try {
+      const existingOrganiser = await this.prisma.organiser.update({
+        where: { id: userId },
+        data: { attachment: dto.attachment, status: OrganiserStatus.PENDING },
+      });
+
+      if (!existingOrganiser) {
+        throw new NotFoundException(
+          'Organiser with the provided ID does not exist.',
+        );
+      }
+
+      await this.notificationHelper.sendOrganiserDocumentReuploadAlert(
+        userId,
+        existingOrganiser.name,
+      );
+
+      return {
+        success: true,
+        message: 'Document reuploaded successfully',
+      };
     } catch (error) {
       console.error('Error saving FCM token:', error);
       if (error.code === 'P2025') {

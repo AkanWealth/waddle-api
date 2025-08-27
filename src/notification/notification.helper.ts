@@ -259,4 +259,19 @@ export class NotificationHelper {
       recipientType: recipientTypeEnum.ORGANISER,
     });
   }
+
+  async sendOrganiserDocumentReuploadAlert(
+    organiserId: string,
+    organiserName: string,
+  ) {
+    await this.notificationService.createAdminNotification({
+      title: 'Organiser Document Reuploaded',
+      body: `An organiser named ${organiserName} has reuploaded their document`,
+      type: 'ORGANISER_DOCUMENT_REUPLOAD',
+      data: {
+        organiserId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 }

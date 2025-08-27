@@ -31,6 +31,18 @@ export class AdminNotificationHelper {
     });
   }
 
+  async sendOrganiserDocumentReuploadAlert(organiserId: string) {
+    return this.adminNotificationService.createAdminNotification({
+      title: 'Organiser Document Reuploaded',
+      body: `An organiser has reuploaded their document`,
+      type: 'ORGANISER_DOCUMENT_REUPLOAD',
+      data: {
+        organiserId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+
   // Send system alert
   async sendSystemAlert(title: string, message: string, data?: any) {
     return this.adminNotificationService.createAdminNotification({

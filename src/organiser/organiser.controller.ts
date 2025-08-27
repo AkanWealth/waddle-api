@@ -38,6 +38,7 @@ import { Roles } from '../auth/decorator/role-decorator';
 import { UpdatePasswordDto } from '../user/dto/update-password.dto';
 import { Role } from '../auth/enum';
 import { ApproveOrganiserDto } from './dto/approve-organiser.dto';
+import { ReuploadDocumentDto } from './dto/reupload-document.dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unathorized' })
@@ -244,6 +245,21 @@ export class OrganiserController {
     } else {
       return this.organiserService.updateProfile(id, dto);
     }
+  }
+
+  @ApiOperation({
+    summary: 'reupload my document as a loggedin organiser',
+    description: 'Organiser can reupload their document',
+  })
+  @ApiAcceptedResponse({ description: 'Accepted' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Patch('me/reupload-document')
+  @Roles(Role.Organiser)
+  reuploadDocument(
+    @GetUser('id') id: string,
+    @Body() dto: ReuploadDocumentDto,
+  ) {
+    return this.organiserService.reuploadOrganiserDocument(id, dto);
   }
 
   @ApiOperation({
