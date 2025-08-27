@@ -24,6 +24,7 @@ import {
   SendPushDto,
   SendEmailToWaddleTeamViaContactUsFormDto,
   CreateNotificationPreferenceDto,
+  CreateUserNotificationPreferenceDto,
 } from './dto';
 import { JwtGuard } from '../auth/guard';
 import { UseGuards } from '@nestjs/common';
@@ -296,6 +297,20 @@ export class NotificationController {
     );
   }
 
+  @ApiOperation({ summary: 'Create/update user notification preferences' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard, RolesGuard)
+  @Post('user/preferences')
+  async createOrUpdateUserPreferences(
+    @GetUser('id') userId: string,
+    @Body() dto: CreateUserNotificationPreferenceDto,
+  ) {
+    return this.notificationService.upsertUserNotificationPreferences(
+      userId,
+      dto,
+    );
+  }
+
   @ApiOperation({ summary: 'Get organiser notification preferences' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtGuard, RolesGuard)
@@ -305,5 +320,13 @@ export class NotificationController {
     return this.notificationService.getOrganiserNotificationPreferences(
       organiserId,
     );
+  }
+
+  @ApiOperation({ summary: 'Get user notification preferences' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard, RolesGuard)
+  @Get('user/preferences')
+  async getUserPreferences(@GetUser('id') userId: string) {
+    return this.notificationService.getUserNotificationPreferences(userId);
   }
 }

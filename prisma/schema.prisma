@@ -128,6 +128,7 @@ model User {
   notifications                 Notification[]          @relation("UserNotifications")
   payments                      Payment[]
   recommendation                Recommendation[]
+  NotificationPreference        NotificationPreference?
 
   @@index([email])
   @@map("user")
@@ -429,19 +430,29 @@ model AdminNotificationStatus {
 }
 
 model NotificationPreference {
-  id             String   @id @default(cuid())
-  organiserId    String?
-  order          Boolean  @default(true)
-  event_approval Boolean  @default(true)
-  cancellation   Boolean  @default(true)
-  payments       Boolean  @default(true)
-  system         Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                   String         @id @default(cuid())
+  organiserId          String?
+  userId               String?
+  recipientType        RecipientType?
+  order                Boolean        @default(true)
+  event_approval       Boolean        @default(true)
+  cancellation         Boolean        @default(true)
+  payments             Boolean        @default(true)
+  system               Boolean        @default(true)
+  booking_confirmation Boolean        @default(true)
+  new_events           Boolean        @default(true)
+  replies              Boolean        @default(true)
+  past_events          Boolean        @default(true)
+  email                Boolean        @default(true)
+  new_features         Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   organiser Organiser? @relation(fields: [organiserId], references: [id], onDelete: Cascade)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organiserId])
+  @@unique([userId])
   @@map("notification_preference")
 }
 

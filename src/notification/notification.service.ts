@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import * as firebase from 'firebase-admin';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateAdminNotificationDto,
   CreateNotificationDto,
   CreateNotificationPreferenceDto,
+  CreateUserNotificationPreferenceDto,
   SendEmailToWaddleTeamViaContactUsFormDto,
 } from './dto';
 import { recipientTypeEnum } from './dto/recepientTypes';
@@ -115,6 +120,7 @@ export class NotificationService {
     // Upsert preferences
     const data: any = {
       organiserId,
+      recipientType: RecipientType.ORGANISER,
       ...Object.fromEntries(
         Object.entries(dto).filter(([, v]) => v !== undefined),
       ),
@@ -129,22 +135,137 @@ export class NotificationService {
         where: { organiserId: organiserId },
         data,
       });
-      return { success: true, data: updated };
+      return {
+        success: true,
+        data: {
+          organiser: {
+            order: updated.order,
+            event_approval: updated.event_approval,
+            cancellation: updated.cancellation,
+            payments: updated.payments,
+            system: updated.system,
+          },
+        },
+      };
     }
 
     const created = await this.prisma.notificationPreference.create({
       data,
     });
-    return { success: true, data: created };
+    return {
+      success: true,
+      data: {
+        organiser: {
+          order: created.order,
+          event_approval: created.event_approval,
+          cancellation: created.cancellation,
+          payments: created.payments,
+          system: created.system,
+        },
+      },
+    };
+  }
+
+  async upsertUserNotificationPreferences(
+    userId: string,
+    dto: CreateUserNotificationPreferenceDto,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const data: any = {
+      userId,
+      recipientType: RecipientType.USER,
+      ...Object.fromEntries(
+        Object.entries(dto).filter(([, v]) => v !== undefined),
+      ),
+    };
+
+    const existing = await this.prisma.notificationPreference.findFirst({
+      where: { userId },
+    });
+
+    if (existing) {
+      const updated = await this.prisma.notificationPreference.update({
+        where: { id: existing.id },
+        data,
+      });
+      return {
+        success: true,
+        data: {
+          user: {
+            booking_confirmation: updated.booking_confirmation,
+            new_events: updated.new_events,
+            replies: updated.replies,
+            past_events: updated.past_events,
+            email: updated.email,
+            new_features: updated.new_features,
+          },
+        },
+      };
+    }
+
+    const created = await this.prisma.notificationPreference.create({
+      data,
+    });
+    return {
+      success: true,
+      data: {
+        user: {
+          booking_confirmation: created.booking_confirmation,
+          new_events: created.new_events,
+          replies: created.replies,
+          past_events: created.past_events,
+          email: created.email,
+          new_features: created.new_features,
+        },
+      },
+    };
   }
 
   async getOrganiserNotificationPreferences(organiserId: string) {
     const preferences = await this.prisma.notificationPreference.findUnique({
       where: { organiserId: organiserId },
     });
-    return { success: true, data: preferences };
+    return {
+      success: true,
+      data: {
+        order: preferences.order,
+        event_approval: preferences.event_approval,
+        cancellation: preferences.cancellation,
+        payments: preferences.payments,
+        system: preferences.system,
+      },
+    };
   }
 
+  async getUserNotificationPreferences(userId: string) {
+    const preferences = await this.prisma.notificationPreference.findUnique({
+      where: { userId },
+    });
+    console.log(preferences);
+    if (!preferences) {
+      throw new BadRequestException(
+        'No preference found for this user. It is probably ann older user created post 27 August',
+      );
+    }
+    return {
+      success: true,
+      data: {
+        booking_confirmation: preferences.booking_confirmation,
+        new_events: preferences.new_events,
+        replies: preferences.replies,
+        past_events: preferences.past_events,
+        email: preferences.email,
+        new_features: preferences.new_features,
+      },
+    };
+  }
   // Send push notification to specific user
   async sendPushToUser(userId: string, title: string, body: string) {
     try {

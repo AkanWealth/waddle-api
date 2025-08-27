@@ -803,6 +803,9 @@ export class EventService {
           like: true,
           recommendations: true,
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
 
       if (!event || event.length <= 0)

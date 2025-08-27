@@ -82,6 +82,12 @@ export class AuthService {
 
       if (!customer) throw new BadRequestException('Email already in use');
 
+      // Create default notification preferences for user (uses schema defaults)
+
+      await (this.prisma as any).notificationPreference.create({
+        data: { userId: customer.id, recipientType: 'USER' },
+      });
+
       // email verification section
       const subject = 'Email Verification';
       const message = `<p>Hello ${customer.name},</p>
