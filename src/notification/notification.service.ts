@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateAdminNotificationDto,
   CreateNotificationDto,
+  CreateNotificationPreferenceDto,
   SendEmailToWaddleTeamViaContactUsFormDto,
 } from './dto';
 import { recipientTypeEnum } from './dto/recepientTypes';
@@ -96,6 +97,45 @@ export class NotificationService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async upsertOrganiserNotificationPreferences(
+    organiserId: string,
+    dto: CreateNotificationPreferenceDto,
+  ) {
+    // Ensure organiser exists
+    const organiser = await this.prisma.organiser.findUnique({
+      where: { id: organiserId },
+      select: { id: true },
+    });
+    if (!organiser) {
+      throw new NotFoundException('Organiser not found');
+    }
+
+    // Upsert preferences
+    const data: any = {
+      organiserId,
+      ...Object.fromEntries(
+        Object.entries(dto).filter(([, v]) => v !== undefined),
+      ),
+    };
+
+    const existing = await this.prisma.notificationPreference.findUnique({
+      where: { organiserId: organiserId },
+    });
+
+    if (existing) {
+      const updated = await this.prisma.notificationPreference.update({
+        where: { organiserId: organiserId },
+        data,
+      });
+      return { success: true, data: updated };
+    }
+
+    const created = await this.prisma.notificationPreference.create({
+      data,
+    });
+    return { success: true, data: created };
   }
 
   // Send push notification to specific user

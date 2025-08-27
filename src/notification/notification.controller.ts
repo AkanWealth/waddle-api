@@ -1,201 +1,3 @@
-// import {
-//   Controller,
-//   Get,
-//   Post,
-//   Body,
-//   Patch,
-//   Param,
-//   Query,
-//   HttpCode,
-//   HttpStatus,
-//   Delete,
-// } from '@nestjs/common';
-// import {
-//   ApiInternalServerErrorResponse,
-//   ApiOkResponse,
-//   ApiOperation,
-//   ApiQuery,
-// } from '@nestjs/swagger';
-// import { NotificationService } from './notification.service';
-// import {
-//   CreateAdminNotificationDto,
-//   CreateNotificationDto,
-//   SendPushDto,
-// } from './dto';
-
-// @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-// @Controller('notifications')
-// export class NotificationController {
-//   constructor(private readonly notificationService: NotificationService) {}
-
-//   @ApiOperation({
-//     summary: 'Create and send notification',
-//     description:
-//       'Create notification in database and optionally send push notification',
-//   })
-//   @ApiOkResponse({ description: 'Notification created successfully' })
-//   @HttpCode(HttpStatus.CREATED)
-//   @Post()
-//   async createNotification(@Body() dto: CreateNotificationDto) {
-//     return this.notificationService.createNotification(dto);
-//   }
-
-//   @ApiOperation({
-//     summary: 'Send push notification',
-//     description: 'Send push notification to user',
-//   })
-//   @ApiOkResponse({ description: 'Push notification sent' })
-//   @HttpCode(HttpStatus.OK)
-//   @Post('push')
-//   async sendPush(@Body() dto: SendPushDto) {
-//     return this.notificationService.sendPushToUser(
-//       dto.userId,
-//       dto.title,
-//       dto.body,
-//     );
-//   }
-
-//   @ApiOperation({
-//     summary: 'Get user notifications',
-//     description: 'Get paginated notifications for a user',
-//   })
-//   @ApiOkResponse({ description: 'Notifications retrieved successfully' })
-//   @ApiQuery({ name: 'page', required: false, type: Number })
-//   @ApiQuery({ name: 'limit', required: false, type: Number })
-//   @Get('user/:userId')
-//   async getUserNotifications(
-//     @Param('userId') userId: string,
-//     @Query('page') page: number = 1,
-//     @Query('limit') limit: number = 20,
-//   ) {
-//     return this.notificationService.getUserNotifications(userId, page, limit);
-//   }
-
-//   @ApiOperation({
-//     summary: 'Mark notification as read',
-//     description: 'Mark a specific notification as read',
-//   })
-//   @ApiOkResponse({ description: 'Notification marked as read' })
-//   @Patch(':id/read/:userId')
-//   async markAsRead(@Param('id') id: string, @Param('userId') userId: string) {
-//     return this.notificationService.markAsRead(id, userId);
-//   }
-
-//   @ApiOperation({
-//     summary: 'Mark all notifications as read',
-//     description: 'Mark all notifications as read for a user',
-//   })
-//   @ApiOkResponse({ description: 'All notifications marked as read' })
-//   @Patch('read-all/:userId')
-//   async markAllAsRead(@Param('userId') userId: string) {
-//     return this.notificationService.markAllAsRead(userId);
-//   }
-
-//   @ApiOperation({
-//     summary: 'Get unread count',
-//     description: 'Get count of unread notifications for a user',
-//   })
-//   @ApiOkResponse({ description: 'Unread count retrieved' })
-//   @Get('unread-count/:userId')
-//   async getUnreadCount(@Param('userId') userId: string) {
-//     return this.notificationService.getUnreadCount(userId);
-//   }
-
-//   @ApiOperation({
-//     summary: 'Delete a notification',
-//     description: 'Delete a specific notification for a user',
-//   })
-//   @ApiOkResponse({ description: 'Notification deleted successfully' })
-//   @Delete(':id/user/:userId')
-//   async deleteNotification(
-//     @Param('id') id: string,
-//     @Param('userId') userId: string,
-//   ) {
-//     return this.notificationService.deleteNotification(id, userId);
-//   }
-
-//   @ApiOperation({
-//     summary: 'Delete all notifications for a user',
-//     description: 'Delete all notifications for a user',
-//   })
-//   @ApiOkResponse({ description: 'All notifications deleted successfully' })
-//   @Delete('user/:userId')
-//   async deleteAllNotifications(@Param('userId') userId: string) {
-//     return this.notificationService.deleteAllNotifications(userId);
-//   }
-
-//   @Post()
-//   async createAdminNotification(@Body() dto: CreateAdminNotificationDto) {
-//     return this.notificationService.createAdminNotification(dto);
-//   }
-
-//   @Get()
-//   async getMyNotifications(
-//     @Param('adminId') adminId: string,
-//     @Query('includeRead') includeRead?: string,
-//     @Query('includeCleared') includeCleared?: string,
-//     @Query('limit') limit?: string,
-//     @Query('offset') offset?: string,
-//   ) {
-//     const options = {
-//       includeRead: includeRead !== 'false',
-//       includeCleared: includeCleared === 'true',
-//       limit: limit ? parseInt(limit) : 50,
-//       offset: offset ? parseInt(offset) : 0,
-//     };
-
-//     return this.notificationService.getAdminNotifications(adminId, options);
-//   }
-
-//   @Get('counts')
-//   async getNotificationCounts(@Param('adminId') adminId: string) {
-//     return this.notificationService.getAdminNotificationCounts(adminId);
-//   }
-
-//   @Patch(':notificationId/read')
-//   async markAdminNotificationAsRead(
-//     @Param('adminId') adminId: string,
-//     @Param('notificationId') notificationId: string,
-//   ) {
-//     return this.notificationService.markAdminNotificationAsRead(
-//       adminId,
-//       notificationId,
-//     );
-//   }
-
-//   @Patch('read-all')
-//   async markAllAdminNotificationAsRead(@Param('adminId') adminId: string) {
-//     return this.notificationService.markAllAdminNotificationAsRead(adminId);
-//   }
-
-//   @Patch(':notificationId/clear')
-//   async clearNotification(
-//     @Param('adminId') adminId: string,
-//     @Param('notificationId') notificationId: string,
-//   ) {
-//     return this.notificationService.clearAdminNotification(
-//       adminId,
-//       notificationId,
-//     );
-//   }
-
-//   @Patch('clear-all')
-//   async clearAllNotifications(@Param('adminId') adminId: string) {
-//     return this.notificationService.clearAllAdminNotifications(adminId);
-//   }
-
-//   @Delete(':notificationId')
-//   async deleteAdminNotification(
-//     @Param('adminId') adminId: string,
-//     @Param('notificationId') notificationId: string,
-//   ) {
-//     return this.notificationService.deleteAdminNotification(
-//       adminId,
-//       notificationId,
-//     );
-//   }
-// }
-
 import {
   Controller,
   Get,
@@ -213,6 +15,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { NotificationService } from './notification.service';
 import {
@@ -220,10 +23,19 @@ import {
   CreateNotificationDto,
   SendPushDto,
   SendEmailToWaddleTeamViaContactUsFormDto,
+  CreateNotificationPreferenceDto,
 } from './dto';
+import { JwtGuard } from '../auth/guard';
+import { UseGuards } from '@nestjs/common';
+import { GetUser } from '../auth/decorator';
+import { Roles } from '../auth/decorator/role-decorator';
+import { RolesGuard } from '../auth/guard/role.guard';
+import { Role } from '../auth/enum';
 import { recipientTypeEnum } from './dto/recepientTypes';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
+@ApiBearerAuth()
+@UseGuards(JwtGuard)
 @Controller('notifications')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
@@ -466,5 +278,21 @@ export class NotificationController {
     @Body() dto: SendEmailToWaddleTeamViaContactUsFormDto,
   ) {
     return this.notificationService.sendEmailToWaddleTeamViaContactUsForm(dto);
+  }
+
+  // --- ORGANISER NOTIFICATION PREFERENCES ---
+  @ApiOperation({ summary: 'Create/update organiser notification preferences' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard, RolesGuard)
+  @Roles(Role.Organiser)
+  @Post('organiser/preferences')
+  async createOrUpdateOrganiserPreferences(
+    @GetUser('id') organiserId: string,
+    @Body() dto: CreateNotificationPreferenceDto,
+  ) {
+    return this.notificationService.upsertOrganiserNotificationPreferences(
+      organiserId,
+      dto,
+    );
   }
 }

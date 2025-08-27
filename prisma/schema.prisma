@@ -49,20 +49,20 @@ model AdminPermission {
 }
 
 model Organiser {
-  id                            String           @id @default(dbgenerated("generate_unique_id('organiser'::text, 'ORG-'::text)"))
+  id                            String                  @id @default(dbgenerated("generate_unique_id('organiser'::text, 'ORG-'::text)"))
   name                          String?
-  email                         String           @unique
+  email                         String                  @unique
   password                      String
   phone_number                  String?
   business_logo                 String?
   address                       String?
   business_name                 String?
   registration_number           String?
-  email_verify                  Boolean          @default(false)
-  isLocked                      Boolean          @default(false)
-  isDeleted                     Boolean          @default(false)
-  isVerified                    Boolean          @default(false)
-  failedLoginAttempts           Int              @default(0)
+  email_verify                  Boolean                 @default(false)
+  isLocked                      Boolean                 @default(false)
+  isDeleted                     Boolean                 @default(false)
+  isVerified                    Boolean                 @default(false)
+  failedLoginAttempts           Int                     @default(0)
   website_url                   String?
   business_url                  String?
   facebook_url                  String?
@@ -70,25 +70,26 @@ model Organiser {
   verification_token_expiration String?
   reset_token                   String?
   reset_expiration              String?
-  createdAt                     DateTime         @default(now())
-  updatedAt                     DateTime         @updatedAt
+  createdAt                     DateTime                @default(now())
+  updatedAt                     DateTime                @updatedAt
   fcmToken                      String?
-  role                          Role             @default(ORGANISER)
-  fcmIsOn                       Boolean          @default(false)
-  isApproved                    Boolean          @default(false)
-  lastLoginAt                   DateTime?        @db.Timestamp(6)
+  role                          Role                    @default(ORGANISER)
+  fcmIsOn                       Boolean                 @default(false)
+  isApproved                    Boolean                 @default(false)
+  lastLoginAt                   DateTime?               @db.Timestamp(6)
   stripe_account_id             String?
-  is_stripe_connected           Boolean          @default(false)
+  is_stripe_connected           Boolean                 @default(false)
   attachment                    String?
   description                   String?
-  isProfileCompleted            Boolean          @default(false)
-  status                        String           @default("PENDING")
+  isProfileCompleted            Boolean                 @default(false)
+  status                        String                  @default("PENDING")
   suspensionReason              String?
   rejectionReason               String?
   disputes                      Dispute[]
   events                        Event[]
-  notifications                 Notification[]   @relation("OrganiserNotifications")
+  notifications                 Notification[]          @relation("OrganiserNotifications")
   RecentActivity                RecentActivity[]
+  NotificationPreference        NotificationPreference?
 
   @@index([email])
   @@map("organiser")
@@ -425,6 +426,23 @@ model AdminNotificationStatus {
   @@unique([adminId, adminNotificationId])
   @@index([adminId, isRead, isCleared, isDeleted])
   @@map("admin_notification_status")
+}
+
+model NotificationPreference {
+  id             String   @id @default(cuid())
+  organiserId    String?
+  order          Boolean  @default(true)
+  event_approval Boolean  @default(true)
+  cancellation   Boolean  @default(true)
+  payments       Boolean  @default(true)
+  system         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organiser Organiser? @relation(fields: [organiserId], references: [id], onDelete: Cascade)
+
+  @@unique([organiserId])
+  @@map("notification_preference")
 }
 
 model Dispute {
