@@ -66,6 +66,9 @@ export class CrowdSourcingService {
           status: 'APPROVED',
           tag: 'Event',
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
         skip: calSkip,
         take: pageSize,
         include: { like: true, creator: true },
