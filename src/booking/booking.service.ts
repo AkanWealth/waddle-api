@@ -814,7 +814,7 @@ export class BookingService {
     try {
       const bookings = await this.prisma.booking.findMany({
         where: { event: { organiserId: userId } },
-        include: { event: true, user: true },
+        include: { event: true, user: true, consent: true },
         orderBy: {
           createdAt: 'desc',
         },
@@ -1138,7 +1138,8 @@ export class BookingService {
     const transformed = bookings.map((booking, index) => ({
       id: index + 1,
       name: booking.event?.name ?? 'Unknown',
-      date: booking.event?.date.toISOString().split('T')[0],
+      date: booking.createdAt.toISOString().split('T')[0],
+      createdAt: booking.createdAt,
       status: this.mapStatus(booking.status),
       revenue:
         Number(booking.ticket_quantity) * Number(booking.event?.price ?? 0),
