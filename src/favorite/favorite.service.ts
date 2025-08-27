@@ -33,12 +33,13 @@ export class FavoriteService {
             userId,
             event: {
               status: EventStatus.APPROVED,
+              isCancelled: false,
               isDeleted: false,
             },
           },
           include: { event: true },
           skip,
-          take: limit,
+          take: Number(limit),
           orderBy: { createdAt: 'desc' },
         }),
         this.prisma.favorite.count({
@@ -51,10 +52,6 @@ export class FavoriteService {
           },
         }),
       ]);
-
-      if (!favorites || favorites.length === 0) {
-        throw new NotFoundException('No favourite found');
-      }
 
       return {
         message: 'Favorites found',
@@ -78,6 +75,7 @@ export class FavoriteService {
           userId,
           event: {
             status: EventStatus.APPROVED,
+            isCancelled: false,
             isDeleted: false,
           },
         },

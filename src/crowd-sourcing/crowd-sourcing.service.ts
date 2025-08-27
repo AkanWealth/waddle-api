@@ -21,6 +21,7 @@ import { UpdateReviewDto } from './dto/update-review.dto';
 // import { CreateReviewDto } from './dto/create-review.dto';
 import { CommentStatus, CrowdSourceStatus } from '@prisma/client';
 import { CreateCrowdSourceReviewDto } from './dto/create-crowdsource-review.dto';
+import { NotificationHelper } from 'src/notification/notification.helper';
 
 @Injectable()
 export class CrowdSourcingService {
@@ -35,6 +36,7 @@ export class CrowdSourcingService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private notificationHelper: NotificationHelper,
   ) {}
 
   async createSourcedEvent(creatorId: string, dto: CreateCrowdSourcingDto) {
@@ -432,6 +434,11 @@ export class CrowdSourcingService {
       where: { id },
       data: { isVerified: true, status: CrowdSourceStatus.APPROVED },
     });
+    await this.notificationHelper.sendRecommendationApprovedNotification(
+      event.creatorId,
+      event.name,
+      event.tag == 'Event' ? true : false,
+    );
 
     return {
       message: 'Verified',
@@ -450,6 +457,11 @@ export class CrowdSourcingService {
       where: { id },
       data: { isVerified: false, status: CrowdSourceStatus.REJECTED },
     });
+    await this.notificationHelper.sendRecommendationRejectionNotification(
+      event.creatorId,
+      event.name,
+      event.tag == 'Event' ? true : false,
+    );
 
     return {
       message: 'Unverified',

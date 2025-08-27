@@ -235,6 +235,15 @@ export class NotificationHelper {
       sendPush: true,
       visibleToAdmins: false,
     });
+    await this.notificationService.createAdminNotification({
+      title: 'Organiser Event Cancellationn',
+      body: 'A Vendor has rejected for an event cancellation. Please approve ',
+      type: 'EVENT_CANCELLATION_REQUEST',
+      data: {
+        organiserId,
+        timestamp: new Date().toISOString(),
+      },
+    });
   }
 
   async sendEventCancellationNotificationToWishlistUsers(
@@ -272,6 +281,33 @@ export class NotificationHelper {
         organiserId,
         timestamp: new Date().toISOString(),
       },
+    });
+  }
+
+  async sendRecommendationApprovedNotification(
+    userId: string,
+    eventName: string,
+    isEvent: boolean,
+  ) {
+    await this.notificationService.createNotification({
+      title: `${isEvent ? 'Event' : 'Place'} Recommendation Approved`,
+      body: `Your recommended ${isEvent ? 'event' : 'place'} "${eventName}" has just been reviewed and approve by the admin.`,
+      recipientId: userId,
+      sendPush: true,
+      recipientType: recipientTypeEnum.USER,
+    });
+  }
+  async sendRecommendationRejectionNotification(
+    userId: string,
+    eventName: string,
+    isEvent: boolean,
+  ) {
+    await this.notificationService.createNotification({
+      title: `${isEvent ? 'Event' : 'Place'} Recommendation Rejected`,
+      body: `Your recommended ${isEvent ? 'event' : 'place'} "${eventName}" has just been rejected by the admin.`,
+      recipientId: userId,
+      sendPush: true,
+      recipientType: recipientTypeEnum.USER,
     });
   }
 }
