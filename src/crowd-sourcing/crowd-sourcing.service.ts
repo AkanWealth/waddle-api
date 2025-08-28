@@ -73,7 +73,7 @@ export class CrowdSourcingService {
         },
         skip: calSkip,
         take: pageSize,
-        include: { like: true, creator: true },
+        include: { like: true, creator: true, attendances: true },
       });
 
       const totalEvents = await this.prisma.crowdSource.count({
@@ -132,7 +132,7 @@ export class CrowdSourcingService {
       orderBy: {
         createdAt: 'desc',
       },
-      include: { like: true, creator: true },
+      include: { like: true, creator: true, reviews: true },
     });
 
     const totalPlaces = await this.prisma.crowdSource.count({
@@ -1734,9 +1734,6 @@ export class CrowdSourcingService {
           reviewId: review.id,
           user: {
             ...review.user,
-            profile_picture: review.user.profile_picture
-              ? `${process.env.S3_PUBLIC_URL}/users/${review.user.profile_picture}`
-              : null,
           },
           comment: review.comment,
           recommendedAt: review.createdAt,
