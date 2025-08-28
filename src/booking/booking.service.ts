@@ -1525,11 +1525,27 @@ export class BookingService {
         },
       });
 
+      const [userPreferences, organiserPreferences] = await Promise.all([
+        this.prisma.notificationPreference.findFirst({
+          where: {
+            userId: booking.userId,
+          },
+        }),
+        this.prisma.notificationPreference.findFirst({
+          where: {
+            organiserId: booking.event.organiserId,
+          },
+        }),
+      ]);
+
+      if (userPreferences.booking_confirmation) {
+        await this.notificationHelper.sendBookingConfirmation(
+          booking.userId,
+          booking.event.name,
+        );
+      }
       // Send confirmation notification
-      await this.notificationHelper.sendBookingConfirmation(
-        booking.userId,
-        booking.event.name,
-      );
+
       if (isOrganiserEvent) {
         await this.organiserRecentActivity.sendRecentOrderActivity(
           booking.event.organiserId,
@@ -1543,11 +1559,13 @@ export class BookingService {
           payment.amount,
           booking.event.name,
         );
-        await this.notificationHelper.sendEventBookedNotification(
-          booking.event.organiserId,
-          booking.event.name,
-          booking.user.name,
-        );
+        if (organiserPreferences.order) {
+          await this.notificationHelper.sendEventBookedNotification(
+            booking.event.organiserId,
+            booking.event.name,
+            booking.user.name,
+          );
+        }
       }
       const subject = 'Booking Confirmation';
       const message = `
@@ -1567,7 +1585,9 @@ export class BookingService {
       <p>Waddle Team</p>
     `;
 
-      await this.mailer.sendMail(booking.user.email, subject, message);
+      if (userPreferences.email) {
+        await this.mailer.sendMail(booking.user.email, subject, message);
+      }
 
       return {
         message: 'Payment successful and booking confirmed',
@@ -1626,7 +1646,15 @@ export class BookingService {
         where: { id: userId },
       });
 
-      if (user) {
+      const [userPreferences] = await Promise.all([
+        this.prisma.notificationPreference.findFirst({
+          where: {
+            userId: existingBooking.userId,
+          },
+        }),
+      ]);
+
+      if (user && userPreferences.booking_confirmation) {
         // Send failure notification - using a simple notification for now
         await this.notification.createNotification({
           title: 'Payment Failed',
