@@ -59,9 +59,14 @@ export class CrowdSourcingService {
     }
   }
 
-  async findAllSourcedEvent(page: number, pageSize: number) {
+  async findAllSourcedEvent(page = 1, pageSize = 10) {
     try {
-      const calSkip = (page - 1) * pageSize;
+      // force to number and handle edge cases
+      const safePage = Math.max(Number(page) || 1, 1);
+      const safePageSize = Math.max(Number(pageSize) || 10, 1);
+
+      const calSkip = (safePage - 1) * safePageSize;
+
       const events = await this.prisma.crowdSource.findMany({
         where: {
           isDeleted: false,
@@ -72,7 +77,7 @@ export class CrowdSourcingService {
           createdAt: 'desc',
         },
         skip: calSkip,
-        take: pageSize,
+        take: safePageSize,
         include: {
           like: true,
           creator: true,
@@ -96,41 +101,95 @@ export class CrowdSourcingService {
           tag: 'Event',
         },
       });
-      if (!events || events.length === 0) {
-        return {
-          message: 'No events found for the given page.',
-          events: [],
-          totalEvents: totalEvents,
-          currentPage: page,
-          pageSize: pageSize,
-          totalPages: Math.ceil(totalEvents / pageSize),
-        };
-      }
-
-      // const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
-      // const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
-      // const url = `${baseUrl}/${folder}`;
-
-      // const eventsWithImage = events.map((event) => {
-      //   const imageUrls = event.images.map((image) => `${url}/${image}`);
-      //   return {
-      //     ...event,
-      //     images: imageUrls,
-      //   };
-      // });
 
       return {
-        message: 'Events found',
+        message: events.length
+          ? 'Events found'
+          : 'No events found for this page.',
         events,
-        totalEvents: totalEvents,
-        currentPage: page,
-        pageSize: pageSize,
-        totalPages: Math.ceil(totalEvents / pageSize),
+        totalEvents,
+        currentPage: safePage,
+        pageSize: safePageSize,
+        totalPages: Math.ceil(totalEvents / safePageSize),
       };
     } catch (error) {
       throw error;
     }
   }
+
+  //Previous one
+  // async findAllSourcedEvent(page: number, pageSize: number) {
+  //   try {
+  //     const calSkip = (page - 1) * pageSize;
+  //     const events = await this.prisma.crowdSource.findMany({
+  //       where: {
+  //         isDeleted: false,
+  //         status: 'APPROVED',
+  //         tag: 'Event',
+  //       },
+  //       orderBy: {
+  //         createdAt: 'desc',
+  //       },
+  //       skip: calSkip,
+  //       take: pageSize,
+  //       include: {
+  //         like: true,
+  //         creator: true,
+  //         attendances: {
+  //           include: {
+  //             user: {
+  //               select: {
+  //                 profile_picture: true,
+  //                 id: true,
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     const totalEvents = await this.prisma.crowdSource.count({
+  //       where: {
+  //         isDeleted: false,
+  //         status: 'APPROVED',
+  //         tag: 'Event',
+  //       },
+  //     });
+  //     if (!events || events.length === 0) {
+  //       return {
+  //         message: 'No events found for the given page.',
+  //         events: [],
+  //         totalEvents: totalEvents,
+  //         currentPage: page,
+  //         pageSize: pageSize,
+  //         totalPages: Math.ceil(totalEvents / pageSize),
+  //       };
+  //     }
+
+  //     // const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
+  //     // const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
+  //     // const url = `${baseUrl}/${folder}`;
+
+  //     // const eventsWithImage = events.map((event) => {
+  //     //   const imageUrls = event.images.map((image) => `${url}/${image}`);
+  //     //   return {
+  //     //     ...event,
+  //     //     images: imageUrls,
+  //     //   };
+  //     // });
+
+  //     return {
+  //       message: 'Events found',
+  //       events,
+  //       totalEvents: totalEvents,
+  //       currentPage: page,
+  //       pageSize: pageSize,
+  //       totalPages: Math.ceil(totalEvents / pageSize),
+  //     };
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
 
   async findAllSourcedPlace(page: number, pageSize: number) {
     console.log(page, pageSize);
@@ -203,7 +262,7 @@ export class CrowdSourcingService {
           tag: 'Event',
         },
 
-        include: { like: true, creator: true },
+        include: { like: true, creator: true, attendances: true },
         orderBy: {
           createdAt: 'desc',
         },
@@ -226,21 +285,17 @@ export class CrowdSourcingService {
         };
       }
 
-      const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
-      const folder = this.config.getOrThrow('S3_CROWDSOURCE_FOLDER');
-      const url = `${baseUrl}/${folder}`;
-
-      const eventsWithImage = events.map((event) => {
-        const imageUrls = event.images.map((image) => `${url}/${image}`);
-        return {
-          ...event,
-          images: imageUrls,
-        };
-      });
+      // const eventsWithImage = events.map((event) => {
+      //   const imageUrls = event.images.map((image) => `${url}/${image}`);
+      //   return {
+      //     ...event,
+      //     images: imageUrls,
+      //   };
+      // });
 
       return {
         message: 'Events found',
-        events: eventsWithImage,
+        events: events,
         totalEvents: totalEvents,
       };
     } catch (error) {
@@ -1821,6 +1876,60 @@ export class CrowdSourcingService {
               : null,
           },
           comment: review.comment,
+          recommendedAt: review.createdAt,
+        })),
+      },
+    };
+  }
+
+  async getParentsWhoRecommendedEventAsAdmin(crowdSourceId: string) {
+    // Verify crowdsource exists and is an event
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: {
+        id: crowdSourceId,
+        isDeleted: false,
+        tag: 'Event',
+      },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const parentsWhoRecommended =
+      await this.prisma.crowdSourceAttendance.findMany({
+        where: {
+          crowdSourceId: crowdSourceId,
+          going: 'YES',
+          user: {
+            role: 'GUARDIAN',
+            isDeleted: false,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profile_picture: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+    return {
+      success: true,
+      message: 'Parents who recommended this event retrieved successfully',
+      data: {
+        totalRecommendations: parentsWhoRecommended.length,
+        parents: parentsWhoRecommended.map((review) => ({
+          reviewId: review.id,
+          user: review.user,
+          // comment: review.comment,
           recommendedAt: review.createdAt,
         })),
       },

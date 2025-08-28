@@ -531,6 +531,16 @@ export class CrowdSourcingController {
     return this.crowdSourcingService.getParentsWhoRecommendedEvent(id);
   }
 
+  @Get('event/:crowdSourceId/parents-list')
+  @ApiOperation({
+    summary: 'Get list of parents who recommended a crowdsourced event ',
+  })
+  @ApiParam({ name: 'crowdSourceId', type: String })
+  @ApiResponse({ status: 200, description: 'List retrieved successfully' })
+  getParentsWhoRecommendedEventAdmin(@Param('crowdSourceId') id: string) {
+    return this.crowdSourcingService.getParentsWhoRecommendedEventAsAdmin(id);
+  }
+
   @Post('event/:crowdSourceId/recommendation')
   @ApiOperation({ summary: 'Toggle recommendation for an event' })
   @ApiParam({ name: 'crowdSourceId', type: String })
