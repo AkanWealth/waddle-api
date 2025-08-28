@@ -62,7 +62,7 @@ export class OrganiserService {
   ): '7days' | 'monthly' | 'yearly' {
     const diffMs = endDate.getTime() - startDate.getTime();
     const days = diffMs / (24 * 60 * 60 * 1000);
-    if (days <= 8) return '7days';
+    if (days <= 31) return '7days';
     // Rough month diff
     const months =
       (endDate.getFullYear() - startDate.getFullYear()) * 12 +
@@ -114,19 +114,19 @@ export class OrganiserService {
     const map = new Map<string, { period: string; date: string }>();
 
     if (period === '7days') {
-      // Generate each day between startDate and endDate (max 7)
+      // Generate each day between startDate and endDate (inclusive)
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
       const end = new Date(endDate);
       end.setHours(0, 0, 0, 0);
 
       const cursor = new Date(start);
-      let steps = 0;
-      while (cursor <= end && steps < 8) {
+      while (cursor <= end) {
         const { key, label } = this.buildPeriodKeyAndLabel(cursor, period);
-        map.set(key, { period: label, date: key });
+        if (!map.has(key)) {
+          map.set(key, { period: label, date: key });
+        }
         cursor.setDate(cursor.getDate() + 1);
-        steps++;
       }
     } else if (period === 'monthly') {
       // Last up-to 12 months between range
