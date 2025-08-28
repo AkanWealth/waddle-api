@@ -14,7 +14,7 @@ import {
 } from '@aws-sdk/client-s3';
 import Stripe from 'stripe';
 import { UpdatePasswordDto } from '../user/dto';
-import { NotificationService } from '../notification/notification.service';
+// import { NotificationService } from '../notification/notification.service';
 import { OrganiserStatus } from 'src/utils/constants/organiserTypes';
 import { EventStatus } from 'src/utils/constants/eventTypes';
 import { NotificationHelper } from 'src/notification/notification.helper';
@@ -39,9 +39,458 @@ export class OrganiserService {
     private prisma: PrismaService,
     private config: ConfigService,
     private mailer: Mailer,
-    private notificationService: NotificationService,
     private notificationHelper: NotificationHelper,
   ) {}
+
+  private calculateChange(current: number, previous: number) {
+    if (previous === 0) {
+      return {
+        changePercent: Number((current > 0 ? 100 : 0).toFixed(1)),
+        isPositive: current >= 0,
+      };
+    }
+    const delta = ((current - previous) / previous) * 100;
+    return {
+      changePercent: Number(delta.toFixed(1)),
+      isPositive: delta >= 0,
+    };
+  }
+
+  private determinePeriodGranularity(
+    startDate: Date,
+    endDate: Date,
+  ): '7days' | 'monthly' | 'yearly' {
+    const diffMs = endDate.getTime() - startDate.getTime();
+    const days = diffMs / (24 * 60 * 60 * 1000);
+    if (days <= 8) return '7days';
+    // Rough month diff
+    const months =
+      (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+      (endDate.getMonth() - startDate.getMonth());
+    if (months <= 12) return 'monthly';
+    return 'yearly';
+  }
+
+  private buildPeriodKeyAndLabel(
+    date: Date,
+    period: '7days' | 'monthly' | 'yearly',
+  ) {
+    if (period === '7days') {
+      return {
+        key: date.toISOString().split('T')[0],
+        label: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()],
+      };
+    }
+    if (period === 'monthly') {
+      return {
+        key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+        label: [
+          'Jan',
+          'Feb',
+          'Mar',
+          'Apr',
+          'May',
+          'Jun',
+          'Jul',
+          'Aug',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dec',
+        ][date.getMonth()],
+      };
+    }
+    return {
+      key: date.getFullYear().toString(),
+      label: date.getFullYear().toString(),
+    };
+  }
+
+  private initializeSeriesBuckets(
+    startDate: Date,
+    endDate: Date,
+    period: '7days' | 'monthly' | 'yearly',
+  ) {
+    const map = new Map<string, { period: string; date: string }>();
+
+    if (period === '7days') {
+      // Generate each day between startDate and endDate (max 7)
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(0, 0, 0, 0);
+
+      const cursor = new Date(start);
+      let steps = 0;
+      while (cursor <= end && steps < 8) {
+        const { key, label } = this.buildPeriodKeyAndLabel(cursor, period);
+        map.set(key, { period: label, date: key });
+        cursor.setDate(cursor.getDate() + 1);
+        steps++;
+      }
+    } else if (period === 'monthly') {
+      // Last up-to 12 months between range
+      const startY = startDate.getFullYear();
+      const startM = startDate.getMonth();
+      const endY = endDate.getFullYear();
+      const endM = endDate.getMonth();
+      let y = startY;
+      let m = startM;
+      while (y < endY || (y === endY && m <= endM)) {
+        const d = new Date(y, m, 1);
+        const { key, label } = this.buildPeriodKeyAndLabel(d, period);
+        map.set(key, { period: label, date: key });
+        m++;
+        if (m > 11) {
+          m = 0;
+          y++;
+        }
+      }
+    } else {
+      // yearly - from start year to end year
+      for (let y = startDate.getFullYear(); y <= endDate.getFullYear(); y++) {
+        const d = new Date(y, 0, 1);
+        const { key, label } = this.buildPeriodKeyAndLabel(d, period);
+        map.set(key, { period: label, date: key });
+      }
+    }
+
+    return map;
+  }
+
+  private async getBookingGrowthSeries(
+    organiserId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    const period = this.determinePeriodGranularity(startDate, endDate);
+
+    const raw = await this.prisma.booking.findMany({
+      where: {
+        status: 'Confirmed',
+        isDeleted: false,
+        createdAt: { gte: startDate, lt: endDate },
+        event: { organiserId, isDeleted: false },
+      },
+      select: { createdAt: true, ticket_quantity: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const buckets = this.initializeSeriesBuckets(startDate, endDate, period);
+    const totals = new Map<string, number>();
+
+    for (const r of raw) {
+      const d = new Date(r.createdAt);
+      const { key } = this.buildPeriodKeyAndLabel(d, period);
+      totals.set(key, (totals.get(key) || 0) + (r.ticket_quantity || 0));
+    }
+
+    const series = Array.from(buckets.entries()).map(([key, meta]) => ({
+      period: meta.period,
+      bookings: totals.get(key) || 0,
+      date: meta.date,
+    }));
+
+    return { period, series };
+  }
+
+  private async getRevenueGrowthSeries(
+    organiserId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    const period = this.determinePeriodGranularity(startDate, endDate);
+
+    const raw = await this.prisma.payment.findMany({
+      where: {
+        status: 'SUCCESSFUL',
+        createdAt: { gte: startDate, lt: endDate },
+        event: { organiserId },
+      },
+      select: {
+        createdAt: true,
+        netAmount: true,
+        amountPaid: true,
+        amount: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const buckets = this.initializeSeriesBuckets(startDate, endDate, period);
+    const totals = new Map<string, number>();
+
+    for (const r of raw) {
+      const d = new Date(r.createdAt);
+      const { key } = this.buildPeriodKeyAndLabel(d, period);
+      const n = r.netAmount ? Number(r.netAmount) : 0;
+      const a = r.amountPaid ? Number(r.amountPaid) : 0;
+      const amt = n || a || (r.amount ? Number(r.amount) : 0) || 0;
+      totals.set(key, Number(((totals.get(key) || 0) + amt).toFixed(2)));
+    }
+
+    const series = Array.from(buckets.entries()).map(([key, meta]) => ({
+      period: meta.period,
+      revenue: totals.get(key) || 0,
+      date: meta.date,
+    }));
+
+    return { period, series };
+  }
+
+  async getOrganiserAnalytics(
+    organiserId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    if (!organiserId) throw new BadRequestException('organiserId is required');
+    if (!(startDate instanceof Date) || isNaN(startDate.getTime()))
+      throw new BadRequestException('startDate is invalid');
+    if (!(endDate instanceof Date) || isNaN(endDate.getTime()))
+      throw new BadRequestException('endDate is invalid');
+
+    const rangeMs = endDate.getTime() - startDate.getTime();
+    const previousStartDate = new Date(startDate.getTime() - rangeMs);
+    const previousEndDate = startDate;
+
+    // Revenue (successful payments)
+    const [currentPayments, previousPayments] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: {
+          status: 'SUCCESSFUL',
+          event: { organiserId },
+          createdAt: { gte: startDate, lt: endDate },
+        },
+        select: { netAmount: true, amountPaid: true },
+      }),
+      this.prisma.payment.findMany({
+        where: {
+          status: 'SUCCESSFUL',
+          event: { organiserId },
+          createdAt: { gte: previousStartDate, lt: previousEndDate },
+        },
+        select: { netAmount: true, amountPaid: true },
+      }),
+    ]);
+
+    // Use netAmount primarily, fallback to amountPaid
+    const sumPayments = (list: { netAmount: any; amountPaid: any }[]) =>
+      list.reduce((sum, p) => {
+        const n = p.netAmount ? Number(p.netAmount) : 0;
+        const a = p.amountPaid ? Number(p.amountPaid) : 0;
+        return sum + (n || a || 0);
+      }, 0);
+
+    const currentRevenue = Number(sumPayments(currentPayments).toFixed(2));
+    const previousRevenue = Number(sumPayments(previousPayments).toFixed(2));
+    const revenueChange = this.calculateChange(currentRevenue, previousRevenue);
+
+    // Bookings (Confirmed only)
+    const [currentBookings, previousBookings] = await Promise.all([
+      this.prisma.booking.count({
+        where: {
+          status: 'Confirmed',
+          isDeleted: false,
+          event: { organiserId, isDeleted: false },
+          createdAt: { gte: startDate, lt: endDate },
+        },
+      }),
+      this.prisma.booking.count({
+        where: {
+          status: 'Confirmed',
+          isDeleted: false,
+          event: { organiserId, isDeleted: false },
+          createdAt: { gte: previousStartDate, lt: previousEndDate },
+        },
+      }),
+    ]);
+    const bookingChange = this.calculateChange(
+      currentBookings,
+      previousBookings,
+    );
+
+    // Top performing events (by attendees within period)
+    const topEventBookings = await this.prisma.booking.groupBy({
+      by: ['eventId'],
+      where: {
+        status: 'Confirmed',
+        isDeleted: false,
+        event: { organiserId, isDeleted: false },
+        createdAt: { gte: startDate, lt: endDate },
+      },
+      _sum: { ticket_quantity: true },
+    });
+
+    // Fetch event names and revenue for the top IDs
+    const sortedTop = topEventBookings
+      .sort(
+        (a, b) => (b._sum.ticket_quantity || 0) - (a._sum.ticket_quantity || 0),
+      )
+      .slice(0, 5);
+    const topEventIds = sortedTop.map((t) => t.eventId);
+
+    const [eventsMeta, revenueByEvent] = await Promise.all([
+      this.prisma.event.findMany({
+        where: { id: { in: topEventIds } },
+        select: { id: true, name: true },
+      }),
+      this.prisma.payment.groupBy({
+        by: ['eventId'],
+        where: {
+          status: 'SUCCESSFUL',
+          eventId: { in: topEventIds },
+          createdAt: { gte: startDate, lt: endDate },
+        },
+        _sum: { netAmount: true, amount: true, amountPaid: true },
+      }),
+    ]);
+
+    const revenueMap = new Map<string, number>();
+    for (const r of revenueByEvent) {
+      const n = r._sum.netAmount ? Number(r._sum.netAmount) : 0;
+      const a = r._sum.amountPaid ? Number(r._sum.amountPaid) : 0;
+      const amt = n || a || (r._sum.amount ? Number(r._sum.amount) : 0) || 0;
+      revenueMap.set(r.eventId, Number(amt.toFixed(2)));
+    }
+
+    const nameMap = new Map(eventsMeta.map((e) => [e.id, e.name || 'Unnamed']));
+
+    const topEvents = sortedTop.map((t) => ({
+      eventId: t.eventId,
+      name: nameMap.get(t.eventId) || 'Unnamed',
+      attendees: t._sum.ticket_quantity || 0,
+      revenue: revenueMap.get(t.eventId) || 0,
+    }));
+
+    // Demographics within period (reuse logic with date filter)
+    const consents = await this.prisma.consent.findMany({
+      where: {
+        booking: {
+          status: 'Confirmed',
+          isDeleted: false,
+          createdAt: { gte: startDate, lt: endDate },
+          event: { organiserId, isDeleted: false },
+        },
+      },
+      select: { age: true },
+    });
+
+    const ages = consents
+      .map((c) => c.age)
+      .filter((a) => typeof a === 'number');
+    const buckets = [
+      { label: '0-5', min: 0, max: 5, count: 0 },
+      { label: '6-12', min: 6, max: 12, count: 0 },
+      { label: '13-20', min: 13, max: 20, count: 0 },
+    ];
+    for (const age of ages) {
+      for (const b of buckets) {
+        if (age >= b.min && age <= b.max) {
+          b.count += 1;
+          break;
+        }
+      }
+    }
+    const totalAttendees = buckets.reduce((sum, b) => sum + b.count, 0);
+    const demographicsBuckets = buckets.map((b) => ({
+      label: b.label,
+      count: b.count,
+      percentage:
+        totalAttendees === 0
+          ? 0
+          : Number(((b.count / totalAttendees) * 100).toFixed(2)),
+    }));
+
+    // Returning customers percentage within period
+    const bookingsForUsers = await this.prisma.booking.findMany({
+      where: {
+        status: 'Confirmed',
+        isDeleted: false,
+        createdAt: { gte: startDate, lt: endDate },
+        event: { organiserId, isDeleted: false },
+      },
+      select: { userId: true },
+    });
+
+    const userCountMap = new Map<string, number>();
+    for (const b of bookingsForUsers) {
+      userCountMap.set(b.userId, (userCountMap.get(b.userId) || 0) + 1);
+    }
+    const totalUniqueCustomers = userCountMap.size;
+    let returningCustomers = 0;
+    for (const count of userCountMap.values())
+      if (count >= 2) returningCustomers += 1;
+    const returningCustomersPercentage =
+      totalUniqueCustomers === 0
+        ? 0
+        : Number(
+            ((returningCustomers / totalUniqueCustomers) * 100).toFixed(2),
+          );
+
+    const demographics = {
+      message: 'Age group percentages fetched',
+      total_attendees: totalAttendees,
+      buckets: demographicsBuckets,
+      returning_customers_percentage: returningCustomersPercentage,
+    };
+
+    // Recent payments (last 5 within period)
+    const recentPayments = await this.prisma.payment.findMany({
+      where: {
+        status: 'SUCCESSFUL',
+        event: { organiserId },
+        createdAt: { gte: startDate, lt: endDate },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        transactionId: true,
+        eventId: true,
+        amount: true,
+        netAmount: true,
+        amountPaid: true,
+        status: true,
+        createdAt: true,
+        event: { select: { name: true } },
+      },
+    });
+
+    const transformedRecentPayments = recentPayments.map((p) => ({
+      id: p.id,
+      transactionId: p.transactionId,
+      eventId: p.eventId,
+      eventName: p.event?.name || null,
+      amount: p.amount ? Number(p.amount) : null,
+      netAmount: p.netAmount ? Number(p.netAmount) : null,
+      amountPaid: p.amountPaid ? Number(p.amountPaid) : null,
+      status: p.status,
+      createdAt: p.createdAt,
+    }));
+
+    // Growth series
+    const [bookingGrowth, revenueGrowth] = await Promise.all([
+      this.getBookingGrowthSeries(organiserId, startDate, endDate),
+      this.getRevenueGrowthSeries(organiserId, startDate, endDate),
+    ]);
+
+    return {
+      revenue: {
+        total: currentRevenue,
+        previous: previousRevenue,
+        ...revenueChange,
+      },
+      bookings: {
+        total: currentBookings,
+        previous: previousBookings,
+        ...bookingChange,
+      },
+      topEvents,
+      demographics,
+      recentPayments: transformedRecentPayments,
+      bookingGrowth,
+      revenueGrowth,
+    };
+  }
 
   private async createConnectAccount(userId: string) {
     const account = await this.stripe.accounts.create({

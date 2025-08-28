@@ -14,6 +14,7 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   Post,
+  Query,
 } from '@nestjs/common';
 import { OrganiserService } from './organiser.service';
 import { UpdateOrganiserDto } from './dto';
@@ -47,6 +48,46 @@ import { ReuploadDocumentDto } from './dto/reupload-document.dto';
 @Controller('organisers')
 export class OrganiserController {
   constructor(private organiserService: OrganiserService) {}
+
+  @ApiOperation({
+    summary: 'Get organiser analytics',
+    description:
+      'Returns revenue, bookings, top events, demographics, and recent payments for a date range with previous-period comparison',
+  })
+  @ApiOkResponse({ description: 'Organiser analytics retrieved successfully' })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: String,
+    description: 'ISO date string',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: String,
+    description: 'ISO date string',
+  })
+  @Get('analytics')
+  @Roles(Role.Organiser)
+  async getOrganiserAnalytics(
+    @GetUser('id') organiserId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const now = new Date();
+    const defaultEndDate = now;
+    const defaultStartDate = new Date(now);
+    defaultStartDate.setMonth(now.getMonth() - 3);
+
+    const parsedStart = startDate ? new Date(startDate) : defaultStartDate;
+    const parsedEnd = endDate ? new Date(endDate) : defaultEndDate;
+
+    return this.organiserService.getOrganiserAnalytics(
+      organiserId,
+      parsedStart,
+      parsedEnd,
+    );
+  }
 
   // Start Organiser
   @ApiOperation({
