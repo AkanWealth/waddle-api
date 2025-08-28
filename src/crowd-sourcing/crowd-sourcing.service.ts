@@ -78,7 +78,12 @@ export class CrowdSourcingService {
           creator: true,
           attendances: {
             include: {
-              user: true,
+              user: {
+                select: {
+                  profile_picture: true,
+                  id: true,
+                },
+              },
             },
           },
         },
@@ -145,7 +150,12 @@ export class CrowdSourcingService {
         creator: true,
         reviews: {
           include: {
-            user: true,
+            user: {
+              select: {
+                profile_picture: true,
+                id: true,
+              },
+            },
           },
         },
       },
