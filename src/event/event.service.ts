@@ -464,7 +464,6 @@ export class EventService {
             // Admin events (drafted by current admin)
             {
               AND: [
-                { isPublished: false }, // Drafted events
                 { adminId: adminId }, // Only include drafted events created by current admin
               ],
             },
