@@ -237,7 +237,7 @@ export class NotificationHelper {
     });
     await this.notificationService.createAdminNotification({
       title: 'Organiser Event Cancellationn',
-      body: 'A Vendor has rejected for an event cancellation. Please approve ',
+      body: 'A Vendor has just rejected for an event cancellation.',
       type: 'EVENT_CANCELLATION_REQUEST',
       data: {
         organiserId,
