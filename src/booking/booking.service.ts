@@ -864,24 +864,46 @@ export class BookingService {
     try {
       const skip = (page - 1) * limit;
 
-      const [bookings, total] = await this.prisma.$transaction([
-        this.prisma.booking.findMany({
-          where: { userId },
-          include: { event: true },
-          skip,
-          take: Number(limit),
-          orderBy: {
-            createdAt: 'desc',
-            // event: {
-            //   date: 'desc',
-            // },
-          },
-        }),
-        this.prisma.booking.count({ where: { userId } }),
-      ]);
+      const today = new Date();
+
+      const [bookings, total, pastCount, upcomingCount] =
+        await this.prisma.$transaction([
+          this.prisma.booking.findMany({
+            where: { userId },
+            include: { event: true },
+            skip,
+            take: Number(limit),
+            orderBy: {
+              createdAt: 'desc',
+            },
+          }),
+          this.prisma.booking.count({
+            where: { userId },
+          }),
+          this.prisma.booking.count({
+            where: {
+              userId,
+              event: {
+                date: { lt: today }, // past events
+              },
+            },
+          }),
+          this.prisma.booking.count({
+            where: {
+              userId,
+              event: {
+                date: { gte: today }, // upcoming events
+              },
+            },
+          }),
+        ]);
 
       return {
         message: 'Bookings found',
+        meta: {
+          pastCount,
+          upcomingCount,
+        },
         total,
         page,
         limit,

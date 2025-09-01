@@ -1,9 +1,10 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import * as firebase from 'firebase-admin';
+import * as admin from 'firebase-admin';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateAdminNotificationDto,
@@ -21,7 +22,52 @@ export class NotificationService {
   constructor(
     private prisma: PrismaService,
     private mailer: Mailer,
+    @Inject('FIREBASE_ADMIN')
+    private readonly firebaseAdmin: { messaging: admin.messaging.Messaging },
   ) {}
+  private async sendPushNotification(
+    token: string,
+    title: string,
+    body: string,
+  ) {
+    console.log(token);
+    const message = {
+      token,
+      notification: {
+        title,
+        body,
+      },
+      data: {
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      },
+      android: {
+        priority: 'high' as const,
+        notification: {
+          sound: 'default',
+          channelId: 'default',
+        },
+      },
+      apns: {
+        headers: {
+          'apns-priority': '10',
+        },
+        payload: {
+          aps: {
+            contentAvailable: true,
+            sound: 'default',
+          },
+        },
+      },
+    };
+
+    try {
+      const response = await this.firebaseAdmin.messaging.send(message);
+      console.log('✅ Push sent:', response);
+      return { message: 'Push notification sent successfully', response };
+    } catch (error) {
+      console.error('❌ Error sending push:', error);
+    }
+  }
 
   async createNotification(dto: CreateNotificationDto) {
     try {
@@ -266,6 +312,7 @@ export class NotificationService {
       },
     };
   }
+
   // Send push notification to specific user
   async sendPushToUser(userId: string, title: string, body: string) {
     try {
@@ -277,6 +324,7 @@ export class NotificationService {
       if (!user) {
         throw new NotFoundException('User not found');
       }
+      console.log(user);
 
       if (!user.fcmToken || !user.fcmIsOn) {
         console.log('User has no FCM token or notifications disabled');
@@ -313,45 +361,45 @@ export class NotificationService {
   }
 
   // Send push notification using Firebase
-  async sendPushNotification(token: string, title: string, body: string) {
-    const message = {
-      token,
-      notification: {
-        title,
-        body,
-      },
-      data: {
-        click_action: 'FLUTTER_NOTIFICATION_CLICK',
-      },
-      android: {
-        priority: 'high' as const,
-        notification: {
-          sound: 'default',
-          channelId: 'default',
-        },
-      },
-      apns: {
-        headers: {
-          'apns-priority': '10',
-        },
-        payload: {
-          aps: {
-            contentAvailable: true,
-            sound: 'default',
-          },
-        },
-      },
-    };
+  // async sendPushNotification(token: string, title: string, body: string) {
+  //   const message = {
+  //     token,
+  //     notification: {
+  //       title,
+  //       body,
+  //     },
+  //     data: {
+  //       click_action: 'FLUTTER_NOTIFICATION_CLICK',
+  //     },
+  //     android: {
+  //       priority: 'high' as const,
+  //       notification: {
+  //         sound: 'default',
+  //         channelId: 'default',
+  //       },
+  //     },
+  //     apns: {
+  //       headers: {
+  //         'apns-priority': '10',
+  //       },
+  //       payload: {
+  //         aps: {
+  //           contentAvailable: true,
+  //           sound: 'default',
+  //         },
+  //       },
+  //     },
+  //   };
 
-    try {
-      const response = await firebase.messaging().send(message);
-      console.log('Push notification sent successfully:', response);
-      return { message: 'Push notification sent successfully', response };
-    } catch (error) {
-      console.error('Error sending push notification:', error);
-      throw error;
-    }
-  }
+  //   try {
+  //     const response = await firebase.messaging().send(message);
+  //     console.log('Push notification sent successfully:', response);
+  //     return { message: 'Push notification sent successfully', response };
+  //   } catch (error) {
+  //     console.error('Error sending push notification:', error);
+  //     throw error;
+  //   }
+  // }
 
   // Get notifications for a user
   async getUserNotifications(
@@ -790,12 +838,13 @@ export class NotificationService {
     try {
       const unreadCount = await this.prisma.adminNotificationStatus.count({
         where: {
-          adminId,
+          adminId: adminId,
           isRead: false,
-          isCleared: false,
-          isDeleted: false,
+          //isCleared: false,
+          //isDeleted: false,
         },
       });
+      console.log(unreadCount);
 
       return {
         adminId,

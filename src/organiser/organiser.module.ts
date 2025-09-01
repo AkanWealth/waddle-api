@@ -6,6 +6,7 @@ import { NotificationService } from '../notification/notification.service';
 import { NotificationHelper } from 'src/notification/notification.helper';
 import { Mailer } from 'src/helper';
 import { OrganiserRecentActivity } from './organiser-recent-activity-helper';
+import { firebaseAdminProvider } from 'src/notification/firebase-admin.provider';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { OrganiserRecentActivity } from './organiser-recent-activity-helper';
     NotificationHelper,
     OrganiserRecentActivity,
     Mailer,
+    firebaseAdminProvider,
   ],
   exports: [OrganiserService, OrganiserRecentActivity],
 })

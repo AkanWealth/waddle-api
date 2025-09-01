@@ -101,15 +101,7 @@ export class UserService {
         },
       });
 
-      const usersWithImage = user.map((list) => {
-        const profile_picture = `${process.env.S3_PUBLIC_URL}/${this.config.getOrThrow('S3_USER_FOLDER')}/${list.profile_picture}`;
-        return {
-          ...list,
-          profile_picture,
-        };
-      });
-
-      return usersWithImage;
+      return user;
     } catch (error) {
       throw error;
     }

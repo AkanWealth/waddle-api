@@ -13,6 +13,6 @@ import { NotificationHelper } from './notification.helper';
     Mailer,
     NotificationHelper,
   ],
-  exports: [NotificationHelper],
+  exports: [NotificationHelper, firebaseAdminProvider],
 })
 export class NotificationModule {}

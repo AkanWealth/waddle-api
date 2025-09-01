@@ -74,7 +74,7 @@ model Organiser {
   updatedAt                     DateTime                @updatedAt
   fcmToken                      String?
   role                          Role                    @default(ORGANISER)
-  fcmIsOn                       Boolean                 @default(false)
+  fcmIsOn                       Boolean                 @default(true)
   isApproved                    Boolean                 @default(false)
   lastLoginAt                   DateTime?               @db.Timestamp(6)
   stripe_account_id             String?
@@ -116,7 +116,7 @@ model User {
   updatedAt                     DateTime                @updatedAt
   fcmToken                      String?
   role                          Role                    @default(GUARDIAN)
-  fcmIsOn                       Boolean                 @default(false)
+  fcmIsOn                       Boolean                 @default(true)
   bookings                      Booking[]
   comment                       Comment[]
   crowdSource                   CrowdSource[]
