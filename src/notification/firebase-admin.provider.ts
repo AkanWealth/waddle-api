@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { serviceAccount } from '../../serviceAccount';
+import { serviceAccount } from './serviceAccount';
 
 export const firebaseAdminProvider = {
   provide: 'FIREBASE_ADMIN',
