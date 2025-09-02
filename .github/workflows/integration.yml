@@ -143,7 +143,7 @@ jobs:
           echo "FIREBASE_TYPE=service_account" >> $GITHUB_ENV
           echo "FIREBASE_PROJECT_ID=waddle-push-notification" >> $GITHUB_ENV
           echo "FIREBASE_PRIVATE_KEY_ID=cac17d4e74c15f012a77cc53f52dd1d59cbed31e" >> $GITHUB_ENV
-          echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> $GITHUB_ENV
+          echo "FIREBASE_PRIVATE_KEY=$(echo "${{ secrets.FIREBASE_PRIVATE_KEY }}" | awk '{printf "%s\\n", $0}')" >> $GITHUB_ENV
           echo "FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@waddle-push-notification.iam.gserviceaccount.com" >> $GITHUB_ENV
           echo "FIREBASE_CLIENT_ID=${{secrets.FIREBASE_CLIENT_ID}}" >> $GITHUB_ENV
           echo "FIREBASE_AUTH_URI=${{secrets.FIREBASE_AUTH_URI}}" >> $GITHUB_ENV
