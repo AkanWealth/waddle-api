@@ -145,12 +145,12 @@ jobs:
           echo "FIREBASE_PRIVATE_KEY_ID=cac17d4e74c15f012a77cc53f52dd1d59cbed31e" >> $GITHUB_ENV
           echo "FIREBASE_PRIVATE_KEY=${{ secrets.FIREBASE_PRIVATE_KEY }}" >> $GITHUB_ENV
           echo "FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@waddle-push-notification.iam.gserviceaccount.com" >> $GITHUB_ENV
-          echo "FIREBASE_CLIENT_ID=113261042783839410702" >> $GITHUB_ENV
-          echo "FIREBASE_AUTH_URI=https://accounts.google.com/o/oauth2/auth" >> $GITHUB_ENV
-          echo "FIREBASE_TOKEN_URI=https://oauth2.googleapis.com/token" >> $GITHUB_ENV
-          echo "FIREBASE_AUTH_PROVIDER_CERT_URL=https://www.googleapis.com/oauth2/v1/certs" >> $GITHUB_ENV
-          echo "FIREBASE_CLIENT_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40waddle-push-notification.iam.gserviceaccount.com" >> $GITHUB_ENV
-          echo "FIREBASE_UNIVERSE_DOMAIN=googleapis.com" >> $GITHUB_ENV
+          echo "FIREBASE_CLIENT_ID=${{secrets.FIREBASE_CLIENT_ID}}" >> $GITHUB_ENV
+          echo "FIREBASE_AUTH_URI=${{secrets.FIREBASE_AUTH_URI}}" >> $GITHUB_ENV
+          echo "FIREBASE_TOKEN_URI=${{secrets.FIREBASE_TOKEN_URI}}" >> $GITHUB_ENV
+          echo "FIREBASE_AUTH_PROVIDER_CERT_URL=${{secrets.FIREBASE_AUTH_PROVIDER_CERT_URL}}" >> $GITHUB_ENV
+          echo "FIREBASE_CLIENT_CERT_URL=${{secrets.FIREBASE_CLIENT_CERT_URL}}" >> $GITHUB_ENV
+          echo "FIREBASE_UNIVERSE_DOMAIN=${{secrets.FIREBASE_UNIVERSE_DOMAIN}}" >> $GITHUB_ENV
 
       - name: Wait for PostgreSQL to be ready
         run: |
