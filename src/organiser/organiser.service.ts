@@ -60,15 +60,40 @@ export class OrganiserService {
     startDate: Date,
     endDate: Date,
   ): '7days' | 'monthly' | 'yearly' {
+    const msPerDay = 24 * 60 * 60 * 1000;
     const diffMs = endDate.getTime() - startDate.getTime();
-    const days = diffMs / (24 * 60 * 60 * 1000);
-    if (days <= 31) return '7days';
-    // Rough month diff
+    const days = diffMs / msPerDay;
+
+    // Detect exact whole-month window (e.g., Aug 1 00:00 → Sep 1 00:00)
+    const isStartAtMonthStart =
+      startDate.getUTCDate() === 1 &&
+      startDate.getUTCHours() === 0 &&
+      startDate.getUTCMinutes() === 0 &&
+      startDate.getUTCSeconds() === 0 &&
+      startDate.getUTCMilliseconds() === 0;
+    const isEndAtMonthStart =
+      endDate.getUTCDate() === 1 &&
+      endDate.getUTCHours() === 0 &&
+      endDate.getUTCMinutes() === 0 &&
+      endDate.getUTCSeconds() === 0 &&
+      endDate.getUTCMilliseconds() === 0;
+
     const months =
       (endDate.getFullYear() - startDate.getFullYear()) * 12 +
       (endDate.getMonth() - startDate.getMonth());
-    if (months <= 12) return 'monthly';
-    return 'yearly';
+
+    // If the range is an exact calendar month window, use monthly
+    if (isStartAtMonthStart && isEndAtMonthStart && months >= 1 && days <= 31.5)
+      return 'monthly';
+
+    // Yearly for windows longer than 12 months
+    if (months > 12) return 'yearly';
+
+    // For short windows (<= 31 days), show daily even if they cross month boundary
+    if (days <= 28) return '7days';
+
+    // Otherwise, aggregate by month up to 12 months
+    return 'monthly';
   }
 
   private buildPeriodKeyAndLabel(
@@ -77,8 +102,10 @@ export class OrganiserService {
   ) {
     if (period === '7days') {
       return {
-        key: date.toISOString().split('T')[0],
-        label: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()],
+        key: `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`,
+        label: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+          date.getUTCDay()
+        ],
       };
     }
     if (period === 'monthly') {
@@ -116,9 +143,9 @@ export class OrganiserService {
     if (period === '7days') {
       // Generate each day between startDate and endDate (inclusive)
       const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
+      start.setUTCHours(0, 0, 0, 0);
       const end = new Date(endDate);
-      end.setHours(0, 0, 0, 0);
+      end.setUTCHours(0, 0, 0, 0);
 
       const cursor = new Date(start);
       while (cursor <= end) {
@@ -126,7 +153,7 @@ export class OrganiserService {
         if (!map.has(key)) {
           map.set(key, { period: label, date: key });
         }
-        cursor.setDate(cursor.getDate() + 1);
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
       }
     } else if (period === 'monthly') {
       // Last up-to 12 months between range
@@ -427,7 +454,6 @@ export class OrganiserService {
           );
 
     const demographics = {
-      message: 'Age group percentages fetched',
       total_attendees: totalAttendees,
       buckets: demographicsBuckets,
       returning_customers_percentage: returningCustomersPercentage,
@@ -444,7 +470,6 @@ export class OrganiserService {
       take: 5,
       select: {
         id: true,
-        transactionId: true,
         eventId: true,
         amount: true,
         netAmount: true,
@@ -452,12 +477,12 @@ export class OrganiserService {
         status: true,
         createdAt: true,
         event: { select: { name: true } },
+        user: { select: { name: true } },
       },
     });
 
     const transformedRecentPayments = recentPayments.map((p) => ({
       id: p.id,
-      transactionId: p.transactionId,
       eventId: p.eventId,
       eventName: p.event?.name || null,
       amount: p.amount ? Number(p.amount) : null,
@@ -465,6 +490,7 @@ export class OrganiserService {
       amountPaid: p.amountPaid ? Number(p.amountPaid) : null,
       status: p.status,
       createdAt: p.createdAt,
+      userName: p.user?.name || null,
     }));
 
     // Growth series
