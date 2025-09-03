@@ -96,7 +96,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm ci
+          npm i
 
       - name: Set Environment Variables
         run: |
