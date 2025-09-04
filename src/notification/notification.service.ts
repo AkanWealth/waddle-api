@@ -16,6 +16,7 @@ import {
 import { recipientTypeEnum } from './dto/recepientTypes';
 import { RecipientType } from '@prisma/client';
 import { Mailer } from 'src/helper';
+import { sendEmailMobile } from './dto/send-email-mobile.dto';
 
 @Injectable()
 export class NotificationService {
@@ -885,6 +886,24 @@ export class NotificationService {
 <p>You’ve received a new message from the Waddle contact form:</p>
 <p><b>Name</b>: ${name}</p>
 <p><b>Email</b>: ${email}</p>
+<p><b>Message</b>: ${message}</p>
+
+Best regards,
+`;
+      await this.mailer.sendMail('iamdavidhype@gmail.com', subject, emailBody);
+      return { success: true, message: 'Email sent successfully' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async sendEmailToWaddleTeam(dto: sendEmailMobile) {
+    try {
+      const { message } = dto;
+      const subject = 'New Contact Form Submission';
+
+      const emailBody = `<p>Hello Team,</p>
+<p>You’ve received a new message from the Waddle contact from the app:</p>
 <p><b>Message</b>: ${message}</p>
 
 Best regards,

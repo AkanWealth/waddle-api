@@ -33,6 +33,7 @@ import { Roles } from '../auth/decorator/role-decorator';
 import { RolesGuard } from '../auth/guard/role.guard';
 import { Role } from '../auth/enum';
 import { recipientTypeEnum } from './dto/recepientTypes';
+import { sendEmailMobile } from './dto/send-email-mobile.dto';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
 @ApiBearerAuth()
@@ -279,6 +280,12 @@ export class NotificationController {
     @Body() dto: SendEmailToWaddleTeamViaContactUsFormDto,
   ) {
     return this.notificationService.sendEmailToWaddleTeamViaContactUsForm(dto);
+  }
+
+  @ApiOperation({ summary: 'Send Email To Waddle Team Via Contact Us Form' })
+  @Post('admin/send-email-to-waddle-team-via-mobile')
+  async sendEmailToWaddleTeam(@Body() dto: sendEmailMobile) {
+    return this.notificationService.sendEmailToWaddleTeam(dto);
   }
 
   // --- ORGANISER NOTIFICATION PREFERENCES ---
