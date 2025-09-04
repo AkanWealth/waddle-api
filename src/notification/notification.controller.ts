@@ -282,7 +282,7 @@ export class NotificationController {
     return this.notificationService.sendEmailToWaddleTeamViaContactUsForm(dto);
   }
 
-  @ApiOperation({ summary: 'Send Email To Waddle Team Via Contact Us Form' })
+  @ApiOperation({ summary: 'Send Email To Waddle Team Via Mobile' })
   @Post('admin/send-email-to-waddle-team-via-mobile')
   async sendEmailToWaddleTeam(@Body() dto: sendEmailMobile) {
     return this.notificationService.sendEmailToWaddleTeam(dto);
