@@ -156,6 +156,7 @@ export class EventService {
         data: {
           status: EventStatus.CANCELLED,
           isPublished: false,
+          requestedCancellationAt: new Date(),
         },
       });
       await this.notificationHelper.sendEventCancellationNotification(
@@ -539,12 +540,12 @@ export class EventService {
 
       // Add date range filter if provided
       if (startDate || endDate) {
-        whereCondition.date = {};
+        whereCondition.requestedCancellationAt = {};
         if (startDate) {
-          whereCondition.date.gte = new Date(startDate);
+          whereCondition.requestedCancellationAt.gte = new Date(startDate);
         }
         if (endDate) {
-          whereCondition.date.lte = new Date(endDate);
+          whereCondition.requestedCancellationAt.lte = new Date(endDate);
         }
       }
 
@@ -567,7 +568,7 @@ export class EventService {
           },
           skip,
           take: limit,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { requestedCancellationAt: 'desc' },
         }),
       ]);
 

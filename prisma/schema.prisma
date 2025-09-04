@@ -135,45 +135,46 @@ model User {
 }
 
 model Event {
-  id              String             @id @default(dbgenerated("generate_unique_id('event'::text, 'EVT-'::text)"))
-  name            String?
-  description     String?
-  address         String?
-  price           Decimal?
-  total_ticket    Int?
-  isUnlimited     Boolean            @default(false)
-  ticket_booked   Int                @default(0)
-  frequency       EventFrequencyType @default(oneTime)
-  customFrequency DateTime[]
-  date            DateTime?
-  time            String?
-  age_range       String?
-  instructions    String[]
-  category        String?
-  distance        Int?
-  facilities      String[]
-  tags            String[]
-  eventType       EventType?
-  status          String?            @default("PENDING")
-  rejectionReason String?
-  files           String[]
-  isCancelled     Boolean            @default(false)
-  cancelledAt     DateTime? // when the event was cancelled
-  isPublished     Boolean?           @default(false)
-  isDeleted       Boolean?           @default(false)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  adminId         String?
-  organiserId     String?
-  bookings        Booking[]
-  disputes        Dispute[]
-  admin           Admin?             @relation(fields: [adminId], references: [id])
-  organiser       Organiser?         @relation(fields: [organiserId], references: [id])
-  favorites       Favorite?
-  like            Like[]
-  payments        Payment[]
-  recommendations Recommendation[]
-  reviews         Review[]
+  id                      String             @id @default(dbgenerated("generate_unique_id('event'::text, 'EVT-'::text)"))
+  name                    String?
+  description             String?
+  address                 String?
+  price                   Decimal?
+  total_ticket            Int?
+  isUnlimited             Boolean            @default(false)
+  ticket_booked           Int                @default(0)
+  frequency               EventFrequencyType @default(oneTime)
+  customFrequency         DateTime[]
+  date                    DateTime?
+  time                    String?
+  age_range               String?
+  instructions            String[]
+  category                String?
+  distance                Int?
+  facilities              String[]
+  tags                    String[]
+  eventType               EventType?
+  status                  String?            @default("PENDING")
+  rejectionReason         String?
+  files                   String[]
+  isCancelled             Boolean            @default(false)
+  cancelledAt             DateTime? // when the event was cancelled
+  requestedCancellationAt DateTime?
+  isPublished             Boolean?           @default(false)
+  isDeleted               Boolean?           @default(false)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  adminId                 String?
+  organiserId             String?
+  bookings                Booking[]
+  disputes                Dispute[]
+  admin                   Admin?             @relation(fields: [adminId], references: [id])
+  organiser               Organiser?         @relation(fields: [organiserId], references: [id])
+  favorites               Favorite?
+  like                    Like[]
+  payments                Payment[]
+  recommendations         Recommendation[]
+  reviews                 Review[]
 
   @@index([category, isPublished, age_range])
   @@map("event")
