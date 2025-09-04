@@ -365,11 +365,16 @@ export class EventService {
     try {
       // Calculate skip based on page and pageSize for pagination
       const calSkip = (page - 1) * pageSize;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       const events = await this.prisma.event.findMany({
         where: {
           isPublished: true,
           status: EventStatus.APPROVED,
+          date: {
+            gte: today,
+          },
           organiser: {
             isDeleted: false,
             status: { not: OrganiserStatus.SUSPENDED },
@@ -396,6 +401,9 @@ export class EventService {
         where: {
           isPublished: true,
           status: EventStatus.APPROVED,
+          date: {
+            gte: today,
+          },
           organiser: {
             isDeleted: false,
             status: { not: OrganiserStatus.SUSPENDED },
