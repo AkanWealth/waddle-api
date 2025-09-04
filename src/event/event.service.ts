@@ -930,9 +930,7 @@ export class EventService {
         whereClause.name = { contains: name, mode: 'insensitive' };
       }
 
-      if (age) {
-        whereClause.age_range = age;
-      }
+      // Age range filtering is handled after fetching by overlapping ranges
 
       if (price) {
         whereClause.price = price;
@@ -967,7 +965,41 @@ export class EventService {
         where: whereClause,
         include: { admin: true, organiser: true },
       });
-      if (!event || event.length === 0)
+      // Filter by age range overlap if age query provided (e.g., "2-6")
+      let filteredEvents = event;
+      if (age) {
+        const parseRange = (value?: string | null) => {
+          if (!value) return null;
+          const parts = String(value).split('-');
+          const trimmed = parts.map((p) => p.trim());
+          if (trimmed.length !== 2) return null;
+          const min = Number(trimmed[0]);
+          const max = Number(trimmed[1]);
+          if (Number.isNaN(min) || Number.isNaN(max)) return null;
+          return { min, max };
+        };
+
+        const requested = parseRange(age);
+        if (requested) {
+          filteredEvents = event.filter((ev) => {
+            const stored = parseRange(ev.age_range as unknown as string);
+            if (!stored) return false;
+            return requested.min <= stored.max && stored.min <= requested.max;
+          });
+        } else {
+          // If age is a single number or invalid, try to match inclusively against stored range
+          const singleAge = Number(age);
+          if (!Number.isNaN(singleAge)) {
+            filteredEvents = event.filter((ev) => {
+              const stored = parseRange(ev.age_range as unknown as string);
+              if (!stored) return false;
+              return singleAge >= stored.min && singleAge <= stored.max;
+            });
+          }
+        }
+      }
+
+      if (!filteredEvents || filteredEvents.length === 0)
         throw new NotFoundException(
           'Event with the provided criteria does not exist.',
         );
@@ -980,7 +1012,7 @@ export class EventService {
       //   };
       // });
 
-      return { message: 'Event found', event };
+      return { message: 'Event found', event: filteredEvents };
     } catch (error) {
       throw error;
     }
