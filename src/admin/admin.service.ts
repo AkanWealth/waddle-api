@@ -648,7 +648,11 @@ export class AdminService {
 
     return {
       userStats: userStatsResponse,
-      monthlyData: this.processMonthlyGrowthData(rawMonthlyData),
+      monthlyData: this.processMonthlyGrowthData(
+        rawMonthlyData,
+        startDate,
+        endDate,
+      ),
       hasData: totalUsers > 0 || totalOrganizers > 0,
     };
   }
@@ -944,10 +948,13 @@ export class AdminService {
 
   private processMonthlyGrowthData(
     rawData: Array<{
+      year: number;
       month: number;
       parents_count: bigint;
       organizers_count: bigint;
     }>,
+    startDate: Date,
+    endDate: Date,
   ) {
     const months = [
       'Jan',
@@ -964,28 +971,43 @@ export class AdminService {
       'Dec',
     ];
 
-    const dataMap = new Map<number, { parents: number; organizers: number }>();
-    for (let i = 1; i <= 12; i++) {
-      dataMap.set(i, { parents: 0, organizers: 0 });
-    }
-
-    rawData.forEach(({ month, parents_count, organizers_count }) => {
-      const m = Number(month);
-      const current = dataMap.get(m)!;
-      dataMap.set(m, {
+    // Aggregate data by year-month
+    const dataMap = new Map<string, { parents: number; organizers: number }>();
+    rawData.forEach(({ year, month, parents_count, organizers_count }) => {
+      const key = `${Number(year)}-${Number(month)}`;
+      const current = dataMap.get(key) || { parents: 0, organizers: 0 };
+      dataMap.set(key, {
         parents: current.parents + Number(parents_count),
         organizers: current.organizers + Number(organizers_count),
       });
     });
 
-    return Array.from({ length: 12 }, (_, i) => {
-      const { parents, organizers } = dataMap.get(i + 1)!;
-      return {
-        name: months[i],
-        parents,
-        organizers,
-      };
-    });
+    // Build the list of months within [startDate, endDate)
+    const start = new Date(startDate);
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+
+    const result: Array<{ name: string; parents: number; organizers: number }> =
+      [];
+    const cursor = new Date(start);
+    while (cursor < end) {
+      const y = cursor.getFullYear();
+      const m = cursor.getMonth() + 1; // 1-based
+      const key = `${y}-${m}`;
+      const entry = dataMap.get(key) || { parents: 0, organizers: 0 };
+      result.push({
+        name: months[m - 1],
+        parents: entry.parents,
+        organizers: entry.organizers,
+      });
+      // advance to next month
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    return result;
   }
 
   // async getUserActivity(startDate: Date, endDate: Date) {
@@ -1185,26 +1207,52 @@ export class AdminService {
     const previousStartDate = new Date(startDate.getTime() - rangeInMs);
     const previousEndDate = startDate;
 
-    const [userStats, organizerStats, rawMonthlyData] = await Promise.all([
+    const [
+      currentUserStats,
+      currentOrganizerStats,
+      previousUserStats,
+      previousOrganizerStats,
+      rawMonthlyData,
+    ] = await Promise.all([
+      // Current period: Users
       this.prisma.user.groupBy({
         by: ['role', 'isLocked'],
         where: {
           isDeleted: false,
-          createdAt: { gte: previousStartDate, lt: endDate },
+          createdAt: { gte: startDate, lt: endDate },
         },
         _count: { id: true },
-        _min: { createdAt: true },
       }),
+      // Current period: Organisers (completed profiles only)
       this.prisma.organiser.groupBy({
         by: ['isDeleted', 'isProfileCompleted'],
         where: {
           isDeleted: false,
-          isProfileCompleted: true, // ✅ Only completed profiles
-          createdAt: { gte: previousStartDate, lt: endDate },
+          isProfileCompleted: true,
+          createdAt: { gte: startDate, lt: endDate },
         },
         _count: { id: true },
-        _min: { createdAt: true },
       }),
+      // Previous period: Users
+      this.prisma.user.groupBy({
+        by: ['role', 'isLocked'],
+        where: {
+          isDeleted: false,
+          createdAt: { gte: previousStartDate, lt: previousEndDate },
+        },
+        _count: { id: true },
+      }),
+      // Previous period: Organisers (completed profiles only)
+      this.prisma.organiser.groupBy({
+        by: ['isDeleted', 'isProfileCompleted'],
+        where: {
+          isDeleted: false,
+          isProfileCompleted: true,
+          createdAt: { gte: previousStartDate, lt: previousEndDate },
+        },
+        _count: { id: true },
+      }),
+      // Monthly growth data for the current window
       this.prisma.$queryRaw<
         Array<{
           year: number;
@@ -1236,46 +1284,38 @@ export class AdminService {
     ]);
 
     const aggregateCount = (
-      data: typeof userStats,
-      filterFn: (item: (typeof userStats)[number]) => boolean,
+      data: { _count: { id: number } }[],
+      filterFn: (item: any) => boolean,
     ) => data.filter(filterFn).reduce((sum, item) => sum + item._count.id, 0);
-
-    const isCurrent = (date: Date) => date >= startDate && date < endDate;
-    const isPrevious = (date: Date) =>
-      date >= previousStartDate && date < previousEndDate;
 
     // Current counts
     const currentParents = aggregateCount(
-      userStats,
-      (s) => isCurrent(s._min.createdAt) && s.role === 'GUARDIAN',
+      currentUserStats,
+      (s) => s.role === 'GUARDIAN',
     );
 
     const currentInactive = aggregateCount(
-      userStats,
-      (s) => isCurrent(s._min.createdAt) && s.isLocked === true,
+      currentUserStats,
+      (s) => s.isLocked === true,
     );
 
-    const currentOrganizers = organizerStats
-      .filter(
-        (s) => isCurrent(s._min.createdAt) && s.isProfileCompleted === true,
-      )
+    const currentOrganizers = currentOrganizerStats
+      .filter((s) => s.isProfileCompleted === true)
       .reduce((sum, s) => sum + s._count.id, 0);
 
     // Previous counts
     const previousParents = aggregateCount(
-      userStats,
-      (s) => isPrevious(s._min.createdAt) && s.role === 'GUARDIAN',
+      previousUserStats,
+      (s) => s.role === 'GUARDIAN',
     );
 
     const previousInactive = aggregateCount(
-      userStats,
-      (s) => isPrevious(s._min.createdAt) && s.isLocked === true,
+      previousUserStats,
+      (s) => s.isLocked === true,
     );
 
-    const previousOrganizers = organizerStats
-      .filter(
-        (s) => isPrevious(s._min.createdAt) && s.isProfileCompleted === true,
-      )
+    const previousOrganizers = previousOrganizerStats
+      .filter((s) => s.isProfileCompleted === true)
       .reduce((sum, s) => sum + s._count.id, 0);
 
     // ✅ New total users = parents + inactive + organisers
@@ -1327,7 +1367,11 @@ export class AdminService {
 
     return {
       userStats: userStatsResponse,
-      monthlyData: this.processMonthlyGrowthData(rawMonthlyData),
+      monthlyData: this.processMonthlyGrowthData(
+        rawMonthlyData,
+        startDate,
+        endDate,
+      ),
       hasData: currentTotalUsers > 0 || currentOrganizers > 0,
     };
   }

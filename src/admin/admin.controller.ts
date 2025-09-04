@@ -275,13 +275,20 @@ export class AdminController {
   ) {
     const now = new Date();
     const defaultStartDate = new Date(now.getFullYear(), now.getMonth() - 3, 1); // start of month, 3 months ago
-
     const defaultEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1); // start of next month
 
-    const parsedStart = startDate ? new Date(startDate) : defaultStartDate;
-    const parsedEnd = endDate ? new Date(endDate) : defaultEndDate;
+    const parsedStartRaw = startDate ? new Date(startDate) : defaultStartDate;
+    const parsedEndRaw = endDate ? new Date(endDate) : defaultEndDate;
 
-    return await this.adminService.getUserActivity(parsedStart, parsedEnd);
+    // Normalize to day boundaries: start inclusive 00:00, end exclusive next day 00:00
+    const start = new Date(parsedStartRaw);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(parsedEndRaw);
+    end.setHours(0, 0, 0, 0);
+    end.setDate(end.getDate() + 1);
+
+    return await this.adminService.getUserActivity(start, end);
   }
 
   @ApiOperation({
