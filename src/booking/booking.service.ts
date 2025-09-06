@@ -1560,7 +1560,7 @@ export class BookingService {
         }),
       ]);
 
-      if (userPreferences.booking_confirmation) {
+      if (userPreferences.booking_confirmation && booking.user.fcmToken) {
         await this.notificationHelper.sendBookingConfirmation(
           booking.userId,
           booking.event.name,
@@ -1581,7 +1581,7 @@ export class BookingService {
           payment.amount,
           booking.event.name,
         );
-        if (organiserPreferences.order) {
+        if (organiserPreferences.order && booking.event.organiser.fcmToken) {
           await this.notificationHelper.sendEventBookedNotification(
             booking.event.organiserId,
             booking.event.name,

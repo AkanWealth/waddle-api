@@ -267,12 +267,21 @@ export class EventService {
       if (!event) {
         throw new Error('Event not found or could not be updated');
       }
+
       if (event.organiserId) {
-        await this.notificationHelper.sendEventApprovalNotification(
-          event.organiserId,
-          event.name,
-          true,
-        );
+        const organiserPreferences =
+          await this.prisma.notificationPreference.findFirst({
+            where: {
+              organiserId: event.organiserId,
+            },
+          });
+        if (organiserPreferences.event_approval) {
+          await this.notificationHelper.sendEventApprovalNotification(
+            event.organiserId,
+            event.name,
+            true,
+          );
+        }
       }
 
       return {
@@ -299,12 +308,21 @@ export class EventService {
         throw new Error('Event not found or could not be updated');
       }
       if (event.organiserId) {
-        await this.notificationHelper.sendEventApprovalNotification(
-          event.organiserId,
-          event.name,
-          false,
-        );
+        const organiserPreferences =
+          await this.prisma.notificationPreference.findFirst({
+            where: {
+              organiserId: event.organiserId,
+            },
+          });
+        if (organiserPreferences.event_approval) {
+          await this.notificationHelper.sendEventApprovalNotification(
+            event.organiserId,
+            event.name,
+            false,
+          );
+        }
       }
+
       return {
         success: true,
         message: 'The Event has been rejected',
