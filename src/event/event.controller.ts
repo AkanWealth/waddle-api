@@ -368,6 +368,13 @@ export class EventController {
   @ApiQuery({ name: 'facilities', required: false, type: [String] })
   @ApiQuery({ name: 'distance', required: false, type: Number })
   @ApiQuery({
+    name: 'date',
+    required: false,
+    type: String,
+    description: 'Date in ISO 8601 format (e.g. 2025-08-28T00:00:00.000Z)',
+    example: '2025-08-28T00:00:00.000Z',
+  })
+  @ApiQuery({
     name: 'eventType',
     required: false,
     type: String,
@@ -382,7 +389,10 @@ export class EventController {
     @Query('facilities') facilities?: string[] | string,
     @Query('distance') distance?: string,
     @Query('eventType') eventType?: string,
+    @Query('date') date?: string,
   ) {
+    const parsedDate = date ? new Date(date) : undefined;
+
     return this.eventService.searchEvent(
       name,
       age,
@@ -391,6 +401,7 @@ export class EventController {
       facilities,
       distance,
       eventType,
+      parsedDate,
     );
   }
 

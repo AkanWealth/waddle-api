@@ -922,6 +922,7 @@ export class EventService {
     facilities?: string[] | string,
     distance?: string,
     eventType?: string,
+    parsedDate?: Date,
   ) {
     try {
       const whereClause: any = {
@@ -936,6 +937,9 @@ export class EventService {
 
       if (name) {
         whereClause.name = { contains: name, mode: 'insensitive' };
+      }
+      if (parsedDate) {
+        whereClause.date = parsedDate;
       }
 
       // Age range filtering is handled after fetching by overlapping ranges
