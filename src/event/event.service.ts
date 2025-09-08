@@ -1015,8 +1015,17 @@ export class EventService {
       if (name) {
         whereClause.name = { contains: name, mode: 'insensitive' };
       }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       if (parsedDate) {
-        whereClause.date = parsedDate;
+        const startOfDay = new Date(parsedDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+        const gteDate = startOfDay < today ? today : startOfDay;
+        whereClause.date = { gte: gteDate, lt: endOfDay };
+      } else {
+        whereClause.date = { gte: today };
       }
 
       // Age range filtering is handled after fetching by overlapping ranges
