@@ -701,8 +701,14 @@ export class EventService {
               <p>We apologize for any inconvenience caused.</p>
               <p>Best regards,<br>The Waddle Team</p>
             `;
+            const userPreferences =
+              await this.prisma.notificationPreference.findFirst({
+                where: { userId: booking.userId },
+              });
+            if (userPreferences.email) {
+              await this.mailer.sendMail(booking.user.email, subject, message);
+            }
 
-            await this.mailer.sendMail(booking.user.email, subject, message);
             // return { success: true, message: 'Event is now fully cancelled' };
           } catch (error) {
             console.error(
@@ -729,11 +735,17 @@ export class EventService {
           if (like?.userId) usersToNotify.add(like.userId);
         }
       }
+      const organiserPreferences =
+        await this.prisma.notificationPreference.findFirst({
+          where: { organiserId: event.organiserId },
+        });
+      if (organiserPreferences.cancellation) {
+        await this.notificationHelper.sendEventCancellationConfirmation(
+          event.organiserId,
+          event.name,
+        );
+      }
 
-      await this.notificationHelper.sendEventCancellationConfirmation(
-        event.organiserId,
-        event.name,
-      );
       await this.organiserRecentActivity.sendRecentEventCancellationActivity(
         event.organiserId,
         String(event.price),
@@ -742,16 +754,61 @@ export class EventService {
       );
 
       // Send in-app notifications with concurrency limit and retries
+      // const userIdList = Array.from(usersToNotify);
+      // const maxConcurrent = 10;
+      // let sentCount = 0;
+
+      // const sendWithRetry = async (userId: string, retries = 2) => {
+      //   try {
+      //     await this.notificationHelper.sendEventCancellationNotificationToWishlistUsers(
+      //       userId,
+      //       event.name,
+      //     );
+      //     sentCount += 1;
+      //   } catch (error) {
+      //     if (retries > 0) {
+      //       // basic backoff
+      //       await new Promise((res) => setTimeout(res, 200));
+      //       return sendWithRetry(userId, retries - 1);
+      //     }
+      //     console.error(
+      //       `Failed to send notification to user ${userId}:`,
+      //       error,
+      //     );
+      //   }
+      // };
+
+      // for (let i = 0; i < userIdList.length; i += maxConcurrent) {
+      //   const chunk = userIdList.slice(i, i + maxConcurrent);
+      //   await Promise.allSettled(chunk.map((id) => sendWithRetry(id)));
+      // }
+      // Send in-app notifications with concurrency limit and retries
       const userIdList = Array.from(usersToNotify);
       const maxConcurrent = 10;
       let sentCount = 0;
 
       const sendWithRetry = async (userId: string, retries = 2) => {
         try {
+          // Fetch organiser notification preferences for this event
+          const userPreferences =
+            await this.prisma.notificationPreference.findFirst({
+              where: { userId: userId },
+            });
+
+          // Check if notifications are enabled for cancellations
+          if (!userPreferences?.replies) {
+            console.log(
+              `Skipping notification for user ${userId} (organiser disabled cancellations)`,
+            );
+            return;
+          }
+
+          // Try sending notification
           await this.notificationHelper.sendEventCancellationNotificationToWishlistUsers(
             userId,
             event.name,
           );
+
           sentCount += 1;
         } catch (error) {
           if (retries > 0) {
@@ -770,6 +827,8 @@ export class EventService {
         const chunk = userIdList.slice(i, i + maxConcurrent);
         await Promise.allSettled(chunk.map((id) => sendWithRetry(id)));
       }
+
+      console.log(`Successfully sent ${sentCount} notifications`);
 
       return {
         message: 'Event cancelled successfully',

@@ -841,11 +841,11 @@ export class NotificationService {
         where: {
           adminId: adminId,
           isRead: false,
-          //isCleared: false,
-          //isDeleted: false,
+          isCleared: false,
+          isDeleted: false,
+          isVisible: true,
         },
       });
-      console.log(unreadCount);
 
       return {
         adminId,
