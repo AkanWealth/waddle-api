@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service'; // Adjust path as needed
 import { EventFrequencyType } from '@prisma/client';
+import { EventStatus } from 'src/utils/constants/eventTypes';
 
 @Injectable()
 export class EventFrequencyCronService {
@@ -21,6 +22,7 @@ export class EventFrequencyCronService {
         where: {
           isDeleted: false,
           isPublished: true,
+          status: EventStatus.APPROVED,
           frequency: {
             not: EventFrequencyType.oneTime,
           },
@@ -153,7 +155,7 @@ export class EventFrequencyCronService {
       facilities: originalEvent.facilities || [],
       tags: originalEvent.tags || [],
       eventType: originalEvent.eventType,
-      status: 'PENDING', // New events start as pending
+      status: EventStatus.APPROVED, // New events start as pending
       rejectionReason: null,
       files: originalEvent.files || [],
       isPublished: originalEvent.isPublished,
