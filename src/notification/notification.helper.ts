@@ -56,12 +56,17 @@ export class NotificationHelper {
     });
   }
 
-  async sendBookingCancel(userId: string, name: string, eventName: string) {
+  async sendBookingCancel(
+    userId: string,
+    name: string,
+    eventName: string,
+    sendPush: boolean,
+  ) {
     await this.notificationService.createNotification({
       title: 'Booking Cancelled',
       body: `Your booking for "${eventName}" has been cancelled!`,
       recipientId: userId,
-      sendPush: true,
+      sendPush: sendPush,
       visibleToAdmins: true,
       recipientType: recipientTypeEnum.USER,
     });

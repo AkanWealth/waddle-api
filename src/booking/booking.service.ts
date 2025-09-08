@@ -567,13 +567,18 @@ export class BookingService {
           where: { bookingId: booking.id },
           data: { status: PaymentStatus.FAILED },
         });
-
+        const userPreferences =
+          await this.prisma.notificationPreference.findFirst({
+            where: { userId: booking.userId },
+          });
+        const sendPushStatus = userPreferences.booking_confirmation;
         // Optionally send failure notification
         if (booking.user.fcmIsOn) {
           await this.notificationHelper.sendBookingCancel(
             booking.userId,
             booking.user.name,
             booking.event.name,
+            sendPushStatus,
           );
         }
 
@@ -1024,6 +1029,11 @@ export class BookingService {
           },
         },
       });
+      const userPreferences =
+        await this.prisma.notificationPreference.findFirst({
+          where: { userId: booking.userId },
+        });
+      const sendPushStatus = userPreferences.booking_confirmation;
 
       // Send cancellation notification
       if (booking.user.fcmIsOn) {
@@ -1031,6 +1041,7 @@ export class BookingService {
           booking.userId,
           booking.user.name,
           booking.event.name,
+          sendPushStatus,
         );
       }
 
