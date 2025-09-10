@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -51,6 +52,22 @@ export class EventService {
   ) {
     try {
       if (file) await this.uploadEventImages(fileName, file);
+      const organiser = await this.prisma.organiser.findFirst({
+        where: {
+          id: creatorId,
+          isDeleted: false,
+          status: OrganiserStatus.APPROVED,
+        },
+        select: {
+          stripe_account_id: true,
+          is_stripe_connected: true,
+        },
+      });
+      if (!organiser.is_stripe_connected) {
+        return new BadRequestException(
+          'Failed to create an event. Please connect your stripe account',
+        );
+      }
 
       const date = new Date(dto.date);
       console.log(dto.isPublished, 'This is the published');
