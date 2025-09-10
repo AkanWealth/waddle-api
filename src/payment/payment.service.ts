@@ -154,7 +154,6 @@ export class PaymentService {
             { booking: { status: 'Pending' } },
             { booking: { status: 'Failed' } },
             { booking: { status: 'Refunded' } },
-            { booking: null }, // payments without any booking at all
           ];
           break;
       }
