@@ -1298,13 +1298,12 @@ export class BookingService {
       if (!event) {
         throw new NotFoundException('Event not found');
       }
-      if (
-        !event.isUnlimited &&
-        event.ticket_booked + dto.ticket_quantity > event.total_ticket
-      ) {
-        throw new BadRequestException(
-          'Sorry, you can not book for this event as it has exceeded the slot allowed',
-        );
+      if (event.total_ticket >= 0) {
+        if (event.ticket_booked + dto.ticket_quantity > event.total_ticket) {
+          throw new BadRequestException(
+            'Sorry, you can not book for this event as it has exceeded the slot allowed',
+          );
+        }
       }
 
       // Check if event is created by admin or organiser
