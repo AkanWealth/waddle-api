@@ -135,6 +135,56 @@ export class EventService {
       throw error;
     }
   }
+  async duplicateEventAsOrganiser(eventId: string, creatorId: string) {
+    try {
+      const originalEvent = await this.prisma.event.findFirst({
+        where: { id: eventId, organiserId: creatorId },
+      });
+      if (!originalEvent) {
+        return new BadRequestException(
+          'Could not find this event on the list of duplicated events',
+        );
+      }
+      const newEventData = {
+        name: originalEvent.name,
+        description: originalEvent.description,
+        address: originalEvent.address,
+        price: originalEvent.price,
+        total_ticket: originalEvent.total_ticket,
+        isUnlimited: originalEvent.isUnlimited,
+        ticket_booked: 0, // Reset ticket count for new event
+        frequency: originalEvent.frequency,
+        customFrequency: originalEvent.customFrequency,
+        date: originalEvent.date,
+        time: originalEvent.time, // Keep same time
+        age_range: originalEvent.age_range,
+        instructions: originalEvent.instructions || [],
+        category: originalEvent.category,
+        distance: originalEvent.distance,
+        facilities: originalEvent.facilities || [],
+        tags: originalEvent.tags || [],
+        eventType: originalEvent.eventType,
+        status: EventStatus.DRAFT, // New events start as pending
+        rejectionReason: null,
+        files: originalEvent.files || [],
+        isPublished: originalEvent.isPublished,
+        isDeleted: false,
+        adminId: originalEvent.adminId,
+        organiserId: originalEvent.organiserId,
+      };
+
+      await this.prisma.event.create({
+        data: newEventData,
+      });
+      return {
+        success: true,
+        message: 'Your event has been duplicated successfully',
+      };
+    } catch (error) {
+      console.error('Error publishing drafted event by organiser:', error);
+      throw error;
+    }
+  }
 
   async publishDraftedEventByOrganiser(eventId: string, creatorId: string) {
     try {

@@ -110,6 +110,20 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary: 'Duplicate an event as an organiser',
+    description: 'Duplicate an event as an organiser',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Patch('organiser/:id/duplicate')
+  @Roles(Role.Organiser)
+  duplicateEventAsOrganiser(
+    @GetUser() user: { id: string },
+    @Param('id') eventId: string,
+  ) {
+    return this.eventService.duplicateEventAsOrganiser(eventId, user.id);
+  }
+
+  @ApiOperation({
     summary: 'Publish a drafted event by organiser',
     description: 'Publish a drafted event by the organiser',
   })
