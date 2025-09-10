@@ -64,7 +64,7 @@ export class EventService {
         },
       });
       if (!organiser.is_stripe_connected) {
-        return new BadRequestException(
+        throw new BadRequestException(
           'Failed to create an event. Please connect your stripe account',
         );
       }
@@ -141,10 +141,11 @@ export class EventService {
         where: { id: eventId, organiserId: creatorId },
       });
       if (!originalEvent) {
-        return new BadRequestException(
+        throw new BadRequestException(
           'Could not find this event on the list of duplicated events',
         );
       }
+
       const newEventData = {
         name: originalEvent.name,
         description: originalEvent.description,
@@ -181,7 +182,6 @@ export class EventService {
         message: 'Your event has been duplicated successfully',
       };
     } catch (error) {
-      console.error('Error publishing drafted event by organiser:', error);
       throw error;
     }
   }
@@ -200,7 +200,7 @@ export class EventService {
         },
       });
       if (!organiser.is_stripe_connected) {
-        return new BadRequestException(
+        throw new BadRequestException(
           'Failed to create an event. Please connect your stripe account',
         );
       }
