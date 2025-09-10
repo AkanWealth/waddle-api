@@ -1125,10 +1125,13 @@ export class EventService {
     eventType?: string,
   ) {
     try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const whereClause: any = {
         isPublished: true,
         status: EventStatus.APPROVED,
         isDeleted: false,
+        date: { gte: today },
         organiser: {
           isDeleted: false,
           status: { not: OrganiserStatus.SUSPENDED },
@@ -1148,7 +1151,7 @@ export class EventService {
           where: whereClause,
           include: { admin: true, organiser: true },
           skip,
-          take: limit,
+          take: Number(limit),
           orderBy: { createdAt: 'desc' },
         }),
         this.prisma.event.count({ where: whereClause }),
