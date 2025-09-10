@@ -1009,6 +1009,8 @@ export class EventService {
         organiser: {
           isDeleted: false,
           status: { not: OrganiserStatus.SUSPENDED },
+          is_stripe_connected: true,
+          stripe_account_id: { not: null },
         },
       };
 
@@ -1135,6 +1137,8 @@ export class EventService {
         organiser: {
           isDeleted: false,
           status: { not: OrganiserStatus.SUSPENDED },
+          is_stripe_connected: true,
+          stripe_account_id: { not: null },
         },
       };
 
