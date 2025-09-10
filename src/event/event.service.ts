@@ -138,6 +138,22 @@ export class EventService {
 
   async publishDraftedEventByOrganiser(eventId: string, creatorId: string) {
     try {
+      const organiser = await this.prisma.organiser.findFirst({
+        where: {
+          id: creatorId,
+          isDeleted: false,
+          status: OrganiserStatus.APPROVED,
+        },
+        select: {
+          stripe_account_id: true,
+          is_stripe_connected: true,
+        },
+      });
+      if (!organiser.is_stripe_connected) {
+        return new BadRequestException(
+          'Failed to create an event. Please connect your stripe account',
+        );
+      }
       const event = await this.prisma.event.update({
         where: { id: eventId, organiserId: creatorId },
         data: {
