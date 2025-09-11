@@ -358,6 +358,8 @@ export class EventService {
               organiserId: event.organiserId,
             },
           });
+        console.log('This is the organiser event approval');
+        console.log(organiserPreferences.event_approval);
         if (organiserPreferences.event_approval) {
           await this.notificationHelper.sendEventApprovalNotification(
             event.organiserId,

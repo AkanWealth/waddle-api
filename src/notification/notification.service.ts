@@ -354,6 +354,7 @@ export class NotificationService {
         console.log('Organiser has no FCM token or notifications disabled');
         return { message: 'Organiser has notifications disabled or no token' };
       }
+      console.log('Sending push notification to organiser');
 
       return await this.sendPushNotification(organiser.fcmToken, title, body);
     } catch (error) {

@@ -270,7 +270,7 @@ model Consent {
   id        String   @id @default(dbgenerated("generate_unique_id('consent'::text, 'CNS-'::text)"))
   name      String
   age       Int
-  notes     String
+  notes     String?
   consent   Boolean
   bookingId String
   createdAt DateTime @default(now())

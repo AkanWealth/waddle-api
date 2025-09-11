@@ -33,8 +33,8 @@ export class ConsentItemDto {
     description: 'Notes',
     example: 'Allegic to peanuts',
   })
-  @IsString({ message: 'Notes must be a string' })
   @IsOptional()
+  @IsString({ message: 'Notes must be a string' })
   notes?: string;
 
   @ApiProperty({
