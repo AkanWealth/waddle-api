@@ -36,8 +36,6 @@ import { recipientTypeEnum } from './dto/recepientTypes';
 import { sendEmailMobile } from './dto/send-email-mobile.dto';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server Error' })
-@ApiBearerAuth()
-@UseGuards(JwtGuard)
 @Controller('notifications')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
@@ -49,6 +47,8 @@ export class NotificationController {
     description:
       'Create notification in database and optionally send push notification',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @ApiOkResponse({ description: 'Notification created successfully' })
   @HttpCode(HttpStatus.CREATED)
   @Post()
@@ -60,6 +60,8 @@ export class NotificationController {
     summary: 'Send push notification',
     description: 'Send push notification to user or organiser',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @ApiOkResponse({ description: 'Push notification sent' })
   @HttpCode(HttpStatus.OK)
   @Post('push')
@@ -84,6 +86,8 @@ export class NotificationController {
     description:
       'Get paginated notifications for a user or organiser based on recipientType',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @ApiQuery({ name: 'recipientType', enum: recipientTypeEnum })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -113,6 +117,8 @@ export class NotificationController {
     summary: 'Mark a notification as read',
     description: 'Mark a specific notification as read for a recipient',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Patch(':id/read/:recipientId/:recipientType')
   async markAsRead(
     @Param('id') id: string,
@@ -126,6 +132,8 @@ export class NotificationController {
     summary: 'Mark all notifications as read',
     description: 'Mark all notifications as read for a recipient',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Patch('read-all/:recipientId/:recipientType')
   async markAllAsRead(
     @Param('recipientId') recipientId: string,
@@ -138,6 +146,8 @@ export class NotificationController {
     summary: 'Get unread notification count',
     description: 'Get count of unread notifications for a recipient',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Get('unread-count/:recipientId/:recipientType')
   async getUnreadCount(
     @Param('recipientId') recipientId: string,
@@ -150,6 +160,8 @@ export class NotificationController {
     summary: 'Delete a notification',
     description: 'Delete a specific notification for a recipient',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Delete(':id/recipient/:recipientId/:recipientType')
   async deleteNotification(
     @Param('id') id: string,
@@ -167,6 +179,8 @@ export class NotificationController {
     summary: 'Delete all notifications for recipient',
     description: 'Delete all notifications for a recipient',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Delete('recipient/:recipientId/:recipientType')
   async deleteAllNotifications(
     @Param('recipientId') recipientId: string,
@@ -184,6 +198,8 @@ export class NotificationController {
     summary: 'Create admin notification',
     description: 'Create a notification for all active admins',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Post('admin')
   async createAdminNotification(@Body() dto: CreateAdminNotificationDto) {
     return this.notificationService.createAdminNotification(dto);
@@ -193,6 +209,8 @@ export class NotificationController {
     summary: 'Get admin notifications',
     description: 'Get admin notifications with filter options',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Get('admin/:adminId')
   async getAdminNotifications(
     @Param('adminId') adminId: string,
@@ -212,6 +230,8 @@ export class NotificationController {
   }
 
   @ApiOperation({ summary: 'Get admin notification counts' })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Get('admin/:adminId/counts')
   async getNotificationCounts(@Param('adminId') adminId: string) {
     return this.notificationService.getAdminNotificationCounts(adminId);
@@ -221,12 +241,16 @@ export class NotificationController {
     summary: 'Get admin unread notification count',
     description: 'Get the count of unread notifications for a specific admin',
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Get('admin/:adminId/unread-count')
   async getAdminUnreadCount(@Param('adminId') adminId: string) {
     return this.notificationService.getAdminUnreadCount(adminId);
   }
 
   @ApiOperation({ summary: 'Mark admin notification as read' })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Patch('admin/:notificationId/read/:adminId')
   async markAdminNotificationAsRead(
     @Param('adminId') adminId: string,
@@ -239,12 +263,16 @@ export class NotificationController {
   }
 
   @ApiOperation({ summary: 'Mark all admin notifications as read' })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Patch('admin/read-all/:adminId')
   async markAllAdminNotificationAsRead(@Param('adminId') adminId: string) {
     return this.notificationService.markAllAdminNotificationAsRead(adminId);
   }
 
   @ApiOperation({ summary: 'Clear specific admin notification' })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Patch('admin/:notificationId/clear/:adminId')
   async clearNotification(
     @Param('adminId') adminId: string,
@@ -257,12 +285,16 @@ export class NotificationController {
   }
 
   @ApiOperation({ summary: 'Clear all admin notifications' })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Patch('admin/clear-all/:adminId')
   async clearAllNotifications(@Param('adminId') adminId: string) {
     return this.notificationService.clearAllAdminNotifications(adminId);
   }
 
   @ApiOperation({ summary: 'Soft delete admin notification' })
+  @ApiBearerAuth()
+  @UseGuards(JwtGuard)
   @Delete('admin/:notificationId/:adminId')
   async deleteAdminNotification(
     @Param('adminId') adminId: string,
@@ -290,6 +322,7 @@ export class NotificationController {
 
   // --- ORGANISER NOTIFICATION PREFERENCES ---
   @ApiOperation({ summary: 'Create/update organiser notification preferences' })
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(Role.Organiser)
@@ -306,6 +339,7 @@ export class NotificationController {
 
   @ApiOperation({ summary: 'Create/update user notification preferences' })
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @UseGuards(JwtGuard, RolesGuard)
   @Post('user/preferences')
   async createOrUpdateUserPreferences(
@@ -320,6 +354,7 @@ export class NotificationController {
 
   @ApiOperation({ summary: 'Get organiser notification preferences' })
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(Role.Organiser)
   @Get('organiser/preferences')
@@ -331,6 +366,7 @@ export class NotificationController {
 
   @ApiOperation({ summary: 'Get user notification preferences' })
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
   @UseGuards(JwtGuard, RolesGuard)
   @Get('user/preferences')
   async getUserPreferences(@GetUser('id') userId: string) {
