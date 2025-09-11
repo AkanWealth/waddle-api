@@ -566,8 +566,8 @@ export class EventService {
                 },
                 {
                   OR: [
-                    { isPublished: true }, // Include all published events
-                    { status: 'PENDING' }, // Include all pending events
+                    { status: EventStatus.APPROVED },
+                    { status: EventStatus.PENDING }, // Include all pending events
                     { status: EventStatus.NON_COMPLIANT }, // Include non-compliant events
                   ],
                 },
