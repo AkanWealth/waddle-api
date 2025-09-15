@@ -1,6 +1,6 @@
 import {
   BadRequestException,
-  ForbiddenException,
+  // ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -1421,8 +1421,8 @@ export class EventService {
           'Event with the provided ID does not exist.',
         );
 
-      if (new Date(existingEvent.date) <= new Date())
-        throw new ForbiddenException('Past event can not be updated');
+      // if (new Date(existingEvent.date) <= new Date())
+      //   throw new ForbiddenException('Past event can not be updated');
 
       // let image = existingEvent?.files[0] || undefined;
 
