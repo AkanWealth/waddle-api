@@ -30,10 +30,10 @@ jobs:
           SEED_PASSWORD: P@$$w0rd.
           GOOGLE_CLIENT_ID: 237136003048-3mlogbmva2mmbscg5klvuv861ktvjmen.apps.googleusercontent.com
           GOOGLE_CLIENT_SECRET: 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
-          GOOGLE_CALLBACK_URL: http://localhost:3030/api/v1/auth/google/callback
+          GOOGLE_CALLBACK_URL: https://api.waddleapp.io/api/v1/auth/google/callback
           FACEBOOK_CLIENT_ID: 464940513010541
           FACEBOOK_CLIENT_SECRET: 2c9a12d4b7790dac7cb34c707b3aa2fa
-          FACEBOOK_CALLBACK_URL: http://localhost:3030/api/v1/auth/facebook/redirect
+          FACEBOOK_CALLBACK_URL: https://api.waddleapp.io/api/v1/auth/facebook/redirect
           PORT: 3030
           DATABASE_URL: 'postgresql://postgres:password@localhost:5432/testdb?schema=public'
           JWT_SECRET_KEY: NkM9Ci}gVsEjwfZI07gH@CEZ}?2h
@@ -59,6 +59,8 @@ jobs:
           FRONTEND_URL: https://waddle-admn.vercel.app
           BASE_URL_STRIPE_REFRESH: https://api.waddleapp.io/api/v1/organisers/refresh
           BASE_URL_STRIPE_RETURN: https://api.waddleapp.io/api/v1/organisers/return
+          GEO_API_KEY:  c4991ebe4emsh39eeeb6017b813cp137bc1jsnbafbd462ea52
+          GEO_HOST: google-map-places.p.rapidapi.com
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_ENDPOINT_SECRET: ${{ secrets.STRIPE_ENDPOINT_SECRET }}
           FRESHDESK_DOMAIN: philipoyelegbincom.freshdesk.com
@@ -115,6 +117,8 @@ jobs:
           echo "SEED_LAST_NAME=Admin" >> $GITHUB_ENV
           echo "SEED_EMAIL=admin@waddle.uk" >> $GITHUB_ENV
           echo "SEED_PASSWORD=P@$$w0rd." >> $GITHUB_ENV
+          echo "GEO_API_KEY=c4991ebe4emsh39eeeb6017b813cp137bc1jsnbafbd462ea52" >> $GITHUB_ENV
+          echo "GEO_HOST=google-map-places.p.rapidapi.com" >> $GITHUB_ENV
           echo "GOOGLE_CLIENT_ID=237136003048-3mlogbmva2mmbscg5klvuv861ktvjmen.apps.googleusercontent.com" >> $GITHUB_ENV
           echo "GOOGLE_CLIENT_SECRET=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" >> $GITHUB_ENV
           echo "GOOGLE_CALLBACK_URL=http://localhost:3030/api/v1/auth/google/callback" >> $GITHUB_ENV

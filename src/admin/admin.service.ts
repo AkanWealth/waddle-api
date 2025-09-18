@@ -1235,7 +1235,7 @@ export class AdminService {
       }),
       // Previous period: Users
       this.prisma.user.groupBy({
-        by: ['role', 'isLocked'],
+        by: ['role', 'email_verify'],
         where: {
           isDeleted: false,
           createdAt: { gte: previousStartDate, lt: previousEndDate },
@@ -1293,10 +1293,11 @@ export class AdminService {
       currentUserStats,
       (s) => s.role === 'GUARDIAN',
     );
+    console.log(currentUserStats);
 
     const currentInactive = aggregateCount(
       currentUserStats,
-      (s) => s.isLocked === true,
+      (s) => s.email_verify === false,
     );
 
     const currentOrganizers = currentOrganizerStats
@@ -1311,7 +1312,7 @@ export class AdminService {
 
     const previousInactive = aggregateCount(
       previousUserStats,
-      (s) => s.isLocked === true,
+      (s) => s.email_verify === false,
     );
 
     const previousOrganizers = previousOrganizerStats
