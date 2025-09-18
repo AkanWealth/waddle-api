@@ -230,7 +230,7 @@ export class AdminService {
           <p>Kindly follow the steps below to reset your passowrd.</p>
   
           <ul>
-            <li>Click the link to reset the password: <a href="${process.env.FRONTEND_URL}/set-password?token=${resetToken}">${process.env.FRONTEND_URL}/set-password?token= ${resetToken}</a></li>
+            <li>Click the link to reset the password: <a href="https://www.waddleapp.io/set-password?token=${resetToken}">https://www.waddleapp.io/set-password?token= ${resetToken}</a></li>
           </ul>
     
           <p>Warm regards,</p>
@@ -266,7 +266,7 @@ export class AdminService {
         },
       });
 
-      const setUpPasswordUrl = `${process.env.FRONTEND_URL}/set-password?token=${resetToken}`;
+      const setUpPasswordUrl = `https://www.waddleapp.io/set-password?token=${resetToken}`;
       const subject = 'Waddle Admin Invite';
       const message = `<p>Hello ${subAdmin.first_name},</p>
     <
