@@ -1216,7 +1216,7 @@ export class AdminService {
     ] = await Promise.all([
       // Current period: Users
       this.prisma.user.groupBy({
-        by: ['role', 'isLocked'],
+        by: ['role', 'email_verify'],
         where: {
           isDeleted: false,
           createdAt: { gte: startDate, lt: endDate },
