@@ -227,6 +227,32 @@ export class BookingService {
 
   async bookingConsent(bookingId: string, dto: BookingConsentDto) {
     try {
+      const booking = await this.prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: {
+          event: true,
+        },
+      });
+
+      if (!booking) {
+        throw new NotFoundException('Booking not found');
+      }
+      if (booking.event.age_range) {
+        const [minAge, maxAge] = booking.event.age_range
+          .split('-')
+          .map((n) => Number(n.trim()));
+
+        const invalid = dto.consents.some(
+          (c) => c.age < minAge || c.age > maxAge,
+        );
+
+        if (invalid) {
+          throw new BadRequestException(
+            `Consent age must be between ${minAge} and ${maxAge}`,
+          );
+        }
+      }
+
       const consents = await this.prisma.$transaction(
         dto.consents.map((consentItem) =>
           this.prisma.consent.create({
