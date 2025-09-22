@@ -1370,6 +1370,8 @@ export class BookingService {
           amount: Math.round(amount * 100), // Convert to pence
           currency: 'gbp',
           metadata: metadata,
+          // Restrict to cards only (Apple Pay shows via card wallet in PaymentSheet)
+          payment_method_types: ['card'],
           // Remove application_fee_amount and transfer_data
           // We'll handle the transfer manually after confirming the booking
         },
