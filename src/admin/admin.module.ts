@@ -4,6 +4,11 @@ import { AdminController } from './admin.controller';
 import { AuthService } from '../auth/auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { Mailer, Otp } from '../helper';
+import { NotificationHelper } from '../notification/notification.helper';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationModule } from '../notification/notification.module';
+import { OrganiserModule } from '../organiser/organiser.module';
+import { OrganiserService } from 'src/organiser/organiser.service';
 
 @Module({
   imports: [
@@ -11,8 +16,18 @@ import { Mailer, Otp } from '../helper';
       secret: process.env.JWT_SECRET_KEY,
       signOptions: { expiresIn: process.env.JWT_EXPIRATION_TIME },
     }),
+    NotificationModule,
+    OrganiserModule,
   ],
   controllers: [AdminController],
-  providers: [AdminService, Mailer, AuthService, Otp],
+  providers: [
+    AdminService,
+    Mailer,
+    AuthService,
+    Otp,
+    NotificationHelper,
+    NotificationService,
+    OrganiserService,
+  ],
 })
 export class AdminModule {}

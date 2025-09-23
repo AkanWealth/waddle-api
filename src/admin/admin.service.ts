@@ -9,12 +9,14 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateAdminDto, EditAdminDto, UpdateAdminDto } from './dto';
 import { UpdatePasswordDto } from '../user/dto';
 import { Mailer } from '../helper';
+import { NotificationHelper } from '../notification/notification.helper';
 
 @Injectable()
 export class AdminService {
   constructor(
     private prisma: PrismaService,
     private mailer: Mailer,
+    private notificationHelper: NotificationHelper,
   ) {}
 
   async createAdmin(dto: CreateAdminDto) {
@@ -569,6 +571,9 @@ export class AdminService {
     try {
       const vendor = await this.prisma.organiser.findUnique({
         where: { id: vendorId },
+        include: {
+          NotificationPreference: true,
+        },
       });
       if (!vendor) {
         throw new NotFoundException('Vendor not found');
@@ -577,7 +582,22 @@ export class AdminService {
         where: { id: vendorId },
         data: { isWaddleApproved: isWaddleApproved },
       });
-      return { message: 'Vendor successfully marked as Waddle Approved' };
+      // if(vendor.NotificationPreference.e) {
+      if (isWaddleApproved) {
+        await this.notificationHelper.sendWaddleApprovedTagToVendorNotification(
+          vendorId,
+          vendor.name,
+        );
+      } else {
+        await this.notificationHelper.removeWaddleApprovedTagToVendorNotification(
+          vendorId,
+          vendor.name,
+        );
+      }
+
+      return {
+        message: ` Vendor successfully ${isWaddleApproved ? 'marked as Waddle Approved' : 'removed from Waddle Approved'}`,
+      };
     } catch (error) {
       throw error;
     }

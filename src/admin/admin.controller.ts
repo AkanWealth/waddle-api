@@ -233,23 +233,37 @@ export class AdminController {
     description:
       'Admin with admin role can mark a vendor as Waddle Approved by ID',
   })
-  @ApiNoContentResponse({
+  @ApiOkResponse({
     description: 'Vendor successfully marked as Waddle Approved',
+    schema: {
+      example: { message: 'Vendor marked as Waddle Approved successfully' },
+    },
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        isWaddleApproved: {
+          type: 'boolean',
+          example: true,
+          description:
+            'Set true to mark vendor as Waddle Approved, false otherwise',
+        },
+      },
+      required: ['isWaddleApproved'],
+    },
   })
   @HttpCode(HttpStatus.OK)
   @Patch('vendor/:vendorId/waddle-approved')
   @Roles(Role.Admin)
   async markVendorAsWaddleApproved(
-    @GetUser() admin: User,
     @Param('vendorId') vendorId: string,
     @Body() body: { isWaddleApproved: boolean },
   ): Promise<{ message: string }> {
-    if (admin) {
-      return this.adminService.markVendorAsWaddleApproved(
-        vendorId,
-        body.isWaddleApproved,
-      );
-    }
+    return this.adminService.markVendorAsWaddleApproved(
+      vendorId,
+      body.isWaddleApproved,
+    );
   }
 
   @ApiOperation({

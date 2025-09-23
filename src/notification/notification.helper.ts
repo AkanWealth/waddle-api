@@ -315,4 +315,29 @@ export class NotificationHelper {
       recipientType: recipientTypeEnum.USER,
     });
   }
+
+  async sendWaddleApprovedTagToVendorNotification(
+    vendorId: string,
+    vendorName: string,
+  ) {
+    await this.notificationService.createNotification({
+      title: 'Your account is now Waddle Approved!',
+      body: `Your vendor account "${vendorName}" has been tagged as Waddle Approved by the admin.`,
+      recipientId: vendorId,
+      sendPush: true,
+      recipientType: recipientTypeEnum.ORGANISER,
+    });
+  }
+  async removeWaddleApprovedTagToVendorNotification(
+    vendorId: string,
+    vendorName: string,
+  ) {
+    await this.notificationService.createNotification({
+      title: 'Your account is no longer Waddle Approved!',
+      body: `Your vendor account "${vendorName}" has been removed from Waddle Approved by the admin.`,
+      recipientId: vendorId,
+      sendPush: true,
+      recipientType: recipientTypeEnum.ORGANISER,
+    });
+  }
 }
