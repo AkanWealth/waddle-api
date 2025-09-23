@@ -63,6 +63,7 @@ model Organiser {
   isDeleted                     Boolean                 @default(false)
   isVerified                    Boolean                 @default(false)
   failedLoginAttempts           Int                     @default(0)
+  isWaddleApproved              Boolean                 @default(false)
   website_url                   String?
   business_url                  String?
   facebook_url                  String?

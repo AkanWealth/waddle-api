@@ -562,6 +562,26 @@ export class AdminService {
       throw error;
     }
   }
+  async markVendorAsWaddleApproved(
+    vendorId: string,
+    isWaddleApproved: boolean,
+  ) {
+    try {
+      const vendor = await this.prisma.organiser.findUnique({
+        where: { id: vendorId },
+      });
+      if (!vendor) {
+        throw new NotFoundException('Vendor not found');
+      }
+      await this.prisma.organiser.update({
+        where: { id: vendorId },
+        data: { isWaddleApproved: isWaddleApproved },
+      });
+      return { message: 'Vendor successfully marked as Waddle Approved' };
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async getUserActivitys(startDate: Date, endDate: Date) {
     // const currentYear = startDate.getFullYear();

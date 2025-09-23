@@ -229,6 +229,30 @@ export class AdminController {
   }
 
   @ApiOperation({
+    summary: 'Mark a vendor as Waddle Approved',
+    description:
+      'Admin with admin role can mark a vendor as Waddle Approved by ID',
+  })
+  @ApiNoContentResponse({
+    description: 'Vendor successfully marked as Waddle Approved',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Patch('vendor/:vendorId/waddle-approved')
+  @Roles(Role.Admin)
+  async markVendorAsWaddleApproved(
+    @GetUser() admin: User,
+    @Param('vendorId') vendorId: string,
+    @Body() body: { isWaddleApproved: boolean },
+  ): Promise<{ message: string }> {
+    if (admin) {
+      return this.adminService.markVendorAsWaddleApproved(
+        vendorId,
+        body.isWaddleApproved,
+      );
+    }
+  }
+
+  @ApiOperation({
     summary: 'Deactivate an admin (web)',
     description: 'Admin with admin role can deactivate another admin by ID',
   })
