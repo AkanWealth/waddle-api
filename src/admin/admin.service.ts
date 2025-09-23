@@ -1360,12 +1360,12 @@ export class AdminService {
       .reduce((sum, s) => sum + s._count.id, 0);
 
     // ✅ New total users = parents + inactive + organisers
-    const currentTotalUsers =
-      currentParents + currentInactive + currentOrganizers;
-    const previousTotalUsers =
-      previousParents + previousInactive + previousOrganizers;
+    console.log(currentInactive, currentParents + currentOrganizers);
+    const currentTotalUsers = currentParents + currentOrganizers;
+    const previousTotalUsers = previousParents + previousOrganizers;
 
     const calculateChange = (current: number, previous: number) => {
+      console.log(previous, 'This is the previous');
       if (previous === 0) {
         return {
           change: current > 0 ? '+100%' : '0%',
