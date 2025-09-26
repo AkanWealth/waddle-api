@@ -5,4 +5,8 @@ export class UpdatePaymentStatusDto {
   @IsEnum(PaymentStatus)
   @IsNotEmpty()
   status: PaymentStatus;
+
+  // @IsString()
+  // @IsNotEmpty()
+  // method: string;
 }

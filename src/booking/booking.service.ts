@@ -1371,7 +1371,7 @@ export class BookingService {
           currency: 'gbp',
           metadata: metadata,
           // Restrict to cards only (Apple Pay shows via card wallet in PaymentSheet)
-          payment_method_types: ['card'],
+          // payment_method_types: ['card'],
           automatic_payment_methods: {
             enabled: true,
           },
