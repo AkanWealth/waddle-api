@@ -1372,6 +1372,9 @@ export class BookingService {
           metadata: metadata,
           // Restrict to cards only (Apple Pay shows via card wallet in PaymentSheet)
           payment_method_types: ['card'],
+          automatic_payment_methods: {
+            enabled: true,
+          },
           // Remove application_fee_amount and transfer_data
           // We'll handle the transfer manually after confirming the booking
         },

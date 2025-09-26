@@ -201,7 +201,7 @@ async function bootstrap() {
     ];
 
     // Log CORS requests for debugging
-    console.log('CORS Request:', {
+    console.log('CORS Request o:', {
       method: req.method,
       origin: origin,
       url: req.url,
