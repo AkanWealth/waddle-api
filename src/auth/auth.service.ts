@@ -247,6 +247,18 @@ export class AuthService {
     });
   }
 
+  async validateAppleUser(appleUser: SsoSignInDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: appleUser?.email },
+    });
+
+    if (user) return user;
+
+    return await this.prisma.user.create({
+      data: <any>{ ...appleUser, email_verify: true },
+    });
+  }
+
   async generateResetTokenForUser(userEmail: string) {
     try {
       const user = await this.prisma.user.findUnique({

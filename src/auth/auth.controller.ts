@@ -43,6 +43,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
 import { Mailer } from '../helper';
+import { AppleAuthGuard } from './guard/apple-auth.guard';
 
 @ApiInternalServerErrorResponse({ description: 'Internal Server error' })
 @Controller('auth')
@@ -382,6 +383,33 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
   async googleCallback(
+    @GetUser() user: { id: string; email: string; role: string },
+  ) {
+    const response = await this.authService.signToken(
+      user.id,
+      user.email,
+      user.role,
+    );
+
+    return response;
+  }
+
+  @ApiOperation({
+    summary: 'login using Apple as a parent',
+    description: 'Parents can login using Apple',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AppleAuthGuard)
+  @Get('apple/signin')
+  appleLogin() {}
+
+  @ApiExcludeEndpoint()
+  @ApiOkResponse({ description: 'Ok' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AppleAuthGuard)
+  @Post('apple/callback')
+  async appleCallback(
     @GetUser() user: { id: string; email: string; role: string },
   ) {
     const response = await this.authService.signToken(

@@ -12,6 +12,7 @@ import { ConfigModule } from '@nestjs/config';
 import googleOauthConfig from './config/google-oauth.config';
 import facebookOauthConfig from './config/facebook-oauth.config';
 import { Mailer, Otp } from '../helper';
+import { AppleStrategy } from './strategy/apple.strategy';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { Mailer, Otp } from '../helper';
     JwtStrategy,
     RefreshJwtStrategy,
     GoogleStrategy,
+    AppleStrategy,
     FacebookStrategy,
     Otp,
     Mailer,
