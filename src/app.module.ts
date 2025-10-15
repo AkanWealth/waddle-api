@@ -23,6 +23,7 @@ import { DisputeModule } from './dispute/dispute.module';
 import { Cleaner, EventFrequencyCronService } from './helper';
 import { PaymentModule } from './payment/payment.module';
 import { UploadModule } from './upload/upload.module';
+import { GuestModule } from './guests/guest.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { UploadModule } from './upload/upload.module';
     DisputeModule,
     PaymentModule,
     UploadModule,
+    GuestModule,
   ],
   providers: [AppService, Cleaner, EventFrequencyCronService],
   controllers: [AppController],
