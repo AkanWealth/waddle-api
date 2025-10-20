@@ -408,7 +408,7 @@ export class AuthController {
   @ApiOkResponse({ description: 'Ok' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(AppleAuthGuard)
-  @Post('apple/callback')
+  @Get('apple/callback')
   async appleCallback(
     @GetUser() user: { id: string; email: string; role: string },
   ) {
