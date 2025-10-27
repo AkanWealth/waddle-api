@@ -2,6 +2,7 @@ import { Module, NestModule } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { JwtModule } from '@nestjs/jwt';
+import { Mailer } from 'src/helper';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   ],
   controllers: [UserController],
-  providers: [UserService],
+  providers: [UserService, Mailer],
 })
 export class UserModule implements NestModule {
   configure() {}

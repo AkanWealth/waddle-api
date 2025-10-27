@@ -14,11 +14,13 @@ import {
   // MaxFileSizeValidator,
   // FileTypeValidator,
   Post,
+  BadRequestException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdatePasswordDto, UpdateUserDto } from './dto';
 import {
   ApiAcceptedResponse,
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
   ApiInternalServerErrorResponse,
@@ -181,5 +183,60 @@ export class UserController {
   @Roles(Role.Admin)
   restoreUser(@Param('id') id: string) {
     return this.userService.restoreUser(id);
+  }
+
+  // Request account deletion (sends email with JWT token)
+  @ApiOperation({
+    summary: 'Request account deletion',
+    description:
+      'Authenticated user or organiser can request account deletion. The request body should specify whether the account type is "user" or "organiser". An email with a deletion link will be sent.',
+  })
+  @ApiBody({
+    description: 'Specify the account type making the deletion request',
+    required: true,
+    schema: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['user', 'organiser'],
+          example: 'user',
+          description: 'Type of account requesting deletion',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ description: 'Deletion email sent successfully' })
+  @HttpCode(HttpStatus.OK)
+  @Patch('request-deletion')
+  async requestAccountDeletion(
+    @GetUser('id') id: string,
+    @Body('type') type: 'user' | 'organiser',
+  ) {
+    return this.userService.requestAccountDeletion(id, type);
+  }
+
+  // delete my account (user or organiser)
+  @ApiOperation({
+    summary: 'delete my account',
+    description:
+      'Authenticated user or organiser can permanently delete their account by specifying the account type.',
+  })
+  @ApiOkResponse({ description: 'Account deleted successfully' })
+  @ApiBadRequestResponse({ description: 'Invalid account type' })
+  @HttpCode(HttpStatus.OK)
+  @Delete('me/:type')
+  async deleteMyAccount(
+    @GetUser('id') id: string,
+    @Param('type') type: 'user' | 'organiser',
+  ) {
+    if (!['user', 'organiser'].includes(type)) {
+      throw new BadRequestException(
+        'Invalid account type. Must be user or organiser.',
+      );
+    }
+
+    await this.userService.deleteMyAccount(id, type);
+    return { message: `${type} account deleted successfully.` };
   }
 }

@@ -12,6 +12,8 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
+import { Mailer } from 'src/helper';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
@@ -26,6 +28,8 @@ export class UserService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private mailer: Mailer,
+    private jwt: JwtService,
   ) {}
 
   // save fcm token to the database
@@ -318,5 +322,139 @@ export class UserService {
     } catch (error) {
       throw error;
     }
+  }
+
+  // function to delete my account (user or organiser)
+  async deleteMyAccount(id: string, type: 'user' | 'organiser') {
+    try {
+      if (type === 'user') {
+        // Delete user account
+        const existingUser = await this.prisma.user.findUnique({
+          where: { id },
+        });
+
+        if (!existingUser) {
+          throw new NotFoundException('User not found');
+        }
+
+        // Delete user and all related data (cascade will handle relations)
+        const user = await this.prisma.user.delete({
+          where: { id: existingUser.id },
+        });
+
+        // Delete profile picture from S3 if exists
+        if (user?.profile_picture) {
+          await this.s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+              Key: `${this.config.getOrThrow('S3_USER_FOLDER')}/${user.profile_picture}`,
+            }),
+          );
+        }
+
+        return { message: 'User account deleted successfully' };
+      } else if (type === 'organiser') {
+        // Delete organiser account
+        const existingOrganiser = await this.prisma.organiser.findUnique({
+          where: { id },
+        });
+
+        if (!existingOrganiser) {
+          throw new NotFoundException('Organiser not found');
+        }
+
+        // Delete organiser and all related data (cascade will handle relations)
+        const organiser = await this.prisma.organiser.delete({
+          where: { id: existingOrganiser.id },
+        });
+
+        // Delete business logo from S3 if exists
+        if (organiser?.business_logo) {
+          await this.s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+              Key: `${this.config.getOrThrow('S3_ORGANISER_FOLDER')}/${organiser.business_logo}`,
+            }),
+          );
+        }
+
+        // Delete attachment from S3 if exists
+        if (organiser?.attachment) {
+          await this.s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
+              Key: `${this.config.getOrThrow('S3_ORGANISER_FOLDER')}/${organiser.attachment}`,
+            }),
+          );
+        }
+
+        return { message: 'Organiser account deleted successfully' };
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async requestAccountDeletion(userId: string, role: string) {
+    let user;
+    if (role === 'user') {
+      user = await this.prisma.user.findUnique({ where: { id: userId } });
+    } else if (role === 'organiser') {
+      user = await this.prisma.organiser.findUnique({ where: { id: userId } });
+    } else {
+      throw new BadRequestException('Invalid role specified');
+    }
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const payload = { id: user.id, email: user.email, role };
+    const token = await this.jwt.signAsync(payload, {
+      expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
+      secret: this.config.get<string>('JWT_SECRET_KEY'),
+    });
+
+    // Deletion link with query parameters
+    const deletionLink = `https://www.waddleapp.io/delete-account?role=${encodeURIComponent(
+      role,
+    )}&token=${encodeURIComponent(token)}`;
+
+    // Email content
+    const subject = 'Confirm Your Waddle Account Deletion Request 🧾';
+    const message = `
+    <p>Hello ${user.name || 'there'},</p>
+
+    <p>We received a request to delete your Waddle ${role} account. 
+    If you made this request, please confirm your deletion by clicking the button below:</p>
+
+    <p style="margin: 20px 0;">
+      <a href="${deletionLink}" style="
+        background-color: #ff4b4b;
+        color: #ffffff;
+        padding: 12px 20px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+      ">Confirm Account Deletion</a>
+    </p>
+
+    <p>If you did not request this, please ignore this email — your account will remain active.</p>
+
+    <p>This link will expire in ${
+      this.config.get<string>('JWT_EXPIRATION_TIME') || '1 hour'
+    } for your security.</p>
+
+    <p>Best regards,<br>The Waddle Team</p>
+  `;
+
+    try {
+      await this.mailer.sendMail(user.email, subject, message);
+    } catch (emailError) {
+      console.error('Failed to send deletion email:', emailError);
+      throw new BadRequestException('Failed to send deletion email');
+    }
+
+    return { message: 'Account deletion confirmation email sent successfully' };
   }
 }
