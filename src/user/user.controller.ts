@@ -235,6 +235,7 @@ export class UserController {
         'Invalid account type. Must be user or organiser.',
       );
     }
+    console.log('Controller - Deleting account for ID:', id, 'Type:', type);
 
     await this.userService.deleteMyAccount(id, type);
     return { message: `${type} account deleted successfully.` };

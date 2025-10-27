@@ -326,11 +326,13 @@ export class UserService {
 
   // function to delete my account (user or organiser)
   async deleteMyAccount(id: string, type: 'user' | 'organiser') {
+    const userId = id;
+    console.log('Deleting account for ID:', userId, 'Type:', type);
     try {
       if (type === 'user') {
         // Delete user account
         const existingUser = await this.prisma.user.findUnique({
-          where: { id },
+          where: { id: userId },
         });
 
         if (!existingUser) {
@@ -338,25 +340,17 @@ export class UserService {
         }
 
         // Delete user and all related data (cascade will handle relations)
-        const user = await this.prisma.user.delete({
+        await this.prisma.user.delete({
           where: { id: existingUser.id },
         });
 
         // Delete profile picture from S3 if exists
-        if (user?.profile_picture) {
-          await this.s3Client.send(
-            new DeleteObjectCommand({
-              Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-              Key: `${this.config.getOrThrow('S3_USER_FOLDER')}/${user.profile_picture}`,
-            }),
-          );
-        }
 
         return { message: 'User account deleted successfully' };
       } else if (type === 'organiser') {
         // Delete organiser account
         const existingOrganiser = await this.prisma.organiser.findUnique({
-          where: { id },
+          where: { id: userId },
         });
 
         if (!existingOrganiser) {
@@ -364,29 +358,13 @@ export class UserService {
         }
 
         // Delete organiser and all related data (cascade will handle relations)
-        const organiser = await this.prisma.organiser.delete({
+        await this.prisma.organiser.delete({
           where: { id: existingOrganiser.id },
         });
 
         // Delete business logo from S3 if exists
-        if (organiser?.business_logo) {
-          await this.s3Client.send(
-            new DeleteObjectCommand({
-              Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-              Key: `${this.config.getOrThrow('S3_ORGANISER_FOLDER')}/${organiser.business_logo}`,
-            }),
-          );
-        }
 
         // Delete attachment from S3 if exists
-        if (organiser?.attachment) {
-          await this.s3Client.send(
-            new DeleteObjectCommand({
-              Bucket: this.config.getOrThrow('AWS_BUCKET_NAME'),
-              Key: `${this.config.getOrThrow('S3_ORGANISER_FOLDER')}/${organiser.attachment}`,
-            }),
-          );
-        }
 
         return { message: 'Organiser account deleted successfully' };
       }
@@ -409,7 +387,7 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    const payload = { id: user.id, email: user.email, role };
+    const payload = { sub: user.id, email: user.email, role };
     const token = await this.jwt.signAsync(payload, {
       expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
       secret: this.config.get<string>('JWT_SECRET_KEY'),
