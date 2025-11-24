@@ -23,6 +23,7 @@ import {
   ConfirmEventCancellation,
   CreateEventDto,
   UpdateEventDto,
+  ReportEventDto,
 } from './dto';
 import { GetUser } from '../auth/decorator/get-user.decorator';
 import {
@@ -149,6 +150,21 @@ export class EventController {
     @Param('id') eventId: string,
   ) {
     return this.eventService.cancelAnEventAsOrganiser(eventId, user.id);
+  }
+
+  @ApiOperation({
+    summary: 'Report a published event',
+    description:
+      'Parents can report an event for inappropriate or misleading content.',
+  })
+  @ApiCreatedResponse({ description: 'Report submitted successfully' })
+  @Post(':eventId/report')
+  reportEvent(
+    @GetUser('id') userId: string,
+    @Param('eventId') eventId: string,
+    @Body() dto: ReportEventDto,
+  ) {
+    return this.eventService.reportEvent(userId, eventId, dto);
   }
 
   @ApiOperation({

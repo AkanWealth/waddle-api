@@ -25,4 +25,26 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       this.user.deleteMany(),
     ]);
   }
+
+  async getBlockedUserIds(userId?: string): Promise<string[]> {
+    if (!userId) {
+      return [];
+    }
+
+    const [blocked, blockedBy] = await this.$transaction([
+      this.userBlock.findMany({
+        where: { blockerId: userId },
+        select: { blockedId: true },
+      }),
+      this.userBlock.findMany({
+        where: { blockedId: userId },
+        select: { blockerId: true },
+      }),
+    ]);
+
+    const ids = new Set<string>();
+    blocked.forEach((entry) => ids.add(entry.blockedId));
+    blockedBy.forEach((entry) => ids.add(entry.blockerId));
+    return Array.from(ids);
+  }
 }

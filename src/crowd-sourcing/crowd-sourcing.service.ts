@@ -16,6 +16,7 @@ import {
   CommentCrowdSourcingDto,
   CreateCrowdSourcingDto,
   UpdateCrowdSourcingDto,
+  ReportContentDto,
 } from './dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 // import { CreateReviewDto } from './dto/create-review.dto';
@@ -59,7 +60,7 @@ export class CrowdSourcingService {
     }
   }
 
-  async findAllSourcedEvent(page = 1, pageSize = 10) {
+  async findAllSourcedEvent(page = 1, pageSize = 10, requesterId?: string) {
     try {
       // force to number and handle edge cases
       const safePage = Math.max(Number(page) || 1, 1);
@@ -67,12 +68,22 @@ export class CrowdSourcingService {
 
       const calSkip = (safePage - 1) * safePageSize;
 
+      const blockedIds = await this.prisma.getBlockedUserIds(requesterId);
+
+      const baseWhere: any = {
+        isDeleted: false,
+        status: 'APPROVED',
+        tag: 'Event',
+      };
+
+      if (blockedIds.length) {
+        baseWhere.creatorId = {
+          notIn: blockedIds,
+        };
+      }
+
       const events = await this.prisma.crowdSource.findMany({
-        where: {
-          isDeleted: false,
-          status: 'APPROVED',
-          tag: 'Event',
-        },
+        where: baseWhere,
         orderBy: {
           createdAt: 'desc',
         },
@@ -95,11 +106,7 @@ export class CrowdSourcingService {
       });
 
       const totalEvents = await this.prisma.crowdSource.count({
-        where: {
-          isDeleted: false,
-          status: 'APPROVED',
-          tag: 'Event',
-        },
+        where: baseWhere,
       });
 
       return {
@@ -191,16 +198,28 @@ export class CrowdSourcingService {
   //   }
   // }
 
-  async findAllSourcedPlace(page: number, pageSize: number) {
+  async findAllSourcedPlace(
+    page: number,
+    pageSize: number,
+    requesterId?: string,
+  ) {
     console.log(page, pageSize);
+    const blockedIds = await this.prisma.getBlockedUserIds(requesterId);
+
+    const baseWhere: any = {
+      isDeleted: false,
+      tag: 'Place',
+      status: 'APPROVED',
+    };
+
+    if (blockedIds.length) {
+      baseWhere.creatorId = {
+        notIn: blockedIds,
+      };
+    }
+
     const places = await this.prisma.crowdSource.findMany({
-      where: {
-        isDeleted: false,
-        tag: 'Place',
-        status: 'APPROVED',
-        // isVerified: true,
-        // isPublished: true,
-      },
+      where: baseWhere,
       orderBy: {
         createdAt: 'desc',
       },
@@ -208,6 +227,12 @@ export class CrowdSourcingService {
         like: true,
         creator: true,
         reviews: {
+          where: {
+            status: {
+              in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+            },
+            ...(blockedIds.length ? { userId: { notIn: blockedIds } } : {}),
+          },
           include: {
             user: {
               select: {
@@ -221,11 +246,7 @@ export class CrowdSourcingService {
     });
 
     const totalPlaces = await this.prisma.crowdSource.count({
-      where: {
-        isDeleted: false,
-        tag: 'Place',
-        status: 'APPROVED',
-      },
+      where: baseWhere,
     });
     if (!places || places.length === 0) {
       return {
@@ -482,7 +503,7 @@ export class CrowdSourcingService {
     };
   }
 
-  async findOneSourcedEvent(id: string) {
+  async findOneSourcedEvent(id: string, requesterId?: string) {
     const event = await this.prisma.crowdSource.findUnique({
       where: { id },
       include: { like: true, creator: true },
@@ -490,6 +511,11 @@ export class CrowdSourcingService {
 
     if (!event) {
       throw new NotFoundException('Event not found');
+    }
+
+    const blockedIds = await this.prisma.getBlockedUserIds(requesterId);
+    if (blockedIds.includes(event.creatorId)) {
+      throw new ForbiddenException('You have blocked this parent');
     }
 
     // const baseUrl = this.config.getOrThrow('S3_PUBLIC_URL');
@@ -671,11 +697,34 @@ export class CrowdSourcingService {
     }
   }
 
-  async viewCommentsForSourcedEvent(eventId: string) {
+  async viewCommentsForSourcedEvent(eventId: string, requesterId?: string) {
     try {
+      const blockedIds = await this.prisma.getBlockedUserIds(requesterId);
+      const commentWhere: any = {
+        crowdSourceId: eventId,
+        status: {
+          in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+        },
+      };
+
+      if (blockedIds.length) {
+        commentWhere.userId = { notIn: blockedIds };
+      }
+
       const comment = await this.prisma.comment.findMany({
-        where: { crowdSourceId: eventId },
-        include: { replies: true, user: true },
+        where: commentWhere,
+        include: {
+          replies: {
+            where: {
+              status: {
+                in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+              },
+              ...(blockedIds.length ? { userId: { notIn: blockedIds } } : {}),
+            },
+            include: { user: true },
+          },
+          user: true,
+        },
       });
       if (!comment || comment.length === 0) {
         throw new NotFoundException('No comments found');
@@ -706,10 +755,125 @@ export class CrowdSourcingService {
     }
   }
 
-  async viewRepliesForComment(commentId: string) {
+  async reportCrowdSource(
+    reporterId: string,
+    crowdSourceId: string,
+    dto: ReportContentDto,
+  ) {
+    const crowdSource = await this.prisma.crowdSource.findFirst({
+      where: { id: crowdSourceId, isDeleted: false },
+    });
+
+    if (!crowdSource) {
+      throw new NotFoundException('CrowdSource not found');
+    }
+
+    const existingReport = await this.prisma.crowdSourceReport.findFirst({
+      where: {
+        crowdSourceId,
+        reporterId,
+      },
+    });
+
+    if (existingReport) {
+      throw new BadRequestException('You already reported this content');
+    }
+
+    const report = await this.prisma.crowdSourceReport.create({
+      data: {
+        crowdSourceId,
+        reporterId,
+        reason: dto.reason,
+        description: dto.description,
+      },
+    });
+
+    return { message: 'Report submitted', report };
+  }
+
+  async reportComment(
+    reporterId: string,
+    commentId: string,
+    dto: ReportContentDto,
+  ) {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    const existingReport = await this.prisma.commentReport.findFirst({
+      where: {
+        commentId,
+        reporterId,
+      },
+    });
+
+    if (existingReport) {
+      throw new BadRequestException('You already reported this comment');
+    }
+
+    const report = await this.prisma.commentReport.create({
+      data: {
+        commentId,
+        reporterId,
+        reason: dto.reason,
+        description: dto.description,
+      },
+    });
+
+    return { message: 'Comment reported successfully', report };
+  }
+
+  async reportCrowdSourceReview(
+    reporterId: string,
+    reviewId: string,
+    dto: ReportContentDto,
+  ) {
+    const review = await this.prisma.crowdSourceReview.findUnique({
+      where: { id: reviewId },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Review not found');
+    }
+
+    const existingReport = await this.prisma.reviewReport.findFirst({
+      where: {
+        crowdSourceReviewId: reviewId,
+        reporterId,
+      },
+    });
+
+    if (existingReport) {
+      throw new BadRequestException('You already reported this review');
+    }
+
+    const report = await this.prisma.reviewReport.create({
+      data: {
+        crowdSourceReviewId: reviewId,
+        reporterId,
+        reason: dto.reason,
+        description: dto.description,
+      },
+    });
+
+    return { message: 'Review reported successfully', report };
+  }
+
+  async viewRepliesForComment(commentId: string, requesterId?: string) {
     try {
+      const blockedIds = await this.prisma.getBlockedUserIds(requesterId);
       const response = await this.prisma.comment.findMany({
-        where: { parentId: commentId },
+        where: {
+          parentId: commentId,
+          status: {
+            in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+          },
+          ...(blockedIds.length ? { userId: { notIn: blockedIds } } : {}),
+        },
         include: { user: true },
       });
       if (!response || response.length === 0) {
@@ -859,6 +1023,9 @@ export class CrowdSourcingService {
       this.prisma.crowdSourceReview.findMany({
         where: {
           crowdSourceId,
+          status: {
+            in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+          },
         },
         include: {
           user: {
@@ -884,6 +1051,9 @@ export class CrowdSourcingService {
       this.prisma.crowdSourceReview.count({
         where: {
           crowdSourceId,
+          status: {
+            in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+          },
         },
       }),
     ]);
@@ -1790,6 +1960,9 @@ export class CrowdSourcingService {
           role: 'GUARDIAN',
           isDeleted: false,
         },
+        status: {
+          in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
+        },
       },
       include: {
         user: {
@@ -1845,6 +2018,9 @@ export class CrowdSourcingService {
         user: {
           role: 'GUARDIAN',
           isDeleted: false,
+        },
+        status: {
+          in: [CommentStatus.APPROPRIATE, CommentStatus.PENDING],
         },
       },
       include: {

@@ -8,6 +8,7 @@ import {
   ConfirmEventCancellation,
   CreateEventDto,
   UpdateEventDto,
+  ReportEventDto,
 } from './dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
@@ -1599,6 +1600,44 @@ export class EventService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async reportEvent(userId: string, eventId: string, dto: ReportEventDto) {
+    const event = await this.prisma.event.findFirst({
+      where: {
+        id: eventId,
+        isDeleted: false,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const existingReport = await this.prisma.eventReport.findFirst({
+      where: {
+        eventId,
+        reporterId: userId,
+      },
+    });
+
+    if (existingReport) {
+      throw new BadRequestException('You have already reported this event');
+    }
+
+    const report = await this.prisma.eventReport.create({
+      data: {
+        eventId,
+        reporterId: userId,
+        reason: dto.reason,
+        description: dto.description,
+      },
+    });
+
+    return {
+      message: 'Event reported successfully',
+      report,
+    };
   }
 
   private uploadEventImages(fileName: string, file: Buffer) {

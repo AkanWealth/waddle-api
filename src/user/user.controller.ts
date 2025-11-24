@@ -17,7 +17,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { UpdatePasswordDto, UpdateUserDto } from './dto';
+import { BlockUserDto, UpdatePasswordDto, UpdateUserDto } from './dto';
 import {
   ApiAcceptedResponse,
   ApiBadRequestResponse,
@@ -82,6 +82,39 @@ export class UserController {
   @Post('push-notification')
   tooglePushNotification(@GetUser('id') id: string) {
     return this.userService.togglePushNotififcation(id);
+  }
+
+  @ApiOperation({
+    summary: 'Block another parent',
+    description: 'Prevent content from a specific parent from showing up.',
+  })
+  @ApiOkResponse({ description: 'User blocked successfully' })
+  @Post('block')
+  blockUser(@GetUser('id') id: string, @Body() dto: BlockUserDto) {
+    return this.userService.blockUser(id, dto.blockedUserId);
+  }
+
+  @ApiOperation({
+    summary: 'Unblock a parent',
+    description: 'Remove a previously blocked parent.',
+  })
+  @ApiOkResponse({ description: 'User unblocked successfully' })
+  @Delete('block/:blockedUserId')
+  unblockUser(
+    @GetUser('id') id: string,
+    @Param('blockedUserId') blockedUserId: string,
+  ) {
+    return this.userService.unblockUser(id, blockedUserId);
+  }
+
+  @ApiOperation({
+    summary: 'List blocked parents',
+    description: 'View all parents you have blocked.',
+  })
+  @ApiOkResponse({ description: 'Blocked users retrieved successfully' })
+  @Get('block')
+  getBlockedUsers(@GetUser('id') id: string) {
+    return this.userService.getBlockedUsers(id);
   }
 
   // get all user

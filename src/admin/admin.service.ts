@@ -10,6 +10,7 @@ import { CreateAdminDto, EditAdminDto, UpdateAdminDto } from './dto';
 import { UpdatePasswordDto } from '../user/dto';
 import { Mailer } from '../helper';
 import { NotificationHelper } from '../notification/notification.helper';
+import { CommentStatus, CrowdSourceStatus, ReportStatus } from '@prisma/client';
 
 @Injectable()
 export class AdminService {
@@ -1807,5 +1808,303 @@ export class AdminService {
     }
 
     return result;
+  }
+
+  async getEventReports(status?: ReportStatus) {
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const reports = await this.prisma.eventReport.findMany({
+      where,
+      include: {
+        event: {
+          select: {
+            id: true,
+            name: true,
+            organiserId: true,
+          },
+        },
+        reporter: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return { message: 'Event reports retrieved successfully', reports };
+  }
+
+  async updateEventReport(
+    reportId: string,
+    adminId: string,
+    status: ReportStatus,
+  ) {
+    const report = await this.prisma.eventReport.findUnique({
+      where: { id: reportId },
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    const updatedReport = await this.prisma.eventReport.update({
+      where: { id: reportId },
+      data: {
+        status,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    return { message: 'Event report updated successfully', report: updatedReport };
+  }
+
+  async getCrowdSourceReportsByTag(
+    tag: 'Event' | 'Place',
+    status?: ReportStatus,
+  ) {
+    const where: any = {
+      crowdSource: {
+        tag,
+      },
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    const reports = await this.prisma.crowdSourceReport.findMany({
+      where,
+      include: {
+        crowdSource: {
+          include: {
+            creator: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                profile_picture: true,
+              },
+            },
+          },
+        },
+        reporter: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return { message: 'Crowdsource reports retrieved successfully', reports };
+  }
+
+  async updateCrowdSourceReport(
+    reportId: string,
+    adminId: string,
+    status: ReportStatus,
+    removeContent?: boolean,
+  ) {
+    const report = await this.prisma.crowdSourceReport.findUnique({
+      where: { id: reportId },
+      include: { crowdSource: true },
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    if (removeContent && report.crowdSource.tag !== 'Place') {
+      throw new BadRequestException(
+        'Only recommendations can be removed from this view',
+      );
+    }
+
+    const updatedReport = await this.prisma.crowdSourceReport.update({
+      where: { id: reportId },
+      data: {
+        status,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    if (removeContent) {
+      await this.prisma.crowdSource.update({
+        where: { id: report.crowdSourceId },
+        data: {
+          isDeleted: true,
+          status: CrowdSourceStatus.REJECTED,
+        },
+      });
+    }
+
+    return { message: 'Report updated successfully', report: updatedReport };
+  }
+
+  async getCommentReports(status?: ReportStatus) {
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const reports = await this.prisma.commentReport.findMany({
+      where,
+      include: {
+        comment: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true },
+            },
+            crowdSource: {
+              select: { id: true, name: true, tag: true },
+            },
+          },
+        },
+        reporter: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return { message: 'Comment reports retrieved successfully', reports };
+  }
+
+  async updateCommentReport(
+    reportId: string,
+    adminId: string,
+    status: ReportStatus,
+    removeContent?: boolean,
+  ) {
+    const report = await this.prisma.commentReport.findUnique({
+      where: { id: reportId },
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    const updatedReport = await this.prisma.commentReport.update({
+      where: { id: reportId },
+      data: {
+        status,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    if (removeContent) {
+      await this.prisma.comment.update({
+        where: { id: report.commentId },
+        data: {
+          status: CommentStatus.INAPPROPRIATE,
+        },
+      });
+    }
+
+    return {
+      message: 'Comment report updated successfully',
+      report: updatedReport,
+    };
+  }
+
+  async getReviewReports(status?: ReportStatus) {
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const reports = await this.prisma.reviewReport.findMany({
+      where,
+      include: {
+        review: {
+          include: {
+            event: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+        crowdSourceReview: {
+          include: {
+            crowdSource: {
+              select: { id: true, name: true, tag: true },
+            },
+            user: {
+              select: { id: true, name: true, email: true },
+            },
+          },
+        },
+        reporter: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return { message: 'Review reports retrieved successfully', reports };
+  }
+
+  async updateReviewReport(
+    reportId: string,
+    adminId: string,
+    status: ReportStatus,
+    removeContent?: boolean,
+  ) {
+    const report = await this.prisma.reviewReport.findUnique({
+      where: { id: reportId },
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    const updatedReport = await this.prisma.reviewReport.update({
+      where: { id: reportId },
+      data: {
+        status,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    if (removeContent) {
+      if (report.crowdSourceReviewId) {
+        await this.prisma.crowdSourceReview.update({
+          where: { id: report.crowdSourceReviewId },
+          data: {
+            status: CommentStatus.INAPPROPRIATE,
+          },
+        });
+      } else if (report.reviewId) {
+        await this.prisma.review.delete({
+          where: { id: report.reviewId },
+        });
+      } else {
+        throw new BadRequestException('No review linked to this report');
+      }
+    }
+
+    return {
+      message: 'Review report updated successfully',
+      report: updatedReport,
+    };
   }
 }

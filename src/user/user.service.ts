@@ -14,6 +14,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Mailer } from 'src/helper';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class UserService {
@@ -91,6 +92,89 @@ export class UserService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async blockUser(blockerId: string, blockedUserId: string) {
+    if (blockerId === blockedUserId) {
+      throw new BadRequestException('You cannot block yourself');
+    }
+
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: blockedUserId },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    try {
+      await this.prisma.userBlock.create({
+        data: {
+          blockerId,
+          blockedId: blockedUserId,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new BadRequestException('User already blocked');
+      }
+      throw error;
+    }
+
+    return { message: 'User blocked successfully' };
+  }
+
+  async unblockUser(blockerId: string, blockedUserId: string) {
+    try {
+      await this.prisma.userBlock.delete({
+        where: {
+          blockerId_blockedId: {
+            blockerId,
+            blockedId: blockedUserId,
+          },
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('Block entry not found');
+      }
+      throw error;
+    }
+
+    return { message: 'User unblocked successfully' };
+  }
+
+  async getBlockedUsers(blockerId: string) {
+    const blockedUsers = await this.prisma.userBlock.findMany({
+      where: { blockerId },
+      include: {
+        blocked: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            profile_picture: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      message: 'Blocked users retrieved successfully',
+      blocked: blockedUsers.map((entry) => ({
+        blockedAt: entry.createdAt,
+        user: entry.blocked,
+      })),
+    };
   }
 
   // function to find all the user

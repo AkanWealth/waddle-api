@@ -24,11 +24,16 @@ import {
   ApiOperation,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { CreateAdminDto, EditAdminDto, UpdateAdminDto } from './dto';
+import {
+  CreateAdminDto,
+  EditAdminDto,
+  UpdateAdminDto,
+  UpdateReportStatusDto,
+} from './dto';
 import { GetUser } from '../auth/decorator';
 import { Role } from '../auth/enum';
 import { Roles } from '../auth/decorator/role-decorator';
-import { User } from '@prisma/client';
+import { ReportStatus, User } from '@prisma/client';
 import { UpdatePasswordDto } from '../user/dto';
 import { JwtGuard } from '../auth/guard';
 import { RolesGuard } from '../auth/guard/role.guard';
@@ -426,5 +431,174 @@ export class AdminController {
     @Param('period') period: '7days' | 'monthly' | 'yearly',
   ) {
     return await this.adminService.getBookingData(period);
+  }
+
+  @ApiOperation({
+    summary: 'Fetch reported crowdsource events',
+    description: 'Lists reports opened against parent-created events.',
+  })
+  @ApiOkResponse({ description: 'Reported events retrieved successfully' })
+  @Get('reports/events')
+  @Roles(Role.Admin)
+  getReportedEvents(
+    @GetUser('id') adminId: string,
+    @Query('status') status?: string,
+  ) {
+    if (adminId) {
+      return this.adminService.getEventReports(this.parseReportStatus(status));
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Fetch reported recommendations',
+    description: 'Lists reports raised against parent recommendations/places.',
+  })
+  @ApiOkResponse({
+    description: 'Reported recommendations retrieved successfully',
+  })
+  @Get('reports/recommendations')
+  @Roles(Role.Admin)
+  getReportedRecommendations(
+    @GetUser('id') adminId: string,
+    @Query('status') status?: string,
+  ) {
+    if (adminId) {
+      return this.adminService.getCrowdSourceReportsByTag(
+        'Place',
+        this.parseReportStatus(status),
+      );
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Fetch reported comments',
+    description: 'Lists crowdsource comments that have been reported.',
+  })
+  @ApiOkResponse({ description: 'Reported comments retrieved successfully' })
+  @Get('reports/comments')
+  @Roles(Role.Admin)
+  getReportedComments(
+    @GetUser('id') adminId: string,
+    @Query('status') status?: string,
+  ) {
+    if (adminId) {
+      return this.adminService.getCommentReports(
+        this.parseReportStatus(status),
+      );
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Fetch reported reviews',
+    description:
+      'Lists reviews on events or places that admins need to review.',
+  })
+  @ApiOkResponse({ description: 'Reported reviews retrieved successfully' })
+  @Get('reports/reviews')
+  @Roles(Role.Admin)
+  getReportedReviews(
+    @GetUser('id') adminId: string,
+    @Query('status') status?: string,
+  ) {
+    if (adminId) {
+      return this.adminService.getReviewReports(this.parseReportStatus(status));
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Update reported event',
+    description: 'Marks a reported event as reviewed (no content removal).',
+  })
+  @ApiOkResponse({ description: 'Event report updated successfully' })
+  @Patch('reports/events/:reportId')
+  @Roles(Role.Admin)
+  updateEventReport(
+    @GetUser('id') adminId: string,
+    @Param('reportId') reportId: string,
+    @Body() dto: UpdateReportStatusDto,
+  ) {
+    if (adminId) {
+      return this.adminService.updateEventReport(reportId, adminId, dto.status);
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Update reported recommendation',
+    description: 'Marks a reported recommendation or removes it entirely.',
+  })
+  @ApiOkResponse({
+    description: 'Recommendation report updated successfully',
+  })
+  @Patch('reports/recommendations/:reportId')
+  @Roles(Role.Admin)
+  updateRecommendationReport(
+    @GetUser('id') adminId: string,
+    @Param('reportId') reportId: string,
+    @Body() dto: UpdateReportStatusDto,
+  ) {
+    if (adminId) {
+      return this.adminService.updateCrowdSourceReport(
+        reportId,
+        adminId,
+        dto.status,
+        dto.removeContent,
+      );
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Update reported comment',
+    description:
+      'Marks a comment report as reviewed and optionally hides the comment.',
+  })
+  @ApiOkResponse({ description: 'Comment report updated successfully' })
+  @Patch('reports/comments/:reportId')
+  @Roles(Role.Admin)
+  updateCommentReport(
+    @GetUser('id') adminId: string,
+    @Param('reportId') reportId: string,
+    @Body() dto: UpdateReportStatusDto,
+  ) {
+    if (adminId) {
+      return this.adminService.updateCommentReport(
+        reportId,
+        adminId,
+        dto.status,
+        dto.removeContent,
+      );
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Update reported review',
+    description: 'Marks a review report as reviewed and optionally removes it.',
+  })
+  @ApiOkResponse({ description: 'Review report updated successfully' })
+  @Patch('reports/reviews/:reportId')
+  @Roles(Role.Admin)
+  updateReviewReport(
+    @GetUser('id') adminId: string,
+    @Param('reportId') reportId: string,
+    @Body() dto: UpdateReportStatusDto,
+  ) {
+    if (adminId) {
+      return this.adminService.updateReviewReport(
+        reportId,
+        adminId,
+        dto.status,
+        dto.removeContent,
+      );
+    }
+  }
+
+  private parseReportStatus(status?: string): ReportStatus | undefined {
+    if (!status) {
+      return undefined;
+    }
+    const normalized = status.toUpperCase();
+    if ((Object.values(ReportStatus) as string[]).includes(normalized)) {
+      return normalized as ReportStatus;
+    }
+    return undefined;
   }
 }

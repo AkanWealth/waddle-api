@@ -7,6 +7,113 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model CrowdSourceReport {
+  id            String       @id @default(dbgenerated("generate_unique_id('crowdsource_report'::text, 'CSR-'::text)"))
+  crowdSourceId String
+  reporterId    String
+  reason        String
+  description   String?
+  status        ReportStatus @default(PENDING)
+  reviewedBy    String? // Admin ID who reviewed the report
+  reviewedAt    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  crowdSource CrowdSource @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+  reporter    User        @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([crowdSourceId, status])
+  @@index([reporterId])
+  @@map("crowdsource_report")
+}
+
+model EventReport {
+  id          String       @id @default(dbgenerated("generate_unique_id('event_report'::text, 'EVR-'::text)"))
+  eventId     String
+  reporterId  String
+  reason      String
+  description String?
+  status      ReportStatus @default(PENDING)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reporter User  @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, status])
+  @@index([reporterId])
+  @@map("event_report")
+}
+
+model ReviewReport {
+  id                  String       @id @default(dbgenerated("generate_unique_id('review_report'::text, 'RVR-'::text)"))
+  reviewId            String?
+  crowdSourceReviewId String?
+  reporterId          String
+  reason              String
+  description         String?
+  status              ReportStatus @default(PENDING)
+  reviewedBy          String? // Admin ID who reviewed the report
+  reviewedAt          DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  review            Review?            @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  crowdSourceReview CrowdSourceReview? @relation(fields: [crowdSourceReviewId], references: [id], onDelete: Cascade)
+  reporter          User               @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, status])
+  @@index([crowdSourceReviewId, status])
+  @@index([reporterId])
+  @@map("review_report")
+}
+
+model CommentReport {
+  id         String       @id @default(dbgenerated("generate_unique_id('comment_report'::text, 'CMR-'::text)"))
+  commentId  String
+  reporterId String
+  reason     String
+  description String?
+  status     ReportStatus @default(PENDING)
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  comment  Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reporter User    @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([commentId, status])
+  @@index([reporterId])
+  @@map("comment_report")
+}
+
+model UserBlock {
+  id        String   @id @default(dbgenerated("generate_unique_id('user_block'::text, 'UBK-'::text)"))
+  blockerId String // User who is blocking
+  blockedId String // User who is being blocked
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  blocker User @relation("UserBlocking", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("UserBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("user_block")
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
 model Admin {
   id                            String                    @id @default(dbgenerated("generate_unique_id('admin'::text, 'ADM-'::text)"))
   first_name                    String
@@ -131,6 +238,13 @@ model User {
   recommendation                Recommendation[]
   NotificationPreference        NotificationPreference?
 
+  crowdSourceReports CrowdSourceReport[]
+  eventReports       EventReport[]
+  reviewReports      ReviewReport[]
+  commentReports     CommentReport[]
+  blocking           UserBlock[]         @relation("UserBlocking")
+  blockedBy          UserBlock[]         @relation("UserBlocked")
+
   @@index([email])
   @@map("user")
 }
@@ -176,37 +290,38 @@ model Event {
   payments                Payment[]
   recommendations         Recommendation[]
   reviews                 Review[]
+  eventReports            EventReport[]
 
   @@index([category, isPublished, age_range])
   @@map("event")
 }
 
 model CrowdSource {
-  id          String                  @id @default(cuid())
-  name        String
-  images      String[]
-  description String
-  address     String
-  creatorId   String
-  isVerified  Boolean                 @default(false)
-  isDeleted   Boolean                 @default(false)
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
-  date        DateTime?
-  isFree      Boolean                 @default(false)
-  tag         Tag                     @default(Place)
-  time        String?
-  tips        String?
-  isPublished Boolean                 @default(false)
-  category    String
-  facilities  String[]
-  status      CrowdSourceStatus       @default(PENDING)
-  comment     Comment[]
-  creator     User                    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  attendances CrowdSourceAttendance[]
-  reviews     CrowdSourceReview[]
-  like        Like[]
-
+  id                 String                  @id @default(cuid())
+  name               String
+  images             String[]
+  description        String
+  address            String
+  creatorId          String
+  isVerified         Boolean                 @default(false)
+  isDeleted          Boolean                 @default(false)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  date               DateTime?
+  isFree             Boolean                 @default(false)
+  tag                Tag                     @default(Place)
+  time               String?
+  tips               String?
+  isPublished        Boolean                 @default(false)
+  category           String
+  facilities         String[]
+  status             CrowdSourceStatus       @default(PENDING)
+  comment            Comment[]
+  creator            User                    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  attendances        CrowdSourceAttendance[]
+  reviews            CrowdSourceReview[]
+  like               Like[]
+  crowdSourceReports CrowdSourceReport[]
   @@index([address, isVerified])
   @@map("crowdsource")
 }
@@ -227,19 +342,20 @@ model CrowdSourceAttendance {
 }
 
 model CrowdSourceReview {
-  id              String        @id @default(dbgenerated("generate_unique_id('crowdsource_review'::text, 'CRV-'::text)"))
+  id              String         @id @default(dbgenerated("generate_unique_id('crowdsource_review'::text, 'CRV-'::text)"))
   userId          String
   crowdSourceId   String
   rating          Int?
-  status          CommentStatus @default(PENDING)
+  status          CommentStatus  @default(PENDING)
   comment         String?
-  would_recommend Boolean       @default(false)
-  verified        Boolean       @default(false)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  crowdSource     CrowdSource   @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  would_recommend Boolean        @default(false)
+  verified        Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  crowdSource     CrowdSource    @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   likes           Like[]
+  reviewReports   ReviewReport[]
 
   @@unique([userId, crowdSourceId])
   @@index([crowdSourceId, rating])
@@ -346,22 +462,24 @@ model Comment {
   replies     Comment[]    @relation("CommentReplies")
   user        User         @relation(fields: [userId], references: [id])
   like        Like[]
+  reports     CommentReport[]
 
   @@index([crowdSourceId])
   @@map("comment")
 }
 
 model Review {
-  id        String   @id @default(dbgenerated("generate_unique_id('review'::text, 'REV-'::text)"))
-  rating    Int
-  comment   String?
-  verified  Boolean  @default(false)
-  eventId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  name      String
-  like      Like[]
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  id            String         @id @default(dbgenerated("generate_unique_id('review'::text, 'REV-'::text)"))
+  rating        Int
+  comment       String?
+  verified      Boolean        @default(false)
+  eventId       String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  name          String
+  like          Like[]
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reviewReports ReviewReport[]
 
   @@index([rating])
   @@map("review")

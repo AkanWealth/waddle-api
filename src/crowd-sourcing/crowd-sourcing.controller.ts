@@ -20,6 +20,7 @@ import {
   CreateCrowdSourcingDto,
   UpdateCrowdSourcingDto,
   FlagCommentDto,
+  ReportContentDto,
 } from './dto';
 import { GetUser } from '../auth/decorator';
 import { User } from '@prisma/client';
@@ -113,12 +114,14 @@ export class CrowdSourcingController {
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get('events/:page/:pageSize')
   findAllSourcedEvent(
+    @GetUser('id') userId: string,
     @Param('page') page: string,
     @Param('pageSize') pageSize: string,
   ) {
     return this.crowdSourcingService.findAllSourcedEvent(
       parseInt(page),
       parseInt(pageSize),
+      userId,
     );
   }
 
@@ -152,12 +155,14 @@ export class CrowdSourcingController {
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get('places/:page/:pageSize')
   findAllSourcedPlace(
+    @GetUser('id') userId: string,
     @Param('page') page: string,
     @Param('pageSize') pageSize: string,
   ) {
     return this.crowdSourcingService.findAllSourcedPlace(
       parseInt(page),
       parseInt(pageSize),
+      userId,
     );
   }
 
@@ -219,8 +224,8 @@ export class CrowdSourcingController {
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get(':id')
-  findOneSourcedEvent(@Param('id') id: string) {
-    return this.crowdSourcingService.findOneSourcedEvent(id);
+  findOneSourcedEvent(@GetUser('id') userId: string, @Param('id') id: string) {
+    return this.crowdSourcingService.findOneSourcedEvent(id, userId);
   }
 
   @ApiOperation({
@@ -310,14 +315,67 @@ export class CrowdSourcingController {
   }
 
   @ApiOperation({
+    summary: 'Report a crowdsourced event or place',
+    description: 'Logged-in parents can report inappropriate events or places.',
+  })
+  @ApiCreatedResponse({ description: 'Report submitted' })
+  @Post(':crowdSourceId/report')
+  reportCrowdSource(
+    @GetUser('id') reporterId: string,
+    @Param('crowdSourceId') crowdSourceId: string,
+    @Body() dto: ReportContentDto,
+  ) {
+    return this.crowdSourcingService.reportCrowdSource(
+      reporterId,
+      crowdSourceId,
+      dto,
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Report a comment',
+    description: 'Report any inappropriate or offensive crowdsource comment.',
+  })
+  @ApiCreatedResponse({ description: 'Comment report submitted' })
+  @Post('comment/:commentId/report')
+  reportComment(
+    @GetUser('id') reporterId: string,
+    @Param('commentId') commentId: string,
+    @Body() dto: ReportContentDto,
+  ) {
+    return this.crowdSourcingService.reportComment(reporterId, commentId, dto);
+  }
+
+  @ApiOperation({
+    summary: 'Report a place review',
+    description: 'Report a review left on a crowdsourced place or event.',
+  })
+  @ApiCreatedResponse({ description: 'Review report submitted' })
+  @Post('review/:reviewId/report')
+  reportCrowdsourceReview(
+    @GetUser('id') reporterId: string,
+    @Param('reviewId') reviewId: string,
+    @Body() dto: ReportContentDto,
+  ) {
+    return this.crowdSourcingService.reportCrowdSourceReview(
+      reporterId,
+      reviewId,
+      dto,
+    );
+  }
+
+  @ApiOperation({
     summary: 'view all comment by crowd sourced ID',
     description: 'View all comment by crowd sourced ID',
   })
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get('comment/:id')
-  async viewCommentsForSourcedEvent(@Param('id') id: string) {
-    return this.crowdSourcingService.viewCommentsForSourcedEvent(id);
+  async viewCommentsForSourcedEvent(
+    @GetUser('id') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.crowdSourcingService.viewCommentsForSourcedEvent(id, userId);
   }
 
   @ApiOperation({
@@ -327,8 +385,11 @@ export class CrowdSourcingController {
   @ApiOkResponse({ description: 'Ok' })
   @ApiNotFoundResponse({ description: 'Not found' })
   @Get('reply/:id')
-  async viewRepliesForComment(@Param('id') id: string) {
-    return this.crowdSourcingService.viewRepliesForComment(id);
+  async viewRepliesForComment(
+    @GetUser('id') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.crowdSourcingService.viewRepliesForComment(id, userId);
   }
 
   //Working Fine And Used
