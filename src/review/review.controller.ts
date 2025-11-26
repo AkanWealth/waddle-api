@@ -14,6 +14,7 @@ import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { Roles } from '../auth/decorator/role-decorator';
+import { GetUser } from '../auth/decorator/get-user.decorator';
 import { JwtGuard } from '../auth/guard/auth.guard';
 import { RolesGuard } from '../auth/guard/role.guard';
 import {
@@ -28,6 +29,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Role } from '../auth/enum';
+import { ReportReviewDto } from './dto';
 
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -48,6 +50,22 @@ export class ReviewController {
   }
 
   @ApiOperation({
+    summary: 'Report an event review',
+    description:
+      'Guardians and organisers can flag any review that violates policy.',
+  })
+  @ApiCreatedResponse({ description: 'Review report submitted successfully' })
+  @Post(':reviewId/report')
+  @Roles(Role.Guardian, Role.Organiser)
+  reportEventReview(
+    @GetUser() user: { id: string; role: Role },
+    @Param('reviewId') reviewId: string,
+    @Body() dto: ReportReviewDto,
+  ) {
+    return this.reviewService.reportReview(reviewId, dto, user);
+  }
+
+  @ApiOperation({
     summary: 'view all reviews for an event',
     description: 'View all reviews for an event',
   })
@@ -56,6 +74,18 @@ export class ReviewController {
   @Get(':eventId')
   viewAllReviews(@Param('eventId') eventId: string) {
     return this.reviewService.viewAllReviews(eventId);
+  }
+
+  @ApiOperation({
+    summary: 'Fetch reported reviews for an event',
+    description:
+      'Organisers can monitor review reports tied to their events. Admins can audit everything.',
+  })
+  @ApiOkResponse({ description: 'Reported reviews retrieved successfully' })
+  @Get('reports/event/:eventId')
+  @Roles(Role.Admin, Role.Organiser)
+  getEventReviewReports(@Param('eventId') eventId: string) {
+    return this.reviewService.getReviewReportsByEvent(eventId);
   }
 
   @ApiOperation({

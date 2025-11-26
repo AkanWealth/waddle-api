@@ -51,7 +51,8 @@ model ReviewReport {
   id                  String       @id @default(dbgenerated("generate_unique_id('review_report'::text, 'RVR-'::text)"))
   reviewId            String?
   crowdSourceReviewId String?
-  reporterId          String
+  reporterId          String?
+  organiserId         String?
   reason              String
   description         String?
   status              ReportStatus @default(PENDING)
@@ -62,11 +63,15 @@ model ReviewReport {
 
   review            Review?            @relation(fields: [reviewId], references: [id], onDelete: Cascade)
   crowdSourceReview CrowdSourceReview? @relation(fields: [crowdSourceReviewId], references: [id], onDelete: Cascade)
-  reporter          User               @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  reporter          User?              @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  organiser         Organiser?         @relation(fields: [organiserId], references: [id], onDelete: Cascade)
 
   @@index([reviewId, status])
   @@index([crowdSourceReviewId, status])
   @@index([reporterId])
+  @@index([organiserId])
+  @@unique([reviewId, reporterId])
+  @@unique([reviewId, organiserId])
   @@map("review_report")
 }
 
@@ -198,6 +203,7 @@ model Organiser {
   notifications                 Notification[]          @relation("OrganiserNotifications")
   RecentActivity                RecentActivity[]
   NotificationPreference        NotificationPreference?
+  reviewReports                 ReviewReport[]
 
   @@index([email])
   @@map("organiser")

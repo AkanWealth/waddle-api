@@ -434,7 +434,7 @@ export class AdminController {
   }
 
   @ApiOperation({
-    summary: 'Fetch reported crowdsource events',
+    summary: 'Fetch reported events',
     description: 'Lists reports opened against parent-created events.',
   })
   @ApiOkResponse({ description: 'Reported events retrieved successfully' })
@@ -443,11 +443,63 @@ export class AdminController {
   getReportedEvents(
     @GetUser('id') adminId: string,
     @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
   ) {
     if (adminId) {
-      return this.adminService.getEventReports(this.parseReportStatus(status));
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+
+      return this.adminService.getEventReports({
+        status: this.parseReportStatus(status),
+        search,
+        startDate,
+        endDate,
+        page: pageNum,
+        limit: limitNum,
+      });
     }
   }
+
+  @ApiOperation({
+    summary: 'View reported event details',
+    description: 'Fetch the specific event and context for a report.',
+  })
+  @ApiOkResponse({ description: 'Reported event retrieved successfully' })
+  @Get('reports/events/:reportId')
+  @Roles(Role.Admin)
+  getReportedEventDetail(
+    @GetUser('id') adminId: string,
+    @Param('reportId') reportId: string,
+  ) {
+    if (adminId) {
+      return this.adminService.getEventReportDetail(reportId);
+    }
+  }
+
+  // @ApiOperation({
+  //   summary: 'Fetch reported recommendations',
+  //   description: 'Lists reports raised against parent recommendations/places.',
+  // })
+  // @ApiOkResponse({
+  //   description: 'Reported recommendations retrieved successfully',
+  // })
+  // @Get('reports/recommendations')
+  // @Roles(Role.Admin)
+  // getReportedRecommendations(
+  //   @GetUser('id') adminId: string,
+  //   @Query('status') status?: string,
+  // ) {
+  //   if (adminId) {
+  //     return this.adminService.getCrowdSourceReportsByTag(
+  //       'Place',
+  //       this.parseReportStatus(status),
+  //     );
+  //   }
+  // }
 
   @ApiOperation({
     summary: 'Fetch reported recommendations',
@@ -461,12 +513,21 @@ export class AdminController {
   getReportedRecommendations(
     @GetUser('id') adminId: string,
     @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
   ) {
     if (adminId) {
-      return this.adminService.getCrowdSourceReportsByTag(
-        'Place',
-        this.parseReportStatus(status),
-      );
+      return this.adminService.getCrowdSourceReports({
+        status: this.parseReportStatus(status),
+        search,
+        startDate,
+        endDate,
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+      });
     }
   }
 

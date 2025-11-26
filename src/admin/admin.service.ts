@@ -1810,12 +1810,49 @@ export class AdminService {
     return result;
   }
 
-  async getEventReports(status?: ReportStatus) {
+  async getEventReports(filters: {
+    status?: ReportStatus;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      status,
+      search,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
+    } = filters;
+
     const where: any = {};
+
     if (status) {
       where.status = status;
     }
 
+    if (search) {
+      const searchQuery = { contains: search, mode: 'insensitive' };
+      where.OR = [
+        { reason: searchQuery },
+        { event: { name: searchQuery } },
+        { reporter: { name: searchQuery } },
+        { reporter: { email: searchQuery } },
+      ];
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+
+    // Get total count first
+    const totalCount = await this.prisma.eventReport.count({ where });
+
+    // Fetch paginated results
     const reports = await this.prisma.eventReport.findMany({
       where,
       include: {
@@ -1824,6 +1861,27 @@ export class AdminService {
             id: true,
             name: true,
             organiserId: true,
+            adminId: true,
+            organiser: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone_number: true,
+                business_name: true,
+                business_logo: true,
+                address: true,
+              },
+            },
+            admin: {
+              select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                email: true,
+                avatarUrl: true,
+              },
+            },
           },
         },
         reporter: {
@@ -1834,12 +1892,20 @@ export class AdminService {
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
 
-    return { message: 'Event reports retrieved successfully', reports };
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return {
+      message: 'Event reports retrieved successfully',
+      totalCount,
+      totalPages,
+      currentPage: page,
+      reports,
+    };
   }
 
   async updateEventReport(
@@ -1864,7 +1930,51 @@ export class AdminService {
       },
     });
 
-    return { message: 'Event report updated successfully', report: updatedReport };
+    return {
+      message: 'Event report updated successfully',
+      report: updatedReport,
+    };
+  }
+
+  async getEventReportDetail(reportId: string) {
+    const report = await this.prisma.eventReport.findUnique({
+      where: { id: reportId },
+      include: {
+        reporter: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        event: {
+          include: {
+            organiser: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone_number: true,
+              },
+            },
+            admin: {
+              select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!report) {
+      throw new NotFoundException('Report not found');
+    }
+
+    return { message: 'Event report retrieved successfully', report };
   }
 
   async getCrowdSourceReportsByTag(
@@ -1910,6 +2020,94 @@ export class AdminService {
     });
 
     return { message: 'Crowdsource reports retrieved successfully', reports };
+  }
+
+  async getCrowdSourceReports(filters: {
+    status?: ReportStatus;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      status,
+      search,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
+    } = filters;
+
+    const where: any = {
+      crowdSource: {
+        isDeleted: false,
+      },
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      const searchQuery = { contains: search, mode: 'insensitive' };
+      where.OR = [
+        { reason: searchQuery },
+        { crowdSource: { name: searchQuery } },
+        { reporter: { name: searchQuery } },
+        { reporter: { email: searchQuery } },
+      ];
+    }
+
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+
+    // total count
+    const totalCount = await this.prisma.crowdSourceReport.count({ where });
+
+    // paginated results
+    const reports = await this.prisma.crowdSourceReport.findMany({
+      where,
+      include: {
+        crowdSource: {
+          include: {
+            creator: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                profile_picture: true,
+              },
+            },
+          },
+        },
+        reporter: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return {
+      message: 'Crowdsource reports retrieved successfully',
+      totalCount,
+      totalPages,
+      currentPage: page,
+      reports,
+    };
   }
 
   async updateCrowdSourceReport(
@@ -1977,6 +2175,9 @@ export class AdminService {
         reporter: {
           select: { id: true, name: true, email: true },
         },
+        // organiser: {
+        //   select: { id: true, name: true, email: true },
+        // },
       },
       orderBy: {
         createdAt: 'desc',

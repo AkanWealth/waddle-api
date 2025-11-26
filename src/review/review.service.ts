@@ -1,6 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateReviewDto, UpdateReviewDto } from './dto';
+import { Prisma } from '@prisma/client';
+import { CreateReviewDto, ReportReviewDto, UpdateReviewDto } from './dto';
+import { Role } from '../auth/enum';
 
 @Injectable()
 export class ReviewService {
@@ -89,5 +95,95 @@ export class ReviewService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async reportReview(
+    reviewId: string,
+    dto: ReportReviewDto,
+    reporter: { id: string; role: Role },
+  ) {
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+      select: { id: true },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Review for the provided ID not found');
+    }
+
+    const whereClause =
+      reporter.role === Role.Organiser
+        ? { reviewId, organiserId: reporter.id }
+        : { reviewId, reporterId: reporter.id };
+
+    const existingReport = await this.prisma.reviewReport.findFirst({
+      where: whereClause,
+    });
+
+    if (existingReport) {
+      throw new BadRequestException('You have already reported this review');
+    }
+
+    const reportData: Prisma.ReviewReportUncheckedCreateInput = {
+      reviewId,
+      reason: dto.reason,
+      description: dto.description ?? null,
+    };
+
+    if (reporter.role === Role.Organiser) {
+      reportData.organiserId = reporter.id;
+    } else {
+      reportData.reporterId = reporter.id;
+    }
+
+    const report = await this.prisma.reviewReport.create({
+      data: reportData,
+    });
+
+    return { message: 'Review reported successfully', report };
+  }
+
+  async getReviewReportsByEvent(eventId: string) {
+    const reports = await this.prisma.reviewReport.findMany({
+      where: {
+        review: {
+          eventId,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        review: {
+          select: {
+            id: true,
+            rating: true,
+            comment: true,
+            eventId: true,
+          },
+        },
+        reporter: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        organiser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!reports || reports.length <= 0) {
+      throw new NotFoundException('No review reports found for this event');
+    }
+
+    return {
+      message: 'Review reports retrieved successfully',
+      reports,
+    };
   }
 }
