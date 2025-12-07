@@ -22,6 +22,7 @@ import {
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
@@ -536,15 +537,28 @@ export class AdminController {
     description: 'Lists crowdsource comments that have been reported.',
   })
   @ApiOkResponse({ description: 'Reported comments retrieved successfully' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ReportStatus,
+    description: 'Filter by report status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search across comment content, reporter, and related fields',
+  })
   @Get('reports/comments')
   @Roles(Role.Admin)
   getReportedComments(
     @GetUser('id') adminId: string,
     @Query('status') status?: string,
+    @Query('search') search?: string,
   ) {
     if (adminId) {
       return this.adminService.getCommentReports(
         this.parseReportStatus(status),
+        search,
       );
     }
   }
@@ -555,14 +569,29 @@ export class AdminController {
       'Lists reviews on events or places that admins need to review.',
   })
   @ApiOkResponse({ description: 'Reported reviews retrieved successfully' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ReportStatus,
+    description: 'Filter by report status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search across review content, reporter, and related fields',
+  })
   @Get('reports/reviews')
   @Roles(Role.Admin)
   getReportedReviews(
     @GetUser('id') adminId: string,
     @Query('status') status?: string,
+    @Query('search') search?: string,
   ) {
     if (adminId) {
-      return this.adminService.getReviewReports(this.parseReportStatus(status));
+      return this.adminService.getReviewReports(
+        this.parseReportStatus(status),
+        search,
+      );
     }
   }
 

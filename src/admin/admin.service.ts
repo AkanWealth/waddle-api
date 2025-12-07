@@ -2040,9 +2040,7 @@ export class AdminService {
     } = filters;
 
     const where: any = {
-      crowdSource: {
-        isDeleted: false,
-      },
+      crowdSource: {},
     };
 
     if (status) {
@@ -2125,11 +2123,11 @@ export class AdminService {
       throw new NotFoundException('Report not found');
     }
 
-    if (removeContent && report.crowdSource.tag !== 'Place') {
-      throw new BadRequestException(
-        'Only recommendations can be removed from this view',
-      );
-    }
+    // if (removeContent && report.crowdSource.tag !== 'Place') {
+    //   throw new BadRequestException(
+    //     'Only recommendations can be removed from this view',
+    //   );
+    // }
 
     const updatedReport = await this.prisma.crowdSourceReport.update({
       where: { id: reportId },
@@ -2153,10 +2151,46 @@ export class AdminService {
     return { message: 'Report updated successfully', report: updatedReport };
   }
 
-  async getCommentReports(status?: ReportStatus) {
+  async getCommentReports(status?: ReportStatus, search?: string) {
     const where: any = {};
     if (status) {
       where.status = status;
+    }
+
+    const keyword = search?.trim();
+    if (keyword) {
+      where.OR = [
+        { reason: { contains: keyword, mode: 'insensitive' } },
+        { description: { contains: keyword, mode: 'insensitive' } },
+        {
+          reporter: {
+            OR: [
+              { name: { contains: keyword, mode: 'insensitive' } },
+              { email: { contains: keyword, mode: 'insensitive' } },
+            ],
+          },
+        },
+        {
+          comment: {
+            OR: [
+              { content: { contains: keyword, mode: 'insensitive' } },
+              {
+                user: {
+                  OR: [
+                    { name: { contains: keyword, mode: 'insensitive' } },
+                    { email: { contains: keyword, mode: 'insensitive' } },
+                  ],
+                },
+              },
+              {
+                crowdSource: {
+                  name: { contains: keyword, mode: 'insensitive' },
+                },
+              },
+            ],
+          },
+        },
+      ];
     }
 
     const reports = await this.prisma.commentReport.findMany({
@@ -2225,10 +2259,54 @@ export class AdminService {
     };
   }
 
-  async getReviewReports(status?: ReportStatus) {
+  async getReviewReports(status?: ReportStatus, search?: string) {
     const where: any = {};
     if (status) {
       where.status = status;
+    }
+
+    const keyword = search?.trim();
+    if (keyword) {
+      where.OR = [
+        { reason: { contains: keyword, mode: 'insensitive' } },
+        { description: { contains: keyword, mode: 'insensitive' } },
+        {
+          reporter: {
+            OR: [
+              { name: { contains: keyword, mode: 'insensitive' } },
+              { email: { contains: keyword, mode: 'insensitive' } },
+            ],
+          },
+        },
+        {
+          review: {
+            OR: [
+              { comment: { contains: keyword, mode: 'insensitive' } },
+              { event: { name: { contains: keyword, mode: 'insensitive' } } },
+            ],
+          },
+        },
+        {
+          crowdSourceReview: {
+            OR: [
+              { comment: { contains: keyword, mode: 'insensitive' } },
+              {
+                user: {
+                  OR: [
+                    { name: { contains: keyword, mode: 'insensitive' } },
+                    { email: { contains: keyword, mode: 'insensitive' } },
+                  ],
+                },
+              },
+              {
+                crowdSource: {
+                  name: { contains: keyword, mode: 'insensitive' },
+                },
+              },
+            ],
+          },
+        },
+      ];
     }
 
     const reports = await this.prisma.reviewReport.findMany({
