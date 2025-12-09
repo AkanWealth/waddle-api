@@ -216,7 +216,7 @@ model User {
   email                         String                  @unique
   phone_number                  String?
   address                       String?
-  password                      String
+  password                      String?
   guardian_type                 String?
   email_verify                  Boolean                 @default(false)
   isLocked                      Boolean                 @default(false)
