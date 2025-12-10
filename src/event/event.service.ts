@@ -1092,12 +1092,17 @@ export class EventService {
         isDeleted: false,
         isPublished: true,
         status: EventStatus.APPROVED,
-        organiser: {
-          isDeleted: false,
-          status: { not: OrganiserStatus.SUSPENDED },
-          is_stripe_connected: true,
-          stripe_account_id: { not: null },
-        },
+        OR: [
+          {
+            organiser: {
+              isDeleted: false,
+              status: { not: OrganiserStatus.SUSPENDED },
+              is_stripe_connected: true,
+              stripe_account_id: { not: null },
+            },
+          },
+          { adminId: { not: null } },
+        ],
       };
 
       if (name) {
@@ -1149,7 +1154,38 @@ export class EventService {
 
       const event = await this.prisma.event.findMany({
         where: whereClause,
-        include: { admin: true, organiser: true },
+        include: {
+          admin: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              email: true,
+              role: true,
+              avatarUrl: true,
+              activationStatus: true,
+              isDeleted: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+          organiser: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              address: true,
+              business_name: true,
+              business_logo: true,
+              status: true,
+              isDeleted: true,
+              isApproved: true,
+              is_stripe_connected: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+        },
       });
       // Filter by age range overlap if age query provided (e.g., "2-6")
       let filteredEvents = event;
@@ -1220,12 +1256,17 @@ export class EventService {
         status: EventStatus.APPROVED,
         isDeleted: false,
         date: { gte: today },
-        organiser: {
-          isDeleted: false,
-          status: { not: OrganiserStatus.SUSPENDED },
-          is_stripe_connected: true,
-          stripe_account_id: { not: null },
-        },
+        OR: [
+          {
+            organiser: {
+              isDeleted: false,
+              status: { not: OrganiserStatus.SUSPENDED },
+              is_stripe_connected: true,
+              stripe_account_id: { not: null },
+            },
+          },
+          { adminId: { not: null } },
+        ],
       };
 
       if (age_range) whereClause.age_range = age_range;
@@ -1239,7 +1280,38 @@ export class EventService {
       const [events, total] = await this.prisma.$transaction([
         this.prisma.event.findMany({
           where: whereClause,
-          include: { admin: true, organiser: true },
+          include: {
+            admin: {
+              select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                email: true,
+                role: true,
+                avatarUrl: true,
+                activationStatus: true,
+                isDeleted: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+            organiser: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                address: true,
+                business_name: true,
+                business_logo: true,
+                status: true,
+                isDeleted: true,
+                isApproved: true,
+                is_stripe_connected: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+            },
+          },
           skip,
           take: Number(limit),
           orderBy: { createdAt: 'desc' },
