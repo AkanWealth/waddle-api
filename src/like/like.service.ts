@@ -23,6 +23,22 @@ export class LikeService {
   // like the crowd sourced event
   async likeCrowdSourcedEvent(userId: string, dto: CreateEventLikeDto) {
     try {
+      const existingLike = await this.prisma.like.findUnique({
+        where: {
+          userId_crowdSourceId: {
+            userId,
+            crowdSourceId: dto.eventId,
+          },
+        },
+      });
+
+      if (existingLike) {
+        await this.prisma.like.delete({
+          where: { id: existingLike.id },
+        });
+        return { message: 'Crowd sourced unliked', like: null };
+      }
+
       const like = await this.prisma.like.create({
         data: { crowdSourceId: dto.eventId, userId },
       });

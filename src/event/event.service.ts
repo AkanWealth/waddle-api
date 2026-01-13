@@ -1155,36 +1155,8 @@ export class EventService {
       const event = await this.prisma.event.findMany({
         where: whereClause,
         include: {
-          admin: {
-            select: {
-              id: true,
-              first_name: true,
-              last_name: true,
-              email: true,
-              role: true,
-              avatarUrl: true,
-              activationStatus: true,
-              isDeleted: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          },
-          organiser: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              address: true,
-              business_name: true,
-              business_logo: true,
-              status: true,
-              isDeleted: true,
-              isApproved: true,
-              is_stripe_connected: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          },
+          admin: true,
+          organiser: true,
         },
       });
       // Filter by age range overlap if age query provided (e.g., "2-6")
@@ -1281,36 +1253,8 @@ export class EventService {
         this.prisma.event.findMany({
           where: whereClause,
           include: {
-            admin: {
-              select: {
-                id: true,
-                first_name: true,
-                last_name: true,
-                email: true,
-                role: true,
-                avatarUrl: true,
-                activationStatus: true,
-                isDeleted: true,
-                createdAt: true,
-                updatedAt: true,
-              },
-            },
-            organiser: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                address: true,
-                business_name: true,
-                business_logo: true,
-                status: true,
-                isDeleted: true,
-                isApproved: true,
-                is_stripe_connected: true,
-                createdAt: true,
-                updatedAt: true,
-              },
-            },
+            admin: true,
+            organiser: true,
           },
           skip,
           take: Number(limit),
