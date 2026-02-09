@@ -364,7 +364,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('sso/signin')
   googleSignin(@Body() dto: SsoSignInDto) {
-    return this.authService.validateSsoSignin(dto);
+    return this.authService.googleSignIn(dto);
   }
 
   @ApiOperation({

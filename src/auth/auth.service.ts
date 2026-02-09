@@ -20,6 +20,8 @@ import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Mailer, Otp } from '../helper';
 import { OrganiserStatus } from 'src/utils/constants/organiserTypes';
+import { OAuth2Client } from 'google-auth-library';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -208,18 +210,92 @@ export class AuthService {
     }
   }
 
-  async validateSsoSignin(dto: SsoSignInDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto?.email },
-    });
+  async googleSignIn(dto: SsoSignInDto) {
+    if (!dto.access_token) {
+      throw new BadRequestException('Access token is required');
+    }
+    try {
+      const client = new OAuth2Client();
+      client.setCredentials({ access_token: dto.access_token });
 
-    if (user) {
-      return await this.signToken(user.id, user.email, user.role);
-    } else {
-      const newUser = await this.prisma.user.create({
-        data: <any>{ ...dto, email_verify: true },
+      const userInfoResponse = await client.request({
+        url: 'https://www.googleapis.com/oauth2/v3/userinfo',
       });
-      return await this.signToken(newUser.id, newUser.email, newUser.role);
+      const googleUser = userInfoResponse.data as any;
+
+      const googleEmail = googleUser.email;
+      if (
+        !googleEmail ||
+        googleEmail.toLowerCase() !== dto.email.toLowerCase()
+      ) {
+        throw new BadRequestException({
+          status: 'error',
+          message: 'Email mismatch with Google account',
+        });
+      }
+
+      let user = await this.prisma.user.findUnique({
+        where: { email: googleEmail },
+      });
+
+      if (!user) {
+        user = await this.prisma.user.create({
+          data: {
+            name: googleUser.name || 'Google User',
+            email: googleEmail,
+            password: crypto.randomBytes(16).toString('hex'),
+            email_verify: true,
+            profile_picture: googleUser.picture || null,
+          },
+        });
+        await (this.prisma as any).notificationPreference.create({
+          data: { userId: user.id, recipientType: 'USER' },
+        });
+      } else {
+        const updateData: any = {
+          email_verify: true,
+        };
+
+        if (!user.profile_picture && googleUser.picture) {
+          updateData.profile_picture = googleUser.picture;
+        }
+
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: updateData,
+        });
+      }
+
+      if (dto.fcm_token) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: { fcmToken: dto.fcm_token },
+        });
+      }
+
+      const token = await this.signToken(user.id, user.email, user.role);
+
+      return {
+        status: 'ok',
+        message: 'Signed in successfully',
+        data: {
+          user: {
+            id: user.id,
+            full_name: user.name,
+            email: user.email,
+            profile_pic: user.profile_picture,
+          },
+          token: token.access_token,
+          refresh_token: token.refresh_token,
+        },
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      console.error('Google SignIn error:', error);
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Invalid Google token',
+      });
     }
   }
 

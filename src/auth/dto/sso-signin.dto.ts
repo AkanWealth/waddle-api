@@ -37,4 +37,22 @@ export class SsoSignInDto {
   @IsString({ message: 'Address must be a string' })
   @IsOptional()
   address: string;
+
+  @ApiPropertyOptional({
+    description: 'Access Token',
+    required: false,
+    example: 'ya29.a0AfH6SMB...',
+  })
+  @IsString({ message: 'Access token must be a string' })
+  @IsOptional()
+  access_token?: string;
+
+  @ApiPropertyOptional({
+    description: 'FCM Token',
+    type: String,
+    example: 'fcm_token_string',
+  })
+  @IsString({ message: 'FCM token must be a string' })
+  @IsOptional()
+  fcm_token?: string;
 }
