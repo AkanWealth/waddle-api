@@ -1287,6 +1287,151 @@ export class EventService {
     }
   }
 
+  private readonly GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
+  async filterEventByLocation(
+    latitude: number,
+    longitude: number,
+    radius = 10, // in km
+    age_range?: string,
+    category?: string,
+    page = 1,
+    limit = 10,
+    eventType?: string,
+  ) {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const whereClause: any = {
+        isPublished: true,
+        status: EventStatus.APPROVED,
+        isDeleted: false,
+        date: { gte: today },
+        OR: [
+          {
+            organiser: {
+              isDeleted: false,
+              status: { not: OrganiserStatus.SUSPENDED },
+              is_stripe_connected: true,
+              stripe_account_id: { not: null },
+            },
+          },
+          { adminId: { not: null } },
+        ],
+      };
+
+      if (age_range) whereClause.age_range = age_range;
+      if (category)
+        whereClause.category = { contains: category, mode: 'insensitive' };
+      if (eventType) whereClause.eventType = eventType;
+
+      // We need to fetch all matching events to filter by location in memory
+      // because we don't have geospatial index or lat/long columns
+      const events = await this.prisma.event.findMany({
+        where: whereClause,
+        include: {
+          admin: true,
+          organiser: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Filter by location
+      const eventsWithDistance = await Promise.all(
+        events.map(async (event) => {
+          const coords = await this.getCoordinatesFromAddress(event.address);
+          if (!coords) return null;
+
+          const distance = this.calculateDistance(
+            Number(latitude),
+            Number(longitude),
+            coords.lat,
+            coords.lng,
+          );
+          return { ...event, distance };
+        }),
+      );
+
+      const filteredEvents = eventsWithDistance.filter(
+        (event) => event && event.distance <= Number(radius),
+      );
+
+      // Pagination in memory
+      const total = filteredEvents.length;
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
+
+      return {
+        message: 'Event found',
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        event: paginatedEvents,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  private async getCoordinatesFromAddress(
+    address: string,
+  ): Promise<{ lat: number; lng: number } | null> {
+    if (!address) return null;
+
+    // Check if address is already in "lat,lng" format (fallback/optimization)
+    const parts = address.split(',');
+    if (parts.length === 2) {
+      const lat = parseFloat(parts[0].trim());
+      const lng = parseFloat(parts[1].trim());
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
+      }
+    }
+
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        address,
+      )}&key=${this.GOOGLE_MAPS_API_KEY}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status === 'OK' && data.results && data.results.length > 0) {
+        const location = data.results[0].geometry.location;
+        return { lat: location.lat, lng: location.lng };
+      }
+    } catch (error) {
+      console.error('Error geocoding address:', address, error);
+    }
+    return null;
+  }
+
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
+    const R = 6371; // Radius of the earth in km
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLon = this.deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) *
+        Math.cos(this.deg2rad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI / 180);
+  }
+
   // async updateEventAsAdmin(
   //   id: string,
   //   creatorId: string,

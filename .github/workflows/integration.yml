@@ -78,6 +78,7 @@ jobs:
           FIREBASE_AUTH_PROVIDER_CERT_URL: https://www.googleapis.com/oauth2/v1/certs
           FIREBASE_CLIENT_CERT_URL: https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40waddle-push-notification.iam.gserviceaccount.com
           FIREBASE_UNIVERSE_DOMAIN: googleapis.com
+          GOOGLE_MAPS_API_KEY: AIzaSyCJZtswZ0wT_0G-pbBvLlSQyZwwJ-OEZpI
 
         options: >-
           --health-cmd="pg_isready" 
@@ -157,6 +158,7 @@ jobs:
           echo "FIREBASE_AUTH_PROVIDER_CERT_URL=https://www.googleapis.com/oauth2/v1/certs" >> $GITHUB_ENV
           echo "FIREBASE_CLIENT_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40waddle-push-notification.iam.gserviceaccount.com" >> $GITHUB_ENV
           echo "FIREBASE_UNIVERSE_DOMAIN=googleapis.com" >> $GITHUB_ENV
+          echo "GOOGLE_MAPS_API_KEY=AIzaSyCJZtswZ0wT_0G-pbBvLlSQyZwwJ-OEZpI" >> $GITHUB_ENV
 
       - name: Wait for PostgreSQL to be ready
         run: |

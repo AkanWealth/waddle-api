@@ -473,6 +473,54 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary:
+      'Filter published events by location (latitude/longitude) with pagination',
+    description:
+      'Parents, Admin and Organisers are able to filter published events by location',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiQuery({ name: 'latitude', required: true, type: Number, example: 6.5244 })
+  @ApiQuery({
+    name: 'longitude',
+    required: true,
+    type: Number,
+    example: 3.3792,
+  })
+  @ApiQuery({ name: 'radius', required: false, type: Number, example: 10 })
+  @ApiQuery({ name: 'age', required: false, type: String })
+  @ApiQuery({ name: 'category', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({
+    name: 'eventType',
+    required: false,
+    type: String,
+    enum: EventType,
+  })
+  @Get('filter-location')
+  filterByLocation(
+    @Query('latitude') latitude: number,
+    @Query('longitude') longitude: number,
+    @Query('radius') radius = 10,
+    @Query('age') age: string,
+    @Query('category') category: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('eventType') eventType: string,
+  ) {
+    return this.eventService.filterEventByLocation(
+      latitude,
+      longitude,
+      radius,
+      age,
+      category,
+      page,
+      limit,
+      eventType,
+    );
+  }
+
+  @ApiOperation({
     summary: 'view an event detail by the event id',
     description:
       'Parents, Admin and Organisers are able to find an event detail by id',
