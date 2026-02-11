@@ -272,6 +272,38 @@ export class CrowdSourcingController {
   }
 
   @ApiOperation({
+    summary: 'delete a crowdsourced event',
+    description: 'Delete a crowdsourced event by ID',
+  })
+  @ApiNoContentResponse({ description: 'No content' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('event/:id')
+  @Roles(Role.Admin)
+  removeSourcedEventById(
+    @GetUser() user: { id: string },
+    @Param('id') id: string,
+  ) {
+    if (user) return this.crowdSourcingService.removeSourcedEvent(id);
+  }
+
+  @ApiOperation({
+    summary: 'delete a crowdsourced place',
+    description: 'Delete a crowdsourced place by ID',
+  })
+  @ApiNoContentResponse({ description: 'No content' })
+  @ApiNotFoundResponse({ description: 'Not found' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('place/:id')
+  @Roles(Role.Admin)
+  removeSourcedPlaceById(
+    @GetUser() user: { id: string },
+    @Param('id') id: string,
+  ) {
+    if (user) return this.crowdSourcingService.removeSourcedEvent(id);
+  }
+
+  @ApiOperation({
     summary: 'delete a crowdsourced event/place',
     description: 'Delete a crowdsourced event/place by ID',
   })

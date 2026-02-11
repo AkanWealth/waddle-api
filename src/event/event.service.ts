@@ -1397,9 +1397,11 @@ export class EventService {
 
       const response = await fetch(url);
       const data = await response.json();
+      console.log('Data for this', data);
 
       if (data.status === 'OK' && data.results && data.results.length > 0) {
         const location = data.results[0].geometry.location;
+        console.log('Location for this', location);
         return { lat: location.lat, lng: location.lng };
       }
     } catch (error) {
