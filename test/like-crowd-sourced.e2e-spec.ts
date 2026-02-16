@@ -98,18 +98,18 @@ describe('Like Crowd Sourced Event (e2e)', () => {
     });
 
     test('(POST) => Should like the crowd sourced event again (toggle back)', () => {
-        const dto: CreateEventLikeDto = {
-          eventId: crowdSourceId,
-        };
-        return request(app.getHttpServer())
-          .post('/api/v1/likes/crowd-sourced')
-          .set('Authorization', 'Bearer ' + customerToken)
-          .send(dto)
-          .expect(201)
-          .then((res) => {
-            expect(res.body.message).toBe('Crowd sourced liked');
-            expect(res.body.like).toBeDefined();
-          });
-      });
+      const dto: CreateEventLikeDto = {
+        eventId: crowdSourceId,
+      };
+      return request(app.getHttpServer())
+        .post('/api/v1/likes/crowd-sourced')
+        .set('Authorization', 'Bearer ' + customerToken)
+        .send(dto)
+        .expect(201)
+        .then((res) => {
+          expect(res.body.message).toBe('Crowd sourced liked');
+          expect(res.body.like).toBeDefined();
+        });
+    });
   });
 });

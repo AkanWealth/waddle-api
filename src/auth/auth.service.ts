@@ -862,14 +862,23 @@ export class AuthService {
   async signToken(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
 
+    const accessSecret = this.config.getOrThrow<string>('JWT_SECRET_KEY');
+    const accessExpiry = this.config.get<string>('JWT_EXPIRATION_TIME') || '1h';
+
+    const refreshSecret = this.config.getOrThrow<string>(
+      'JWT_REFRESH_SECRET_KEY',
+    );
+    const refreshExpiry =
+      this.config.get<string>('JWT_REFRESH_EXPIRATION_TIME') || '7d';
+
     const access_token = await this.jwt.signAsync(payload, {
-      expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
-      secret: this.config.get<string>('JWT_SECRET_KEY'),
+      expiresIn: accessExpiry,
+      secret: accessSecret,
     });
 
     const refresh_token = await this.jwt.signAsync(payload, {
-      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
-      secret: this.config.get<string>('JWT_REFRESH_SECRET_KEY'),
+      expiresIn: refreshExpiry,
+      secret: refreshSecret,
     });
 
     return { message: 'Login successful', access_token, refresh_token };
@@ -879,21 +888,27 @@ export class AuthService {
     const blacklistToken = await this.prisma.blacklistedToken.findFirst({
       where: { refresh_token: token },
     });
-    console.log(blacklistToken);
+
     if (blacklistToken) {
       throw new ForbiddenException('Login, token has been blacklisted!');
     }
-    console.log(token, 'This is the token');
-    console.log('Try stuff here');
-    console.log(this.config.get<string>('JWT_REFRESH_SECRET_KEY'));
-    const decoded = await this.jwt.verifyAsync(token, {
-      secret: this.config.get<string>('JWT_REFRESH_SECRET_KEY'),
-    });
-    console.log('Decoded token:', decoded);
-    if (!decoded) {
-      throw new UnauthorizedException('Token is invalid');
+
+    const refreshSecret = this.config.getOrThrow<string>(
+      'JWT_REFRESH_SECRET_KEY',
+    );
+
+    let decoded: any;
+    try {
+      decoded = await this.jwt.verifyAsync(token, {
+        secret: refreshSecret,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
     }
-    console.log('We are gonna test');
+
+    if (!decoded || !decoded.sub || !decoded.email) {
+      throw new UnauthorizedException('Invalid refresh token payload');
+    }
 
     const payload = {
       sub: decoded.sub,
@@ -901,9 +916,12 @@ export class AuthService {
       role: decoded.role,
     };
 
+    const accessSecret = this.config.getOrThrow<string>('JWT_SECRET_KEY');
+    const accessExpiry = this.config.get<string>('JWT_EXPIRATION_TIME') || '1h';
+
     const access_token = await this.jwt.signAsync(payload, {
-      expiresIn: this.config.get<string>('JWT_EXPIRATION_TIME'),
-      secret: this.config.get<string>('JWT_SECRET_KEY'),
+      expiresIn: accessExpiry,
+      secret: accessSecret,
     });
 
     return { access_token };
