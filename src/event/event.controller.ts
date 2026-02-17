@@ -473,6 +473,42 @@ export class EventController {
   }
 
   @ApiOperation({
+    summary: 'Filter events and crowdsourced items by age, category or address',
+    description:
+      'Parents, Admin and Organisers are able to filter events plus crowdsourced events/places',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @ApiQuery({ name: 'age', required: false, type: String })
+  @ApiQuery({ name: 'category', required: false, type: String })
+  @ApiQuery({ name: 'address', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({
+    name: 'eventType',
+    required: false,
+    type: String,
+    enum: EventType,
+  })
+  @Get('filter/all')
+  filterEventsAndCrowdsource(
+    @Query('age') age: string,
+    @Query('category') category: string,
+    @Query('address') address: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('eventType') eventType: string,
+  ) {
+    return this.eventService.filterEventWithCrowdsource(
+      age,
+      category,
+      address,
+      page,
+      limit,
+      eventType,
+    );
+  }
+
+  @ApiOperation({
     summary:
       'Filter published events by location (latitude/longitude) with pagination',
     description:

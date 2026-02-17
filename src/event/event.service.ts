@@ -23,7 +23,11 @@ import { DraftEventDto } from './dto/draft-event.dto';
 import { NotificationHelper } from 'src/notification/notification.helper';
 import { PaymentService } from '../payment/payment.service';
 import { Mailer } from '../helper';
-import { PaymentStatus, BookingStatus } from '@prisma/client';
+import {
+  BookingStatus,
+  CrowdSourceStatus,
+  PaymentStatus,
+} from '@prisma/client';
 import { OrganiserRecentActivity } from 'src/organiser/organiser-recent-activity-helper';
 
 @Injectable()
@@ -1286,7 +1290,6 @@ export class EventService {
       throw error;
     }
   }
-
   private readonly GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
   async filterEventByLocation(
@@ -1369,6 +1372,221 @@ export class EventService {
         limit,
         totalPages: Math.ceil(total / limit),
         event: paginatedEvents,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async filterEventWithCrowdsource(
+    age_range?: string,
+    category?: string,
+    address?: string,
+    page = 1,
+    limit = 10,
+    eventType?: string,
+  ) {
+    try {
+      const calSkip = (page - 1) * limit;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const whereClause: any = {
+        isPublished: true,
+        status: EventStatus.APPROVED,
+        isDeleted: false,
+        date: { gte: today },
+        OR: [
+          {
+            organiser: {
+              isDeleted: false,
+              status: { not: OrganiserStatus.SUSPENDED },
+            },
+          },
+          { adminId: { not: null } },
+        ],
+      };
+
+      if (age_range) whereClause.age_range = age_range;
+      if (address)
+        whereClause.address = { contains: address, mode: 'insensitive' };
+      if (category)
+        whereClause.category = { contains: category, mode: 'insensitive' };
+      if (eventType) whereClause.eventType = eventType;
+
+      const [events, crowdSourcedEvents, crowdSourcedPlaces] =
+        await this.prisma.$transaction([
+          this.prisma.event.findMany({
+            where: whereClause,
+            include: {
+              reviews: true,
+              favorites: true,
+              like: true,
+              recommendations: true,
+            },
+          }),
+          this.prisma.crowdSource.findMany({
+            where: {
+              isDeleted: false,
+              status: CrowdSourceStatus.APPROVED,
+              tag: 'Event',
+              ...(address && {
+                address: { contains: address, mode: 'insensitive' },
+              }),
+              ...(category && {
+                category: { contains: category, mode: 'insensitive' },
+              }),
+            },
+            include: {
+              like: true,
+              creator: true,
+              attendances: {
+                include: {
+                  user: {
+                    select: {
+                      profile_picture: true,
+                      id: true,
+                    },
+                  },
+                },
+              },
+              reviews: {
+                include: {
+                  user: {
+                    select: {
+                      profile_picture: true,
+                      id: true,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+          this.prisma.crowdSource.findMany({
+            where: {
+              isDeleted: false,
+              status: CrowdSourceStatus.APPROVED,
+              tag: 'Place',
+              ...(address && {
+                address: { contains: address, mode: 'insensitive' },
+              }),
+              ...(category && {
+                category: { contains: category, mode: 'insensitive' },
+              }),
+            },
+            include: {
+              like: true,
+              creator: true,
+              reviews: {
+                include: {
+                  user: {
+                    select: {
+                      profile_picture: true,
+                      id: true,
+                    },
+                  },
+                },
+              },
+            },
+          }),
+        ]);
+
+      const normalizedEvents = events.map((event) => ({
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        address: event.address,
+        price: event.price,
+        date: event.date,
+        time: event.time,
+        category: event.category,
+        facilities: event.facilities,
+        tags: event.tags,
+        images: event.files,
+        type: 'event' as const,
+        source: 'official' as const,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+        likes: event.like,
+        reviews: event.reviews,
+        favorites: event.favorites,
+        recommendations: event.recommendations,
+        totalTickets: event.total_ticket,
+        ticketsBooked: event.ticket_booked,
+        isUnlimited: event.isUnlimited,
+        ageRange: event.age_range,
+      }));
+
+      const normalizedCrowdSourcedEvents = crowdSourcedEvents.map((event) => ({
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        address: event.address,
+        price: null,
+        date: event.date,
+        time: event.time,
+        category: event.category,
+        facilities: event.facilities,
+        tags: [],
+        images: event.images,
+        type: 'event' as const,
+        source: 'crowdsourced' as const,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+        creator: event.creator,
+        likes: event.like,
+        attendances: event.attendances,
+        reviews: event.reviews,
+        isFree: event.isFree,
+        tips: event.tips,
+      }));
+
+      const normalizedCrowdSourcedPlaces = crowdSourcedPlaces.map((place) => ({
+        id: place.id,
+        name: place.name,
+        description: place.description,
+        address: place.address,
+        price: null,
+        date: null,
+        time: null,
+        category: place.category,
+        facilities: place.facilities,
+        tags: [],
+        images: place.images,
+        type: 'place' as const,
+        source: 'crowdsourced' as const,
+        createdAt: place.createdAt,
+        updatedAt: place.updatedAt,
+        creator: place.creator,
+        likes: place.like,
+        reviews: place.reviews,
+        isFree: place.isFree,
+        tips: place.tips,
+      }));
+
+      const allItems = [
+        ...normalizedEvents,
+        ...normalizedCrowdSourcedEvents,
+        ...normalizedCrowdSourcedPlaces,
+      ];
+
+      allItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+      const totalItems = allItems.length;
+      const paginatedItems = allItems.slice(calSkip, calSkip + Number(limit));
+
+      return {
+        message: 'Items found',
+        items: paginatedItems,
+        totalItems,
+        page,
+        limit,
+        totalPages: Math.ceil(totalItems / limit),
+        breakdown: {
+          events: normalizedEvents.length,
+          crowdSourcedEvents: normalizedCrowdSourcedEvents.length,
+          places: normalizedCrowdSourcedPlaces.length,
+        },
       };
     } catch (error) {
       throw error;
