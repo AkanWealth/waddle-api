@@ -171,6 +171,122 @@ export class LikeService {
     }
   }
 
+  async getMyLikedCrowdSource(userId: string) {
+    try {
+      const likes = await this.prisma.like.findMany({
+        where: {
+          userId,
+          crowdSourceId: {
+            not: null,
+          },
+        },
+        include: {
+          crowdSource: {
+            include: {
+              like: true,
+              creator: true,
+              attendances: {
+                include: {
+                  user: {
+                    select: {
+                      profile_picture: true,
+                      id: true,
+                    },
+                  },
+                },
+              },
+              reviews: {
+                include: {
+                  user: {
+                    select: {
+                      profile_picture: true,
+                      id: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const items = [];
+      let events = 0;
+      let places = 0;
+
+      for (const like of likes) {
+        if (!like.crowdSource) continue;
+        const cs = like.crowdSource;
+
+        if (cs.tag === 'Event') {
+          events += 1;
+          items.push({
+            id: cs.id,
+            name: cs.name,
+            description: cs.description,
+            address: cs.address,
+            price: null,
+            date: cs.date,
+            time: cs.time,
+            category: cs.category,
+            facilities: cs.facilities,
+            tags: [],
+            images: cs.images,
+            type: 'event',
+            source: 'crowdsourced',
+            createdAt: cs.createdAt,
+            updatedAt: cs.updatedAt,
+            creator: cs.creator,
+            likes: cs.like,
+            attendances: cs.attendances,
+            reviews: cs.reviews,
+            isFree: cs.isFree,
+            tips: cs.tips,
+          });
+        } else if (cs.tag === 'Place') {
+          places += 1;
+          items.push({
+            id: cs.id,
+            name: cs.name,
+            description: cs.description,
+            address: cs.address,
+            price: null,
+            date: null,
+            time: null,
+            category: cs.category,
+            facilities: cs.facilities,
+            tags: [],
+            images: cs.images,
+            type: 'place',
+            source: 'crowdsourced',
+            createdAt: cs.createdAt,
+            updatedAt: cs.updatedAt,
+            creator: cs.creator,
+            likes: cs.like,
+            reviews: cs.reviews,
+            isFree: cs.isFree,
+            tips: cs.tips,
+          });
+        }
+      }
+
+      return {
+        message: 'Liked crowdsourced items found',
+        items,
+        total: items.length,
+        breakdown: {
+          events,
+          places,
+        },
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   // unlike the event
   async deleteLike(userId: string, id: string) {
     try {

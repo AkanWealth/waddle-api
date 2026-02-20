@@ -121,6 +121,17 @@ export class LikeController {
   }
 
   @ApiOperation({
+    summary: 'view logged in user liked crowdsourced events and places',
+    description:
+      'Parents can view all crowdsourced events and places they have liked',
+  })
+  @ApiOkResponse({ description: 'Ok' })
+  @Get('crowd-sourced/me')
+  getMyLikedCrowdSource(@GetUser() user: User) {
+    return this.likeService.getMyLikedCrowdSource(user.id);
+  }
+
+  @ApiOperation({
     summary: 'view all likes for crowd sourced event',
     description: 'Parents can view all likes for crowd sourced event',
   })
