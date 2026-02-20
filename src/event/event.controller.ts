@@ -478,6 +478,7 @@ export class EventController {
       'Parents, Admin and Organisers are able to filter events plus crowdsourced events/places',
   })
   @ApiOkResponse({ description: 'Ok' })
+  @ApiQuery({ name: 'name', required: false, type: String })
   @ApiQuery({ name: 'age', required: false, type: String })
   @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'address', required: false, type: String })
@@ -491,6 +492,7 @@ export class EventController {
   })
   @Get('filter/all')
   filterEventsAndCrowdsource(
+    @Query('name') name: string,
     @Query('age') age: string,
     @Query('category') category: string,
     @Query('address') address: string,
@@ -499,6 +501,7 @@ export class EventController {
     @Query('eventType') eventType: string,
   ) {
     return this.eventService.filterEventWithCrowdsource(
+      name,
       age,
       category,
       address,

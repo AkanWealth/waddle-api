@@ -1379,6 +1379,7 @@ export class EventService {
   }
 
   async filterEventWithCrowdsource(
+    name?: string,
     age_range?: string,
     category?: string,
     address?: string,
@@ -1407,6 +1408,7 @@ export class EventService {
         ],
       };
 
+      if (name) whereClause.name = { contains: name, mode: 'insensitive' };
       if (age_range) whereClause.age_range = age_range;
       if (address)
         whereClause.address = { contains: address, mode: 'insensitive' };
@@ -1430,6 +1432,9 @@ export class EventService {
               isDeleted: false,
               status: CrowdSourceStatus.APPROVED,
               tag: 'Event',
+              ...(name && {
+                name: { contains: name, mode: 'insensitive' },
+              }),
               ...(address && {
                 address: { contains: address, mode: 'insensitive' },
               }),
@@ -1467,6 +1472,9 @@ export class EventService {
               isDeleted: false,
               status: CrowdSourceStatus.APPROVED,
               tag: 'Place',
+              ...(name && {
+                name: { contains: name, mode: 'insensitive' },
+              }),
               ...(address && {
                 address: { contains: address, mode: 'insensitive' },
               }),
