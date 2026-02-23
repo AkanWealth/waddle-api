@@ -1,13 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateFavoriteDto {
   @ApiProperty({
-    description: 'Event ID',
-    example: 'jyiy29723877de339y98yr8e',
-    required: true,
+    description: 'Event ID (for official events)',
+    example: 'EVT-abc123',
+    required: false,
   })
   @IsString({ message: 'Event ID must be a string' })
-  @IsNotEmpty({ message: 'Event ID cannot be empty' })
-  eventId: string;
+  @IsOptional()
+  eventId?: string;
+
+  @ApiProperty({
+    description: 'CrowdSource ID (for crowdsourced events or places)',
+    example: 'cs_abc123',
+    required: false,
+  })
+  @IsString({ message: 'CrowdSource ID must be a string' })
+  @IsOptional()
+  crowdSourceId?: string;
 }

@@ -8,11 +8,14 @@ import { EventStatus } from 'src/utils/constants/eventTypes';
 export class FavoriteService {
   constructor(private prisma: PrismaService) {}
 
-  // create new favorite event
-  //To sort out later on
-
   async createFavorite(userId: string, dto: CreateFavoriteDto) {
     try {
+      if (!dto.eventId && !dto.crowdSourceId) {
+        throw new NotFoundException(
+          'Either eventId or crowdSourceId must be provided',
+        );
+      }
+
       const favorite = await this.prisma.favorite.create({
         data: { ...dto, userId },
       });
@@ -22,7 +25,6 @@ export class FavoriteService {
     }
   }
 
-  // find all favorite event for a user
   async viewAllFavorite(userId: string, page = 1, limit = 10) {
     try {
       const skip = (page - 1) * limit;
@@ -31,13 +33,25 @@ export class FavoriteService {
         this.prisma.favorite.findMany({
           where: {
             userId,
-            event: {
-              status: EventStatus.APPROVED,
-              isCancelled: false,
-              isDeleted: false,
-            },
+            OR: [
+              {
+                event: {
+                  status: EventStatus.APPROVED,
+                  isCancelled: false,
+                  isDeleted: false,
+                },
+              },
+              {
+                crowdSource: {
+                  isDeleted: false,
+                },
+              },
+            ],
           },
-          include: { event: true },
+          include: {
+            event: true,
+            crowdSource: true,
+          },
           skip,
           take: Number(limit),
           orderBy: { createdAt: 'desc' },
@@ -45,13 +59,50 @@ export class FavoriteService {
         this.prisma.favorite.count({
           where: {
             userId,
-            event: {
-              status: EventStatus.APPROVED,
-              isDeleted: false,
-            },
+            OR: [
+              {
+                event: {
+                  status: EventStatus.APPROVED,
+                  isDeleted: false,
+                },
+              },
+              {
+                crowdSource: {
+                  isDeleted: false,
+                },
+              },
+            ],
           },
         }),
       ]);
+
+      const items = favorites.map((fav) => {
+        if (fav.event) {
+          return {
+            id: fav.id,
+            type: 'event',
+            source: 'official',
+            createdAt: fav.createdAt,
+            updatedAt: fav.updatedAt,
+            event: fav.event,
+            crowdSource: null,
+          };
+        }
+
+        if (fav.crowdSource) {
+          return {
+            id: fav.id,
+            type: fav.crowdSource.tag === 'Event' ? 'event' : 'place',
+            source: 'crowdsourced',
+            createdAt: fav.createdAt,
+            updatedAt: fav.updatedAt,
+            event: null,
+            crowdSource: fav.crowdSource,
+          };
+        }
+
+        return fav;
+      });
 
       return {
         message: 'Favorites found',
@@ -59,31 +110,25 @@ export class FavoriteService {
         page,
         limit,
         totalPages: Math.ceil(total / limit),
-        favorites,
+        favorites: items,
       };
     } catch (error) {
       throw error;
     }
   }
 
-  // find one favorite event based on id for a user
   async viewFavorite(id: string, userId: string) {
     try {
       const favorite = await this.prisma.favorite.findFirst({
         where: {
           id,
           userId,
-          event: {
-            status: EventStatus.APPROVED,
-            isCancelled: false,
-            isDeleted: false,
-          },
         },
-        include: { event: true },
+        include: { event: true, crowdSource: true },
       });
       if (!favorite)
         throw new NotFoundException(
-          'No favorite event with the provided ID found',
+          'No favorite item with the provided ID found',
         );
 
       return favorite;

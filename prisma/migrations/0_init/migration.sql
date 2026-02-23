@@ -455,9 +455,6 @@ CREATE UNIQUE INDEX "crowdsource_review_userId_crowdSourceId_key" ON "crowdsourc
 CREATE INDEX "booking_userId_eventId_sessionId_status_idx" ON "booking"("userId", "eventId", "sessionId", "status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "favorite_eventId_key" ON "favorite"("eventId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "like_userId_eventId_key" ON "like"("userId", "eventId");
 
 -- CreateIndex
@@ -603,4 +600,3 @@ ALTER TABLE "payment" ADD CONSTRAINT "payment_eventId_fkey" FOREIGN KEY ("eventI
 
 -- AddForeignKey
 ALTER TABLE "payment" ADD CONSTRAINT "payment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-

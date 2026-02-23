@@ -291,7 +291,7 @@ model Event {
   disputes                Dispute[]
   admin                   Admin?             @relation(fields: [adminId], references: [id])
   organiser               Organiser?         @relation(fields: [organiserId], references: [id])
-  favorites               Favorite?
+  favorites               Favorite[]
   like                    Like[]
   payments                Payment[]
   recommendations         Recommendation[]
@@ -327,6 +327,7 @@ model CrowdSource {
   attendances        CrowdSourceAttendance[]
   reviews            CrowdSourceReview[]
   like               Like[]
+  favorites          Favorite[]
   crowdSourceReports CrowdSourceReport[]
   @@index([address, isVerified])
   @@map("crowdsource")
@@ -404,14 +405,18 @@ model Consent {
 }
 
 model Favorite {
-  id        String   @id @default(dbgenerated("generate_unique_id('favorite'::text, 'FAV-'::text)"))
-  userId    String
-  eventId   String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String      @id @default(dbgenerated("generate_unique_id('favorite'::text, 'FAV-'::text)"))
+  userId        String
+  eventId       String?
+  crowdSourceId String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  event         Event?      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  crowdSource   CrowdSource? @relation(fields: [crowdSourceId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, eventId])
+  @@unique([userId, crowdSourceId])
   @@map("favorite")
 }
 
