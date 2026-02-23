@@ -173,56 +173,106 @@ export class LikeService {
 
   async getMyLikedCrowdSource(userId: string) {
     try {
-      const likes = await this.prisma.like.findMany({
-        where: {
-          userId,
-          crowdSourceId: {
-            not: null,
+      const [eventLikes, crowdSourceLikes] = await this.prisma.$transaction([
+        this.prisma.like.findMany({
+          where: {
+            userId,
+            eventId: {
+              not: null,
+            },
           },
-        },
-        include: {
-          crowdSource: {
-            include: {
-              like: true,
-              creator: true,
-              attendances: {
-                include: {
-                  user: {
-                    select: {
-                      profile_picture: true,
-                      id: true,
+          include: {
+            event: {
+              include: {
+                reviews: true,
+                favorites: true,
+                like: true,
+                recommendations: true,
+              },
+            },
+          },
+        }),
+        this.prisma.like.findMany({
+          where: {
+            userId,
+            crowdSourceId: {
+              not: null,
+            },
+          },
+          include: {
+            crowdSource: {
+              include: {
+                like: true,
+                creator: true,
+                attendances: {
+                  include: {
+                    user: {
+                      select: {
+                        profile_picture: true,
+                        id: true,
+                      },
                     },
                   },
                 },
-              },
-              reviews: {
-                include: {
-                  user: {
-                    select: {
-                      profile_picture: true,
-                      id: true,
+                reviews: {
+                  include: {
+                    user: {
+                      select: {
+                        profile_picture: true,
+                        id: true,
+                      },
                     },
                   },
                 },
               },
             },
           },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
+        }),
+      ]);
 
       const items = [];
-      let events = 0;
-      let places = 0;
+      let officialEvents = 0;
+      let crowdSourceEvents = 0;
+      let crowdSourcePlaces = 0;
 
-      for (const like of likes) {
+      for (const like of eventLikes) {
+        if (!like.event) continue;
+        const ev = like.event;
+        officialEvents += 1;
+        items.push({
+          id: ev.id,
+          name: ev.name,
+          description: ev.description,
+          address: ev.address,
+          price: ev.price,
+          date: ev.date,
+          time: ev.time,
+          category: ev.category,
+          facilities: ev.facilities,
+          tags: ev.tags,
+          images: ev.files,
+          type: 'event',
+          source: 'official',
+          createdAt: ev.createdAt,
+          updatedAt: ev.updatedAt,
+          likes: ev.like,
+          reviews: ev.reviews,
+          favorites: ev.favorites,
+          recommendations: ev.recommendations,
+          totalTickets: ev.total_ticket,
+          ticketsBooked: ev.ticket_booked,
+          isUnlimited: ev.isUnlimited,
+          ageRange: ev.age_range,
+          likedAt: like.createdAt,
+        });
+      }
+
+      for (const like of crowdSourceLikes) {
         if (!like.crowdSource) continue;
         const cs = like.crowdSource;
 
         if (cs.tag === 'Event') {
-          events += 1;
+          crowdSourceEvents += 1;
           items.push({
             id: cs.id,
             name: cs.name,
@@ -245,9 +295,10 @@ export class LikeService {
             reviews: cs.reviews,
             isFree: cs.isFree,
             tips: cs.tips,
+            likedAt: like.createdAt,
           });
         } else if (cs.tag === 'Place') {
-          places += 1;
+          crowdSourcePlaces += 1;
           items.push({
             id: cs.id,
             name: cs.name,
@@ -269,17 +320,21 @@ export class LikeService {
             reviews: cs.reviews,
             isFree: cs.isFree,
             tips: cs.tips,
+            likedAt: like.createdAt,
           });
         }
       }
 
+      items.sort((a, b) => b.likedAt.getTime() - a.likedAt.getTime());
+
       return {
-        message: 'Liked crowdsourced items found',
+        message: 'Liked items found',
         items,
         total: items.length,
         breakdown: {
-          events,
-          places,
+          officialEvents,
+          crowdSourceEvents,
+          crowdSourcePlaces,
         },
       };
     } catch (error) {

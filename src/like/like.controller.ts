@@ -121,9 +121,9 @@ export class LikeController {
   }
 
   @ApiOperation({
-    summary: 'view logged in user liked crowdsourced events and places',
+    summary: 'view logged in user liked events and crowdsourced items',
     description:
-      'Parents can view all crowdsourced events and places they have liked',
+      'Parents can view all events, crowdsourced events and places they have liked',
   })
   @ApiOkResponse({ description: 'Ok' })
   @Get('crowd-sourced/me')
