@@ -1305,7 +1305,8 @@ export class EventService {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const whereClause: any = {
+
+      const eventWhere: any = {
         isPublished: true,
         status: EventStatus.APPROVED,
         isDeleted: false,
@@ -1323,26 +1324,125 @@ export class EventService {
         ],
       };
 
-      if (age_range) whereClause.age_range = age_range;
+      if (age_range) eventWhere.age_range = age_range;
       if (category)
-        whereClause.category = { contains: category, mode: 'insensitive' };
-      if (eventType) whereClause.eventType = eventType;
+        eventWhere.category = { contains: category, mode: 'insensitive' };
+      if (eventType) eventWhere.eventType = eventType;
 
-      // We need to fetch all matching events to filter by location in memory
-      // because we don't have geospatial index or lat/long columns
-      const events = await this.prisma.event.findMany({
-        where: whereClause,
-        include: {
-          admin: true,
-          organiser: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+      const crowdSourceWhere: any = {
+        isDeleted: false,
+        status: CrowdSourceStatus.APPROVED,
+      };
 
-      // Filter by location
-      const eventsWithDistance = await Promise.all(
-        events.map(async (event) => {
-          const coords = await this.getCoordinatesFromAddress(event.address);
+      if (category)
+        crowdSourceWhere.category = { contains: category, mode: 'insensitive' };
+
+      // We need to fetch all matching items to filter by location in memory
+      const [events, crowdSourceItems] = await this.prisma.$transaction([
+        this.prisma.event.findMany({
+          where: eventWhere,
+          include: {
+            admin: true,
+            organiser: true,
+            reviews: true,
+            favorites: true,
+            like: true,
+            recommendations: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.crowdSource.findMany({
+          where: crowdSourceWhere,
+          include: {
+            like: true,
+            favorites: true,
+            creator: true,
+            attendances: {
+              include: {
+                user: {
+                  select: {
+                    profile_picture: true,
+                    id: true,
+                  },
+                },
+              },
+            },
+            reviews: {
+              include: {
+                user: {
+                  select: {
+                    profile_picture: true,
+                    id: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      // Normalize events
+      const normalizedEvents = events.map((event) => ({
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        address: event.address,
+        price: event.price,
+        date: event.date,
+        time: event.time,
+        category: event.category,
+        facilities: event.facilities,
+        tags: event.tags,
+        images: event.files,
+        type: 'event' as const,
+        source: 'official' as const,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt,
+        likes: event.like,
+        reviews: event.reviews,
+        favorites: event.favorites,
+        recommendations: event.recommendations,
+        totalTickets: event.total_ticket,
+        ticketsBooked: event.ticket_booked,
+        isUnlimited: event.isUnlimited,
+        ageRange: event.age_range,
+        organizer: event.organiser,
+        admin: event.admin,
+      }));
+
+      // Normalize crowdsource items
+      const normalizedCrowdSourceItems = crowdSourceItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        address: item.address,
+        price: null,
+        date: item.date,
+        time: item.time,
+        category: item.category,
+        facilities: item.facilities,
+        tags: [],
+        images: item.images,
+        type: (item.tag === 'Event' ? 'event' : 'place') as 'event' | 'place',
+        source: 'crowdsourced' as const,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        creator: item.creator,
+        likes: item.like,
+        attendances: item.attendances,
+        favorites: item.favorites,
+        reviews: item.reviews,
+        isFree: item.isFree,
+        tips: item.tips,
+      }));
+
+      // Combine and calculate distance
+      const allItems = [...normalizedEvents, ...normalizedCrowdSourceItems];
+
+      const itemsWithDistance = await Promise.all(
+        allItems.map(async (item) => {
+          const coords = await this.getCoordinatesFromAddress(item.address);
           if (!coords) return null;
 
           const distance = this.calculateDistance(
@@ -1351,27 +1451,51 @@ export class EventService {
             coords.lat,
             coords.lng,
           );
-          return { ...event, distance };
+          return { ...item, distance };
         }),
       );
 
-      const filteredEvents = eventsWithDistance.filter(
-        (event) => event && event.distance <= Number(radius),
+      const filteredItems = itemsWithDistance.filter(
+        (item) => item && item.distance <= Number(radius),
       );
 
-      // Pagination in memory
-      const total = filteredEvents.length;
+      // Sort by distance (optional, but good for location search) or createdAt (to match previous behavior)
+      // Previous behavior: fetched sorted by createdAt, then filtered.
+      // So effectively sorted by createdAt.
+      filteredItems.sort((a, b) => {
+        if (!a || !b) return 0;
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+
+      // Pagination
+      const total = filteredItems.length;
       const startIndex = (page - 1) * limit;
       const endIndex = startIndex + limit;
-      const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
+      const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+      // Breakdown counts
+      const eventsCount = paginatedItems.filter(
+        (i) => i && i.source === 'official',
+      ).length;
+      const crowdSourceEventsCount = paginatedItems.filter(
+        (i) => i && i.source === 'crowdsourced' && i.type === 'event',
+      ).length;
+      const crowdSourcePlacesCount = paginatedItems.filter(
+        (i) => i && i.source === 'crowdsourced' && i.type === 'place',
+      ).length;
 
       return {
-        message: 'Event found',
+        message: 'Items found',
         total,
         page,
         limit,
         totalPages: Math.ceil(total / limit),
-        event: paginatedEvents,
+        items: paginatedItems,
+        breakdown: {
+          events: eventsCount,
+          crowdSourcedEvents: crowdSourceEventsCount,
+          places: crowdSourcePlacesCount,
+        },
       };
     } catch (error) {
       throw error;
