@@ -1444,6 +1444,7 @@ export class EventService {
             },
             include: {
               like: true,
+              favorites: true,
               creator: true,
               attendances: {
                 include: {
@@ -1484,6 +1485,7 @@ export class EventService {
             },
             include: {
               like: true,
+              favorites: true,
               creator: true,
               reviews: {
                 include: {
@@ -1544,6 +1546,7 @@ export class EventService {
         creator: event.creator,
         likes: event.like,
         attendances: event.attendances,
+        favorites: event.favorites,
         reviews: event.reviews,
         isFree: event.isFree,
         tips: event.tips,
@@ -1565,8 +1568,10 @@ export class EventService {
         source: 'crowdsourced' as const,
         createdAt: place.createdAt,
         updatedAt: place.updatedAt,
+
         creator: place.creator,
         likes: place.like,
+        favorites: place.favorites,
         reviews: place.reviews,
         isFree: place.isFree,
         tips: place.tips,
